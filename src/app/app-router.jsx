@@ -11,6 +11,7 @@ import {
   RegisterForm,
   ForgotPasswordForm,
   HomePage,
+  Forbidden
 } from "@/pages";
 
 export const router = createBrowserRouter([
@@ -25,6 +26,7 @@ export const router = createBrowserRouter([
           { path: "login", element: <LoginForm /> },
           { path: "register", element: <RegisterForm /> },
           { path: "forgot-password", element: <ForgotPasswordForm /> },
+          { path: "forbidden", element: <Forbidden /> },
         ],
       },
       {
