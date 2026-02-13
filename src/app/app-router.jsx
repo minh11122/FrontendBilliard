@@ -7,6 +7,9 @@ import {
 } from "@/components/layouts";
 
 import {
+  LoginForm,
+  RegisterForm,
+  ForgotPasswordForm,
   HomePage,
 } from "@/pages";
 
@@ -15,15 +18,15 @@ export const router = createBrowserRouter([
     path: "/",
     element: <RootLayout />,
     children: [
-      // {
-      //   path: "auth",
-      //   element: <AuthLayout />,
-      //   children: [
-      //     { path: "login", element: <LoginForm /> },
-      //     { path: "register", element: <RegisterForm /> },
-      //     { path: "forgot-password", element: <ForgotPasswordForm /> },
-      //   ],
-      // },
+      {
+        path: "auth",
+        element: <AuthLayout />,
+        children: [
+          { path: "login", element: <LoginForm /> },
+          { path: "register", element: <RegisterForm /> },
+          { path: "forgot-password", element: <ForgotPasswordForm /> },
+        ],
+      },
       {
         path: "",
         element: <HomeMainLayout />,
