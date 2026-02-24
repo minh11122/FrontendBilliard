@@ -1,29 +1,31 @@
 import { useState } from "react";
 import { ChevronDown, Moon } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export const HeaderHome = () => {
   const [openMenu, setOpenMenu] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <header className="w-full bg-white border-b shadow-sm">
       <div className="container mx-auto px-6 py-3 flex items-center justify-between">
-        
         {/* Logo */}
-        <div className="flex items-center gap-2 font-bold text-xl">
-          <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center text-white">
-            🎮
+        <a href="/" className="hover:text-orange-500">
+          <div className="flex items-center gap-2 font-bold text-xl">
+            <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center text-white">
+              🎮
+            </div>
+            <span>
+              Billiard<span className="text-orange-500">Master</span>
+            </span>
           </div>
-          <span>
-            Billiard<span className="text-orange-500">Master</span>
-          </span>
-        </div>
-
+        </a>
         {/* Menu */}
         <nav className="hidden md:flex items-center gap-8 text-gray-600 font-medium">
-          <a href="#" className="hover:text-orange-500">
+          <a href="/" className="hover:text-orange-500">
             Trang chủ
           </a>
-          <a href="#" className="hover:text-orange-500">
+          <a href="/tournament" className="hover:text-orange-500">
             Đặt bàn
           </a>
 
@@ -39,15 +41,12 @@ export const HeaderHome = () => {
             {openMenu && (
               <div className="absolute top-full mt-2 w-40 bg-white border rounded-xl shadow-lg py-2">
                 <a
-                  href="#"
+                  href="/tournament"
                   className="block px-4 py-2 hover:bg-orange-50"
                 >
                   Giải hiện tại
                 </a>
-                <a
-                  href="#"
-                  className="block px-4 py-2 hover:bg-orange-50"
-                >
+                <a href="#" className="block px-4 py-2 hover:bg-orange-50">
                   Đã kết thúc
                 </a>
               </div>
@@ -65,7 +64,10 @@ export const HeaderHome = () => {
             <Moon size={18} />
           </button>
 
-          <button className="px-4 py-2 border rounded-lg hover:bg-gray-50">
+          <button
+            onClick={() => navigate("/auth/login")}
+            className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+          >
             Đăng nhập
           </button>
 
