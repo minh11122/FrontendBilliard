@@ -11,6 +11,7 @@ import {
   RegisterForm,
   ForgotPasswordForm,
   HomePage,
+  TournamentPage,
   Forbidden
 } from "@/pages";
 
@@ -33,6 +34,9 @@ export const router = createBrowserRouter([
         path: "",
         element: <HomeMainLayout />,
         children: [
+          { path: "", element: <HomePage /> },
+          { path: "/tournament", element: <TournamentPage /> },
+          { path: "", element: <HomePage /> },
           { path: "", element: <HomePage /> },
         ],
       },
