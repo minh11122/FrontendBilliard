@@ -1,1 +1,1 @@
-export * from './dashboard-main-layout'
+export * from './dashboard-staff-club-layout'

@@ -2,7 +2,7 @@
 import { Outlet } from "react-router-dom";
 import { SidebarAdmin } from "./sidebar-layout";
 
-export const DashboardMainLayout = () => {
+export const DashboardStaffSystemLayout = () => {
   return (
     <div className="min-h-screen flex">
       <SidebarAdmin />

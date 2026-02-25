@@ -17,7 +17,9 @@ import {
   AccPendingManagement,
   ShopManagement,
   AdminSettings,
-  AccountManagement
+  AccountManagement,
+  LoginClub,
+  LoginSystem
 } from "@/pages";
 
 export const router = createBrowserRouter([
@@ -32,6 +34,8 @@ export const router = createBrowserRouter([
           { path: "login", element: <LoginForm /> },
           { path: "register", element: <RegisterForm /> },
           { path: "forgot-password", element: <ForgotPasswordForm /> },
+          { path: "login-system/adminstration", element: <LoginSystem /> },
+          { path: "login-club/club", element: <LoginClub /> },
           { path: "forbidden", element: <Forbidden /> },
         ],
       },
