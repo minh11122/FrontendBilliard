@@ -19,7 +19,11 @@ import {
   AdminSettings,
   AccountManagement,
   LoginClub,
-  LoginSystem
+  LoginSystem,
+  Owner1,
+  Owner2,
+  Owner3,
+  Owner4
 } from "@/pages";
 
 export const router = createBrowserRouter([
@@ -57,6 +61,16 @@ export const router = createBrowserRouter([
           { path: "list-acc-pending", element: <AccPendingManagement /> },
           { path: "list-shop", element: <ShopManagement /> },
           { path: "setting", element: <AdminSettings /> },
+        ],
+      },
+      {
+        path: "owner",
+        element: <DashboardMainLayout />,
+        children: [
+          { path: "owner1", element: <Owner1 /> },
+          { path: "owner2", element: <Owner2 /> },
+          { path: "owner3", element: <Owner3 /> },
+          { path: "owner4", element: <Owner4 /> },
         ],
       },
     ],
