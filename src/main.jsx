@@ -14,7 +14,7 @@ function App() {
   return (
     <>
       <RouterProvider router={router} />
-      {user?.roleName === "CUSTOMER" && <ChatAI />}
+      {/* {user?.roleName === "CUSTOMER" && <ChatAI />} */}
       <Toaster position="top-right" reverseOrder={false} />
     </>
   );

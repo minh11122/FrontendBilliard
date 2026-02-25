@@ -4,6 +4,7 @@ import { RootLayout } from "./RootLayout";
 import {
   AuthLayout,
   HomeMainLayout,
+  DashboardMainLayout
 } from "@/components/layouts";
 
 import {
@@ -12,7 +13,11 @@ import {
   ForgotPasswordForm,
   HomePage,
   TournamentPage,
-  Forbidden
+  Forbidden,
+  AccPendingManagement,
+  ShopManagement,
+  AdminSettings,
+  AccountManagement
 } from "@/pages";
 
 export const router = createBrowserRouter([
@@ -40,7 +45,16 @@ export const router = createBrowserRouter([
           { path: "", element: <HomePage /> },
         ],
       },
-
+      {
+        path: "admin",
+        element: <DashboardMainLayout />,
+        children: [
+          { path: "list-user", element: <AccountManagement /> },
+          { path: "list-acc-pending", element: <AccPendingManagement /> },
+          { path: "list-shop", element: <ShopManagement /> },
+          { path: "setting", element: <AdminSettings /> },
+        ],
+      },
     ],
   },
 ]);

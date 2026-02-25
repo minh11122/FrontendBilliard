@@ -1,33 +1,46 @@
-import { useState } from "react";
-import { ChevronDown, Moon } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useState, useContext } from "react";
+import { ChevronDown, Moon, User, LogOut } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import { AuthContext } from "@/context/AuthContext";
 
 export const HeaderHome = () => {
   const [openMenu, setOpenMenu] = useState(false);
+  const [openUserMenu, setOpenUserMenu] = useState(false);
   const navigate = useNavigate();
 
+  const { user, logout } = useContext(AuthContext);
+
+  const handleLogout = () => {
+    logout();
+    setOpenUserMenu(false);
+    navigate("/");
+  };
+
   return (
-    <header className="w-full bg-white border-b shadow-sm">
+    <header className="w-full bg-white border-b shadow-sm relative z-[9999]">
       <div className="container mx-auto px-6 py-3 flex items-center justify-between">
+        
         {/* Logo */}
-        <a href="/" className="hover:text-orange-500">
+        <Link to="/" className="hover:text-orange-500">
           <div className="flex items-center gap-2 font-bold text-xl">
             <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center text-white">
-              🎮
+              🎱
             </div>
             <span>
               Billiard<span className="text-orange-500">Master</span>
             </span>
           </div>
-        </a>
+        </Link>
+
         {/* Menu */}
         <nav className="hidden md:flex items-center gap-8 text-gray-600 font-medium">
-          <a href="/" className="hover:text-orange-500">
+          <Link to="/" className="hover:text-orange-500">
             Trang chủ
-          </a>
-          <a href="/tournament" className="hover:text-orange-500">
+          </Link>
+
+          <Link to="/booking" className="hover:text-orange-500">
             Đặt bàn
-          </a>
+          </Link>
 
           {/* Dropdown */}
           <div className="relative">
@@ -40,40 +53,82 @@ export const HeaderHome = () => {
 
             {openMenu && (
               <div className="absolute top-full mt-2 w-40 bg-white border rounded-xl shadow-lg py-2">
-                <a
-                  href="/tournament"
+                <Link
+                  to="/tournament"
                   className="block px-4 py-2 hover:bg-orange-50"
                 >
                   Giải hiện tại
-                </a>
-                <a href="#" className="block px-4 py-2 hover:bg-orange-50">
+                </Link>
+                <Link
+                  to="/tournament/history"
+                  className="block px-4 py-2 hover:bg-orange-50"
+                >
                   Đã kết thúc
-                </a>
+                </Link>
               </div>
             )}
           </div>
 
-          <a href="#" className="hover:text-orange-500">
+          <Link to="/ranking" className="hover:text-orange-500">
             Xếp hạng
-          </a>
+          </Link>
         </nav>
 
         {/* Right side */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 relative">
           <button className="p-2 rounded-lg hover:bg-gray-100">
             <Moon size={18} />
           </button>
 
-          <button
-            onClick={() => navigate("/auth/login")}
-            className="px-4 py-2 border rounded-lg hover:bg-gray-50"
-          >
-            Đăng nhập
-          </button>
+          {/* Nếu đã đăng nhập */}
+          {user ? (
+            <div className="relative">
+              <button
+                onClick={() => setOpenUserMenu(!openUserMenu)}
+                className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+              >
+                <User size={16} />
+                {user.name || "Tài khoản"}
+                <ChevronDown size={14} />
+              </button>
 
-          <button className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600">
-            Đăng ký
-          </button>
+              {openUserMenu && (
+                <div className="absolute right-0 mt-2 w-44 bg-white border rounded-xl shadow-lg py-2">
+                  <Link
+                    to="/profile"
+                    className="block px-4 py-2 hover:bg-orange-50"
+                    onClick={() => setOpenUserMenu(false)}
+                  >
+                    Hồ sơ
+                  </Link>
+
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-4 py-2 hover:bg-orange-50 flex items-center gap-2"
+                  >
+                    <LogOut size={16} />
+                    Đăng xuất
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              <button
+                onClick={() => navigate("/auth/login")}
+                className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+              >
+                Đăng nhập
+              </button>
+
+              <button
+                onClick={() => navigate("/auth/register")}
+                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+              >
+                Đăng ký
+              </button>
+            </>
+          )}
         </div>
       </div>
     </header>
