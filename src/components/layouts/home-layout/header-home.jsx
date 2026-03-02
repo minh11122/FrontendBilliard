@@ -39,7 +39,7 @@ export const HeaderHome = () => {
           </Link>
 
           <Link to="/booking" className="hover:text-orange-500">
-            Đặt bàn
+            CLB
           </Link>
 
           {/* Dropdown */}
