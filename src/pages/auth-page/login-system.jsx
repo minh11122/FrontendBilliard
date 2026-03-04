@@ -54,7 +54,7 @@ export function LoginSystem() {
 
         // 🔥 CHIA ROLE
         if (role === "ADMIN") {
-          navigate("/admin/admin1");
+          navigate("/admin/list-user");
         } else if (role === "STAFF_SYSTEM") {
           navigate("/systemstaff/systemstaff1");
         } else {
