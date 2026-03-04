@@ -25,7 +25,15 @@ import {
   Owner1,
   Owner2,
   Owner3,
-  Owner4
+  Owner4,
+  Staff1,
+  Staff2,
+  Staff3,
+  Staff4,
+  SystemStaff,
+  SystemStaff1,
+  SystemStaff2,
+  SystemStaff3
 } from "@/pages";
 
 export const router = createBrowserRouter([
@@ -73,6 +81,26 @@ export const router = createBrowserRouter([
           { path: "owner2", element: <Owner2 /> },
           { path: "owner3", element: <Owner3 /> },
           { path: "owner4", element: <Owner4 /> },
+        ],
+      },
+      {
+        path: "staff",
+        element: <DashboardMainLayout />,
+        children: [
+          { path: "staff1", element: <Staff1 /> },
+          { path: "staff2", element: <Staff2 /> },
+          { path: "staff3", element: <Staff3 /> },
+          { path: "staff4", element: <Staff4 /> },
+        ],
+      },
+      {
+        path: "systemstaff",
+        element: <DashboardMainLayout />,
+        children: [
+          { path: "systemstaff1", element: <SystemStaff /> },
+          { path: "systemstaff2", element: <SystemStaff1 /> },
+          { path: "systemstaff3", element: <SystemStaff2 /> },
+          { path: "systemstaff4", element: <SystemStaff3/> },
         ],
       },
     ],

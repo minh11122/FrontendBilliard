@@ -56,7 +56,7 @@ export function LoginClub() {
         if (role === "OWNER") {
           navigate("/owner/owner1");
         } else if (role === "STAFF_CLUB") {
-          navigate("/staff/dashboard");
+          navigate("/staff/staff1");
         } else {
           toast.error("Bạn không có quyền truy cập hệ thống club");
           navigate("/");

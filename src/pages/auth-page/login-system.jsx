@@ -38,9 +38,10 @@ export function LoginSystem() {
     onSubmit: async (values, { setSubmitting }) => {
       try {
         const res = await login(values);
-        toast.success("Đăng nhập thành công!");
 
-        loginContext(res.data.token);
+        const { token, role } = res.data;
+
+        loginContext(token);
 
         // remember me
         if (values.rememberMe) {
@@ -49,7 +50,17 @@ export function LoginSystem() {
           Cookies.remove("rememberedEmail");
         }
 
-        navigate("/");
+        toast.success("Đăng nhập thành công!");
+
+        // 🔥 CHIA ROLE
+        if (role === "ADMIN") {
+          navigate("/admin/admin1");
+        } else if (role === "STAFF_SYSTEM") {
+          navigate("/systemstaff/systemstaff1");
+        } else {
+          toast.error("Bạn không có quyền truy cập hệ thống club");
+          navigate("/");
+        }
       } catch (error) {
         toast.error(error.response?.data?.message || "Đăng nhập thất bại");
       } finally {

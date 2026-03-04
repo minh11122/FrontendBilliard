@@ -1,7 +1,7 @@
-export const AccountManagement = () => {
+export const SystemStaff1 = () => {
   return (
     <div>
-      <h1>acc1</h1>
-    </div>
-  );
+    <h1>acc</h1>
+  </div>
+  )
 };

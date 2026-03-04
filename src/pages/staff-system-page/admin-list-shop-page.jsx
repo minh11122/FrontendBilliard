@@ -1,7 +1,7 @@
-export const ShopManagement = () => {
+export const SystemStaff2 = () => {
   return (
     <div>
-      <h1>acc2</h1>
-    </div>
-  );
+    <h1>acc</h1>
+  </div>
+  )
 };
