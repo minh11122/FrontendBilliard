@@ -38,9 +38,10 @@ export function LoginClub() {
     onSubmit: async (values, { setSubmitting }) => {
       try {
         const res = await login(values);
-        toast.success("Đăng nhập thành công!");
 
-        loginContext(res.data.token);
+        const { token, role } = res.data;
+
+        loginContext(token);
 
         // remember me
         if (values.rememberMe) {
@@ -49,7 +50,17 @@ export function LoginClub() {
           Cookies.remove("rememberedEmail");
         }
 
-        navigate("/");
+        toast.success("Đăng nhập thành công!");
+
+        // 🔥 CHIA ROLE
+        if (role === "OWNER") {
+          navigate("/owner/owner1");
+        } else if (role === "STAFF_CLUB") {
+          navigate("/staff/dashboard");
+        } else {
+          toast.error("Bạn không có quyền truy cập hệ thống club");
+          navigate("/");
+        }
       } catch (error) {
         toast.error(error.response?.data?.message || "Đăng nhập thất bại");
       } finally {
@@ -60,16 +71,29 @@ export function LoginClub() {
 
   // ✅ google login
   const handleGoogleLogin = async (credentialResponse) => {
-    try {
-      const tokenId = credentialResponse.credential;
-      const res = await loginGoogle(tokenId);
-      toast.success("Đăng nhập Google thành công!");
-      loginContext(res.data.token);
+  try {
+    const tokenId = credentialResponse.credential;
+    const res = await loginGoogle(tokenId);
+
+    const { token, role } = res.data;
+
+    loginContext(token);
+
+    toast.success("Đăng nhập Google thành công!");
+
+    if (role === "OWNER") {
+      navigate("/owner/owner1");
+    } else if (role === "STAFF_CLUB") {
+      navigate("/staff/dashboard");
+    } else {
+      toast.error("Bạn không có quyền truy cập hệ thống club");
       navigate("/");
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Đăng nhập Google thất bại");
     }
-  };
+
+  } catch (error) {
+    toast.error(error.response?.data?.message || "Đăng nhập Google thất bại");
+  }
+};
 
   return (
     <div className="min-h-screen bg-gray-100 px-4 py-6">
@@ -111,9 +135,7 @@ export function LoginClub() {
           <form onSubmit={formik.handleSubmit} className="space-y-5">
             {/* Email */}
             <div>
-              <label className="text-sm font-medium text-gray-700">
-                Email
-              </label>
+              <label className="text-sm font-medium text-gray-700">Email</label>
               <div className="relative mt-1">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
