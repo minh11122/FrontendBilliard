@@ -22,6 +22,7 @@ import {
   AccountManagement,
   LoginClub,
   LoginSystem,
+  RegisterOwnerAccount,
   Owner1,
   Owner2,
   Owner3,
@@ -61,6 +62,7 @@ export const router = createBrowserRouter([
           { path: "/tournament", element: <TournamentPage /> },
           { path: "/booking", element: <BookingPage /> },
           { path: "/booking/:id", element: <ClubDetailPage /> },
+          { path: "/register-owner-account", element: <RegisterOwnerAccount /> },
         ],
       },
       {

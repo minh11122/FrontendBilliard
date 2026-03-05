@@ -1,5 +1,5 @@
 import { Star, MapPin, Users, Trophy, Clock } from "lucide-react";
-
+import { Link } from "react-router-dom";
 export const HomePage = () => {
   const clubs = [
     {
@@ -158,9 +158,11 @@ export const HomePage = () => {
             </p>
           </div>
 
-          <button className="bg-white text-orange-600 font-semibold px-6 py-3 rounded-xl hover:bg-gray-100">
-            Đăng ký đối tác
-          </button>
+          <Link to="/register-owner-account">
+            <button className="bg-white text-orange-600 font-semibold px-6 py-3 rounded-xl hover:bg-gray-100">
+              Đăng ký đối tác
+            </button>
+          </Link>
         </div>
       </section>
     </div>
