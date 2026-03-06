@@ -4,7 +4,8 @@ import { RootLayout } from "./RootLayout";
 import {
   AuthLayout,
   HomeMainLayout,
-  DashboardMainLayout
+  DashboardMainLayout,
+  DashboardStaffSystemLayout,
 } from "@/components/layouts";
 
 import {
@@ -34,7 +35,8 @@ import {
   SystemStaff,
   SystemStaff1,
   SystemStaff2,
-  SystemStaff3
+  SystemStaff3,
+  SystemStaff4
 } from "@/pages";
 
 export const router = createBrowserRouter([
@@ -97,12 +99,13 @@ export const router = createBrowserRouter([
       },
       {
         path: "systemstaff",
-        element: <DashboardMainLayout />,
+        element: <DashboardStaffSystemLayout />,
         children: [
           { path: "systemstaff1", element: <SystemStaff /> },
           { path: "systemstaff2", element: <SystemStaff1 /> },
           { path: "systemstaff3", element: <SystemStaff2 /> },
-          { path: "systemstaff4", element: <SystemStaff3/> },
+          { path: "systemstaff4", element: <SystemStaff3 /> },
+          { path: "systemstaff5", element: <SystemStaff4 /> },
         ],
       },
     ],
