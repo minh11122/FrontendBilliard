@@ -1,11 +1,11 @@
 // src/layouts/AdminLayout.jsx
 import { Outlet } from "react-router-dom";
-import { SidebarAdmin } from "./sidebar-layout";
+import { SidebarOwner } from "./sidebar-layout";
 
 export const DashboardOwnerLayout = () => {
   return (
     <div className="min-h-screen flex">
-      <SidebarAdmin />
+      <SidebarOwner />
       <main className="flex-1">
         <Outlet />
       </main>
