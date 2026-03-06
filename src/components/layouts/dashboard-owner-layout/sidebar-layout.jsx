@@ -19,7 +19,7 @@ import {
   Home,
 } from "lucide-react";
 
-export const SidebarAdmin = () => {
+export const SidebarOwner = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { logout } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -28,20 +28,20 @@ export const SidebarAdmin = () => {
   const navigation = [
     {
       name: "Danh sách tài khoản",
-      href: "/admin/list-user",
+      href: "/owner/owner1",
       icon: UsersRound,
     },
     {
       name: "Tài khoản chờ duyệt",
-      href: "/admin/list-acc-pending",
+      href: "/owner/owner2",
       icon: UserCheck,
     },
     {
       name: "Danh sách cửa hàng",
-      href: "/admin/list-shop",
+      href: "/owner/owner3",
       icon: Store,
     },
-    
+
   ];
 
   const handleLogout = () => {
@@ -64,9 +64,8 @@ export const SidebarAdmin = () => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-72 transform border-r border-border bg-card transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed inset-y-0 left-0 z-50 w-72 transform border-r border-border bg-card transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
         <div className="flex h-full flex-col">
           {/* Logo & Brand */}
@@ -101,11 +100,10 @@ export const SidebarAdmin = () => {
                 <NavLink
                   key={item.name}
                   to={item.href}
-                  className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                    isActive
+                  className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive
                       ? "bg-orange-500/10 text-orange-600"
                       : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                  }`}
+                    }`}
                   onClick={() => setSidebarOpen(false)} // Đóng sidebar trên mobile khi click
                 >
                   <Icon className="h-5 w-5 shrink-0" />
@@ -118,8 +116,15 @@ export const SidebarAdmin = () => {
 
           {/* Bottom Actions */}
           <div className="border-t border-border p-3 space-y-1">
-           
-           
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 text-muted-foreground hover:bg-accent hover:text-foreground"
+              onClick={() => navigate("/owner/settings")}
+            >
+              <Settings className="h-5 w-5" />
+              <span className="text-sm font-medium">Cài đặt</span>
+            </Button>
+
             <Button
               variant="ghost"
               className="w-full justify-start gap-3 text-destructive hover:bg-destructive/10 hover:text-destructive"

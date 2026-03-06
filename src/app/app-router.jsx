@@ -6,6 +6,7 @@ import {
   HomeMainLayout,
   DashboardMainLayout,
   DashboardStaffSystemLayout,
+  DashboardOwnerLayout
 } from "@/components/layouts";
 
 import {
@@ -19,7 +20,6 @@ import {
   Forbidden,
   AccPendingManagement,
   ShopManagement,
-  AdminSettings,
   AccountManagement,
   LoginClub,
   LoginSystem,
@@ -27,7 +27,6 @@ import {
   Owner1,
   Owner2,
   Owner3,
-  Owner4,
   Staff1,
   Staff2,
   Staff3,
@@ -74,17 +73,16 @@ export const router = createBrowserRouter([
           { path: "list-user", element: <AccountManagement /> },
           { path: "list-acc-pending", element: <AccPendingManagement /> },
           { path: "list-shop", element: <ShopManagement /> },
-          { path: "setting", element: <AdminSettings /> },
+          
         ],
       },
       {
         path: "owner",
-        element: <DashboardMainLayout />,
+        element: <DashboardOwnerLayout />,
         children: [
           { path: "owner1", element: <Owner1 /> },
           { path: "owner2", element: <Owner2 /> },
           { path: "owner3", element: <Owner3 /> },
-          { path: "owner4", element: <Owner4 /> },
         ],
       },
       {
