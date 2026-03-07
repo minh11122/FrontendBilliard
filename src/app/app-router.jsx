@@ -4,7 +4,8 @@ import { RootLayout } from "./RootLayout";
 import {
   AuthLayout,
   HomeMainLayout,
-  DashboardMainLayout
+  DashboardMainLayout,
+  DashboardOwnerLayout
 } from "@/components/layouts";
 
 import {
@@ -23,9 +24,9 @@ import {
   LoginClub,
   LoginSystem,
   RegisterOwnerAccount,
-  Owner1,
-  Owner2,
-  Owner3,
+  OwnerTableListPage,   
+  OwnerCreateTablePage,
+  OwnerDashboardPage,
   Owner4,
   Staff1,
   Staff2,
@@ -77,11 +78,11 @@ export const router = createBrowserRouter([
       },
       {
         path: "owner",
-        element: <DashboardMainLayout />,
+        element: <DashboardOwnerLayout />,
         children: [
-          { path: "owner1", element: <Owner1 /> },
-          { path: "owner2", element: <Owner2 /> },
-          { path: "owner3", element: <Owner3 /> },
+          { path: "tables", element: <OwnerTableListPage /> },
+          { path: "tables/create", element: <OwnerCreateTablePage /> },
+          { path: "dashboard", element: <OwnerDashboardPage /> },
           { path: "owner4", element: <Owner4 /> },
         ],
       },
