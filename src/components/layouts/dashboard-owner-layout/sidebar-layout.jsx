@@ -101,8 +101,8 @@ export const SidebarOwner = () => {
                   key={item.name}
                   to={item.href}
                   className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive
-                      ? "bg-orange-500/10 text-orange-600"
-                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                    ? "bg-orange-500/10 text-orange-600"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
                     }`}
                   onClick={() => setSidebarOpen(false)} // Đóng sidebar trên mobile khi click
                 >
