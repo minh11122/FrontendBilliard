@@ -61,7 +61,6 @@ export function LoginForm() {
           navigate("/");
         } else {
           toast.error("Bạn không có quyền truy cập hệ thống club");
-          navigate("/");
         }
       } catch (error) {
         toast.error(error.response?.data?.message || "Đăng nhập thất bại");
