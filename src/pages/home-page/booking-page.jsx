@@ -1,18 +1,27 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { MapPin, Search, Star, Filter, ChevronRight, ChevronLeft } from "lucide-react";
+import { MapPin, Search, Star, ChevronRight, ChevronLeft, Navigation } from "lucide-react";
 import axios from "axios";
+import { getAllClubs } from "@/services/club.service";
+import { getCurrentPosition, calculateDistance, formatDistance } from "@/services/location.service";
 
 export const BookingPage = () => {
   const [clubs, setClubs] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
+  // Districts in Hanoi
+  const districts = ["Tất cả", "Ba Đình", "Hoàn Kiếm", "Tây Hồ", "Long Biên", "Cầu Giấy", "Đống Đa", "Hai Bà Trưng", "Hoàng Mai", "Thanh Xuân", "Sóc Sơn", "Đông Anh", "Gia Lâm", "Nam Từ Liêm", "Bắc Từ Liêm", "Thanh Trì"];
+
   // Filters state
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState("Tất cả");
+  const [selectedTypes, setSelectedTypes] = useState([]); // mảng rỗng = Tất cả
+  const [selectedDistrict, setSelectedDistrict] = useState("Tất cả");
   const [filterRating, setFilterRating] = useState(false);
   const [filterPrice, setFilterPrice] = useState("all");
-  
+  const [userLocation, setUserLocation] = useState(null);
+  const [findingLocation, setFindingLocation] = useState(false);
+  const [sortByLocation, setSortByLocation] = useState(false);
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
@@ -24,9 +33,9 @@ export const BookingPage = () => {
   const fetchClubs = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("http://localhost:9999/api/clubs");
-      if (res.data.success) {
-        setClubs(res.data.data);
+      const res = await getAllClubs();
+      if (res.success) {
+        setClubs(res.data);
       }
     } catch (error) {
       console.error("Error fetching clubs:", error);
@@ -35,36 +44,92 @@ export const BookingPage = () => {
     }
   };
 
+  const toggleLocationSorting = async () => {
+    if (sortByLocation) {
+      setSortByLocation(false);
+      return;
+    }
+
+    if (userLocation) {
+      setSortByLocation(true);
+      return;
+    }
+
+    try {
+      setFindingLocation(true);
+      const pos = await getCurrentPosition();
+      setUserLocation(pos);
+      setSortByLocation(true);
+    } catch (error) {
+      console.error("Error getting location:", error);
+    } finally {
+      setFindingLocation(false);
+    }
+  };
+
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterType, filterRating, filterPrice]);
+  }, [searchTerm, selectedTypes, selectedDistrict, filterRating, filterPrice, sortByLocation]);
 
   // Helper map Table DB Types to UI Types
   const mapTypeToUI = (dbType) => {
-     if (dbType.includes("Carom")) return "3C";
-     if (dbType.includes("Snooker")) return "Libre";
-     return "Pool"; // Fallback for Pool Table
+    if (!dbType) return "Pool";
+    const type = dbType.toLowerCase();
+    if (type.includes("3c") || type.includes("carom")) return "3C";
+    if (type.includes("snooker")) return "Snooker";
+    return "Pool";
+  };
+
+  const handleTypeClick = (type) => {
+    if (type === "Tất cả") {
+      setSelectedTypes([]);
+    } else {
+      setSelectedTypes(prev =>
+        prev.includes(type)
+          ? prev.filter(t => t !== type)
+          : [...prev, type]
+      );
+    }
   };
 
   const filteredClubs = clubs.filter((club) => {
-    const matchSearch = club.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                        club.address.toLowerCase().includes(searchTerm.toLowerCase());
+    // Luôn lọc theo Hà Nội (giả định address chứa "Hà Nội")
+    const isInHanoi = club.address?.toLowerCase().includes("hà nội");
+    if (!isInHanoi) return false;
+
+    const matchSearch = club.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      club.address.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchDistrict = selectedDistrict === "Tất cả"
+      ? true
+      : club.address.toLowerCase().includes(selectedDistrict.toLowerCase());
+
     const matchRating = filterRating ? club.rating >= 4.0 : true;
-    
-    const matchType = filterType === "Tất cả" 
-      ? true 
-      : (club.tableTypes && club.tableTypes.some(type => mapTypeToUI(type) === filterType));
-      
+
+    const matchType = selectedTypes.length === 0
+      ? true
+      : club.tableTypes?.some(dbType => selectedTypes.includes(mapTypeToUI(dbType)));
+
     const matchPrice = (() => {
-       if (filterPrice === "under50") return club.priceFrom < 50000;
-       if (filterPrice === "50to100") return club.priceFrom >= 50000 && club.priceFrom <= 100000;
-       if (filterPrice === "over100") return club.priceFrom > 100000;
-       return true;
+      if (filterPrice === "under50") return club.priceFrom < 50000;
+      if (filterPrice === "50to100") return club.priceFrom >= 50000 && club.priceFrom <= 100000;
+      if (filterPrice === "over100") return club.priceFrom > 100000;
+      return true;
     })();
-      
-    return matchSearch && matchRating && matchType && matchPrice;
+
+    return matchSearch && matchDistrict && matchRating && matchType && matchPrice;
+  }).map(club => {
+    if (userLocation && club.lat && club.lng) {
+      const dist = calculateDistance(userLocation.lat, userLocation.lng, club.lat, club.lng);
+      return { ...club, distanceValue: dist, distance: formatDistance(dist) };
+    }
+    return { ...club, distance: club.distance || "N/A" };
   });
+
+  if (sortByLocation && userLocation) {
+    filteredClubs.sort((a, b) => (a.distanceValue || Infinity) - (b.distanceValue || Infinity));
+  }
 
   const totalPages = Math.ceil(filteredClubs.length / itemsPerPage) || 1;
   const paginatedClubs = filteredClubs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -78,29 +143,27 @@ export const BookingPage = () => {
 
   const renderPagination = () => {
     if (totalPages <= 1) return null;
-    
+
     let pages = [];
     for (let i = 1; i <= totalPages; i++) {
-        if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
-           pages.push(i);
-        } else if (i === currentPage - 2 || i === currentPage + 2) {
-           pages.push("...");
-        }
+      if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+        pages.push(i);
+      } else if (i === currentPage - 2 || i === currentPage + 2) {
+        pages.push("...");
+      }
     }
-    
-    // Lọc bỏ các dấu "..." thừa
     pages = pages.filter((p, index) => p !== "..." || pages[index - 1] !== "...");
 
     return (
       <div className="flex justify-center items-center gap-2 mt-12">
-        <button 
+        <button
           onClick={() => handlePageChange(currentPage - 1)}
           disabled={currentPage === 1}
           className="p-2 border rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-50 disabled:opacity-50"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
-        
+
         {pages.map((page, index) => (
           page === "..." ? (
             <span key={`dots-${index}`} className="text-slate-400 px-2">...</span>
@@ -108,18 +171,17 @@ export const BookingPage = () => {
             <button
               key={page}
               onClick={() => handlePageChange(page)}
-              className={`w-10 h-10 border rounded-lg font-medium transition-colors ${
-                currentPage === page 
-                  ? "bg-emerald-500 text-white border-emerald-500" 
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-              }`}
+              className={`w-10 h-10 border rounded-lg font-medium transition-colors ${currentPage === page
+                ? "bg-emerald-500 text-white border-emerald-500"
+                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                }`}
             >
               {page}
             </button>
           )
         ))}
 
-        <button 
+        <button
           onClick={() => handlePageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
           className="p-2 border rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 disabled:opacity-50"
@@ -140,41 +202,43 @@ export const BookingPage = () => {
               <h1 className="text-2xl font-bold text-slate-800">Danh sách Câu lạc bộ</h1>
               <p className="text-slate-500 text-sm mt-1">Tìm kiếm và đặt bàn tại các câu lạc bộ bida chất lượng nhất</p>
             </div>
-            
-            <div className="w-full md:w-96 relative">
-              <input 
-                type="text" 
-                placeholder="Tìm kiếm tên câu lạc bộ hoặc địa chỉ..." 
-                className="w-full pl-10 pr-4 py-2 border rounded-full bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all shadow-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <Search className="absolute left-3 top-2.5 text-slate-400 w-5 h-5" />
-            </div>
           </div>
 
           {/* Filters */}
           <div className="flex flex-wrap items-center gap-2 mt-6">
-            <button className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-sm font-medium rounded-full transition-colors border">
-              <Filter className="w-4 h-4" /> Bộ lọc
-            </button>
-            <button className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-sm font-medium rounded-full transition-colors border">
-              Quận/Huyện <span className="text-xs ml-1">▼</span>
-            </button>
-            <div className="flex bg-slate-100 p-0.5 rounded-full border">
-              {["Tất cả", "Pool", "3C", "Libre"].map((type) => (
-                <button 
-                  key={type}
-                  onClick={() => setFilterType(type)}
-                  className={`px-4 py-1.5 shadow-sm text-sm font-medium rounded-full transition-all ${
-                    filterType === type ? "bg-white text-emerald-600" : "text-slate-600 hover:text-slate-900"
-                  }`}
-                >
-                  {type}
-                </button>
+            <select
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-sm font-medium rounded-full transition-colors border appearance-none outline-none cursor-pointer"
+              value={selectedDistrict}
+              onChange={(e) => setSelectedDistrict(e.target.value)}
+            >
+              <option value="Tất cả">Quận/Huyện (Hà Nội)</option>
+              {districts.filter(d => d !== "Tất cả").map(d => (
+                <option key={d} value={d}>{d}</option>
               ))}
+            </select>
+
+            {/* Multi-select type buttons */}
+            <div className="flex bg-slate-100 p-0.5 rounded-full border">
+              {["Tất cả", "Pool", "3C", "Libre"].map((type) => {
+                const isActive = type === "Tất cả"
+                  ? selectedTypes.length === 0
+                  : selectedTypes.includes(type);
+                return (
+                  <button
+                    key={type}
+                    onClick={() => handleTypeClick(type)}
+                    className={`px-4 py-1.5 shadow-sm text-sm font-medium rounded-full transition-all ${isActive
+                      ? "bg-white text-emerald-600"
+                      : "text-slate-600 hover:text-slate-900"
+                      }`}
+                  >
+                    {type}
+                  </button>
+                );
+              })}
             </div>
-            <select 
+
+            <select
               className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-sm font-medium rounded-full transition-colors border appearance-none outline-none cursor-pointer"
               value={filterPrice}
               onChange={(e) => setFilterPrice(e.target.value)}
@@ -184,16 +248,38 @@ export const BookingPage = () => {
               <option value="50to100">50.000đ - 100.000đ/h</option>
               <option value="over100">Trên 100.000đ/h</option>
             </select>
-            <button 
+
+            <button
               onClick={() => setFilterRating(!filterRating)}
-              className={`flex items-center gap-1 px-4 py-2 text-sm font-medium rounded-full transition-colors border ${
-                filterRating 
-                  ? "bg-yellow-50 text-yellow-700 border-yellow-200" 
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200 border-slate-200"
-              }`}
+              className={`flex items-center gap-1 px-4 py-2 text-sm font-medium rounded-full transition-colors border ${filterRating
+                ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200 border-slate-200"
+                }`}
             >
               Đánh giá (4.0+) <Star className={`w-4 h-4 ${filterRating ? "fill-yellow-500 text-yellow-500" : "text-slate-400"}`} />
             </button>
+
+            <button
+              onClick={toggleLocationSorting}
+              disabled={findingLocation}
+              className={`flex items-center gap-1 px-4 py-2 text-sm font-medium rounded-full transition-colors border ${sortByLocation
+                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200 border-slate-200"
+                }`}
+            >
+              {findingLocation ? "Đang xác vị trí..." : "Gần tôi"} <Navigation className={`w-4 h-4 ${sortByLocation ? "fill-emerald-500 text-emerald-500" : "text-slate-400"}`} />
+            </button>
+
+            <div className="w-full md:w-96 relative md:ml-auto">
+              <input
+                type="text"
+                placeholder="Tìm kiếm tên câu lạc bộ hoặc địa chỉ..."
+                className="w-full pl-10 pr-4 py-2 border rounded-full bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all shadow-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <Search className="absolute left-3 top-2.5 text-slate-400 w-5 h-5" />
+            </div>
           </div>
         </div>
       </div>
@@ -227,32 +313,32 @@ export const BookingPage = () => {
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="p-4 flex flex-col flex-grow">
                     <h3 className="text-lg font-bold text-slate-900 group-hover:text-emerald-600 transition-colors line-clamp-1">{club.name}</h3>
                     <p className="text-slate-500 text-sm mt-1 flex items-start gap-1 line-clamp-2">
                       <MapPin className="w-4 h-4 shrink-0 mt-0.5 text-slate-400" />
                       {club.address}
                     </p>
-                    
+
                     <div className="mt-4 flex items-center justify-between text-sm">
                       <div className="text-slate-500">{club.distance}</div>
                       <div className="font-bold text-emerald-600">Từ {club.priceFrom?.toLocaleString()}đ/h</div>
                     </div>
-                    
-                    <div className="mt-4 flex items-center gap-1 mb-4">
-                      {club.tableTypes && club.tableTypes.map((type, idx) => (
-                         <span key={idx} className="px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded border">
-                            {mapTypeToUI(type)}
-                         </span>
+
+                    <div className="mt-4 flex flex-wrap items-center gap-1 mb-4">
+                      {club.tableTypes && [...new Set(club.tableTypes.map(mapTypeToUI))].map((uiType, idx) => (
+                        <span key={idx} className="px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded border">
+                          {uiType}
+                        </span>
                       ))}
                       {(!club.tableTypes || club.tableTypes.length === 0) && (
-                         <span className="px-2 py-1 bg-slate-100 text-slate-400 text-xs rounded border border-dashed">Chưa có loại bàn</span>
+                        <span className="px-2 py-1 bg-slate-100 text-slate-400 text-xs rounded border border-dashed">Chưa có loại bàn</span>
                       )}
                     </div>
 
                     <div className="mt-auto pt-4 border-t">
-                      <Link 
+                      <Link
                         to={`/booking/${club._id}`}
                         className="flex items-center justify-center w-full gap-2 py-2.5 bg-slate-900 hover:bg-emerald-600 text-white font-medium rounded-lg transition-colors"
                       >

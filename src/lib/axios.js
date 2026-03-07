@@ -2,8 +2,7 @@
 import axios from "axios";
 import { loadingEmitter } from "@/utils/loadingEmitter";
 
-// const baseURL = "http://localhost:9999/api";
-const baseURL = "https://backendbilliard.onrender.com/api";
+const baseURL = import.meta.env.VITE_API_URL || "http://localhost:9999/api";
 
 
 const api = axios.create({

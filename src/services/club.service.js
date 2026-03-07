@@ -1,21 +1,46 @@
-import axios from "axios";
+import api from "../lib/axios";
 
-const API_BASE_URL = "http://localhost:9999/api/clubs"; // sửa theo port/back-end của bạn
+// Lấy tất cả câu lạc bộ (có hỗ trợ params tìm kiếm/lọc)
+export const getAllClubs = async (params = {}) => {
+  try {
+    const response = await api.get("/clubs", { params });
+    return response.data;
+  } catch (error) {
+    console.error("Error in getAllClubs:", error);
+    throw error;
+  }
+};
 
-// token lấy từ localStorage (sau khi login)
-function getAuthToken() {
-  return localStorage.getItem("token");
-}
+// Lấy chi tiết câu lạc bộ theo ID
+export const getClubById = async (id) => {
+  try {
+    const response = await api.get(`/clubs/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error in getClubById for id ${id}:`, error);
+    throw error;
+  }
+};
 
-export async function registerClub(data) {
-  const token = getAuthToken();
+/**
+ * Chủ quán đăng ký thông tin CLB mới
+ * Kết hợp từ code cũ của thành viên khác
+ */
+export const registerClub = async (data) => {
+  try {
+    const response = await api.post("/clubs/register-owner-account", data);
+    return response.data;
+  } catch (error) {
+    console.error("Error in registerClub:", error);
+    throw error;
+  }
+};
 
-  const response = await axios.post(`${API_BASE_URL}/register-owner-account`, data, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json"
-    }
-  });
+// Hỗ trợ cả named export và default export để không làm lỗi code của các thành viên khác
+export const clubService = {
+  getAllClubs,
+  getClubById,
+  registerClub
+};
 
-  return response.data;
-}
+export default clubService;
