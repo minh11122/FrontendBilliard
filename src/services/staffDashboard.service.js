@@ -14,6 +14,15 @@ export async function getDashboardData() {
     return res.data;
 }
 
+export async function getClubs(status) {
+    const params = status ? { status } : {};
+    const res = await axios.get(`${BASE_URL}/clubs`, {
+        headers: authHeader(),
+        params,
+    });
+    return res.data;
+}
+
 export async function approveClub(id) {
     const res = await axios.patch(`${BASE_URL}/clubs/${id}/approve`, {}, {
         headers: authHeader()
@@ -23,6 +32,20 @@ export async function approveClub(id) {
 
 export async function rejectClub(id) {
     const res = await axios.patch(`${BASE_URL}/clubs/${id}/reject`, {}, {
+        headers: authHeader()
+    });
+    return res.data;
+}
+
+export async function lockClub(id) {
+    const res = await axios.patch(`${BASE_URL}/clubs/${id}/lock`, {}, {
+        headers: authHeader()
+    });
+    return res.data;
+}
+
+export async function unlockClub(id) {
+    const res = await axios.patch(`${BASE_URL}/clubs/${id}/unlock`, {}, {
         headers: authHeader()
     });
     return res.data;

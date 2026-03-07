@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import {
-  Building2, CheckCircle2, XCircle, Eye, Clock,
+  Building2, CheckCircle2, XCircle, Eye, Lock, LockOpen,
   RefreshCw, Loader2, AlertCircle, X, Search
 } from "lucide-react";
-import { getDashboardData, approveClub, rejectClub } from "../../services/staffDashboard.service";
+import {
+  getClubs, getDashboardData,
+  approveClub, rejectClub, lockClub, unlockClub
+} from "../../services/staffDashboard.service";
 
 // ─── Toast ─────────────────────────────────────────────────────────────────
 const Toast = ({ message, type, onClose }) => (
@@ -16,17 +19,18 @@ const Toast = ({ message, type, onClose }) => (
 );
 
 // ─── Status Badge ──────────────────────────────────────────────────────────
+const STATUS_MAP = {
+  Pending: { label: "Chờ duyệt", cls: "bg-yellow-100 text-yellow-700" },
+  Approved: { label: "Đã duyệt", cls: "bg-green-100 text-green-700" },
+  Rejected: { label: "Từ chối", cls: "bg-red-100 text-red-600" },
+  Locked: { label: "Đã khoá", cls: "bg-gray-100 text-gray-500" },
+};
+
 const StatusBadge = ({ status }) => {
-  const map = {
-    Pending: "bg-yellow-100 text-yellow-700",
-    Approved: "bg-green-100 text-green-700",
-    Rejected: "bg-red-100 text-red-600",
-    Locked: "bg-gray-100 text-gray-500",
-  };
-  const labels = { Pending: "Chờ duyệt", Approved: "Đã duyệt", Rejected: "Từ chối", Locked: "Khoá" };
+  const s = STATUS_MAP[status] || { label: status, cls: "bg-gray-100 text-gray-500" };
   return (
-    <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${map[status] || "bg-gray-100 text-gray-500"}`}>
-      {labels[status] || status}
+    <span className={`px-2.5 py-0.5 text-xs rounded-full font-semibold ${s.cls}`}>
+      {s.label}
     </span>
   );
 };
@@ -35,7 +39,7 @@ const StatusBadge = ({ status }) => {
 const SkeletonRow = () => (
   <tr>
     {[1, 2, 3, 4, 5, 6].map(i => (
-      <td key={i} className="py-3 pr-4">
+      <td key={i} className="py-3.5 px-5">
         <div className="h-4 bg-gray-200 rounded animate-pulse" style={{ width: `${50 + i * 8}%` }} />
       </td>
     ))}
@@ -49,8 +53,13 @@ const ClubDetailModal = ({ club, onClose }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-gray-900 text-lg">{club.name}</h3>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-gray-900 text-lg">{club.name}</h3>
+            <StatusBadge status={club.status} />
+          </div>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg">
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
         </div>
         <div className="space-y-3 text-sm">
           {[
@@ -64,11 +73,12 @@ const ClubDetailModal = ({ club, onClose }) => {
           ].map(([label, value]) => (
             <div key={label} className="flex gap-2">
               <span className="text-gray-500 w-36 flex-shrink-0">{label}:</span>
-              <span className="text-gray-900 font-medium">{value}</span>
+              <span className="text-gray-900 font-medium break-all">{value}</span>
             </div>
           ))}
         </div>
-        <button onClick={onClose} className="mt-5 w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-medium">
+        <button onClick={onClose}
+          className="mt-5 w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-medium">
           Đóng
         </button>
       </div>
@@ -76,9 +86,18 @@ const ClubDetailModal = ({ club, onClose }) => {
   );
 };
 
+// ─── Filter tabs config ────────────────────────────────────────────────────
+const FILTERS = [
+  { key: "Pending", label: "Chờ duyệt", active: "bg-yellow-500 text-white", dot: "bg-yellow-500" },
+  { key: "Approved", label: "Đã duyệt", active: "bg-green-600 text-white", dot: "bg-green-500" },
+  { key: "Rejected", label: "Từ chối", active: "bg-red-500 text-white", dot: "bg-red-500" },
+  { key: "Locked", label: "Đã khoá", active: "bg-gray-500 text-white", dot: "bg-gray-400" },
+];
+
 // ─── Main Component ────────────────────────────────────────────────────────
 export const SystemStaff1 = () => {
   const [clubs, setClubs] = useState([]);
+  const [counts, setCounts] = useState({ Pending: 0, Approved: 0, Rejected: 0, Locked: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState({});
@@ -92,15 +111,24 @@ export const SystemStaff1 = () => {
     setTimeout(() => setToast(null), 3500);
   };
 
-  const fetchData = useCallback(async () => {
+  // Fetch count badges from dashboard (non-blocking)
+  const fetchCounts = useCallback(async () => {
+    try {
+      const res = await getDashboardData();
+      if (res?.success) {
+        const s = res.data.stats || {};
+        setCounts(prev => ({ ...prev, Pending: s.pendingClubs || 0 }));
+      }
+    } catch { /* silent */ }
+  }, []);
+
+  // Fetch clubs for current filter tab
+  const fetchClubs = useCallback(async (status) => {
     try {
       setLoading(true);
       setError(null);
-      const res = await getDashboardData();
-      if (res.success) {
-        // Dashboard trả về pendingClubs, nhưng cần tất cả clubs
-        setClubs(res.data.pendingClubs || []);
-      }
+      const res = await getClubs(status);
+      if (res.success) setClubs(res.data || []);
     } catch (e) {
       setError(e?.response?.data?.message || "Lỗi kết nối server");
     } finally {
@@ -108,42 +136,61 @@ export const SystemStaff1 = () => {
     }
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchCounts();
+  }, [fetchCounts]);
 
-  const handleApprove = async (id) => {
-    setActionLoading(p => ({ ...p, [id]: "approve" }));
+  useEffect(() => {
+    fetchClubs(filterStatus);
+  }, [filterStatus, fetchClubs]);
+
+  const handleTabChange = (key) => {
+    setFilterStatus(key);
+    setSearch("");
+  };
+
+  const withAction = async (id, action, successMsg, errorMsg, fn) => {
+    setActionLoading(p => ({ ...p, [id]: action }));
     try {
-      await approveClub(id);
-      showToast("Đã duyệt CLB thành công!");
-      fetchData();
+      await fn();
+      showToast(successMsg);
+      fetchClubs(filterStatus);
+      fetchCounts();
     } catch {
-      showToast("Lỗi khi duyệt CLB", "error");
+      showToast(errorMsg, "error");
     } finally {
       setActionLoading(p => ({ ...p, [id]: null }));
     }
   };
 
-  const handleReject = async (id) => {
-    setActionLoading(p => ({ ...p, [id]: "reject" }));
-    try {
-      await rejectClub(id);
-      showToast("Đã từ chối CLB.");
-      fetchData();
-    } catch {
-      showToast("Lỗi khi từ chối CLB", "error");
-    } finally {
-      setActionLoading(p => ({ ...p, [id]: null }));
-    }
-  };
+  const handleApprove = (id) =>
+    withAction(id, "approve", "Đã duyệt CLB thành công!", "Lỗi khi duyệt CLB", () => approveClub(id));
+
+  const handleReject = (id) =>
+    withAction(id, "reject", "Đã từ chối CLB.", "Lỗi khi từ chối CLB", () => rejectClub(id));
+
+  const handleLock = (id) =>
+    withAction(id, "lock", "Đã khoá CLB.", "Lỗi khi khoá CLB", () => lockClub(id));
+
+  const handleUnlock = (id) =>
+    withAction(id, "unlock", "Đã mở khoá CLB.", "Lỗi khi mở khoá CLB", () => unlockClub(id));
 
   const filtered = clubs.filter(c =>
-  (!search || c.name?.toLowerCase().includes(search.toLowerCase()) ||
-    c.address?.toLowerCase().includes(search.toLowerCase()))
+    !search ||
+    c.name?.toLowerCase().includes(search.toLowerCase()) ||
+    c.address?.toLowerCase().includes(search.toLowerCase())
   );
+
+  const emptyMessages = {
+    Pending: { icon: "✅", text: "Không có CLB nào đang chờ duyệt" },
+    Approved: { icon: "🏢", text: "Chưa có CLB nào được duyệt" },
+    Rejected: { icon: "🚫", text: "Không có CLB nào bị từ chối" },
+    Locked: { icon: "🔒", text: "Không có CLB nào bị khoá" },
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      {toast && <Toast {...toast} onClose={() => setToast(null)} />}
       {selected && <ClubDetailModal club={selected} onClose={() => setSelected(null)} />}
 
       {/* Header */}
@@ -155,24 +202,29 @@ export const SystemStaff1 = () => {
             <p className="text-xs text-gray-500">Phê duyệt và quản lý câu lạc bộ</p>
           </div>
         </div>
-        <button onClick={fetchData} disabled={loading}
-          className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
-          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-blue-500" : ""}`} /> Làm mới
+        <button
+          onClick={() => fetchClubs(filterStatus)}
+          disabled={loading}
+          className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-blue-500" : ""}`} />
+          Làm mới
         </button>
       </div>
 
       {error && (
         <div className="mx-6 mt-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-red-700 text-sm">
           <AlertCircle className="w-5 h-5 flex-shrink-0" /> {error}
-          <button onClick={fetchData} className="ml-auto font-medium flex items-center gap-1">
+          <button onClick={() => fetchClubs(filterStatus)} className="ml-auto font-medium flex items-center gap-1">
             <RefreshCw className="w-3.5 h-3.5" /> Thử lại
           </button>
         </div>
       )}
 
       <div className="p-6">
-        {/* Toolbar */}
+        {/* Filter tabs + Search */}
         <div className="flex flex-wrap items-center gap-3 mb-5">
+          {/* Search */}
           <div className="relative flex-1 min-w-[200px] max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
@@ -183,15 +235,25 @@ export const SystemStaff1 = () => {
               className="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
             />
           </div>
-          <div className="flex gap-1">
-            {["Pending", "Approved", "Rejected", "Locked"].map(s => (
+
+          {/* Tabs */}
+          <div className="flex gap-1.5 flex-wrap">
+            {FILTERS.map(f => (
               <button
-                key={s}
-                onClick={() => setFilterStatus(prev => prev === s ? "" : s)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${filterStatus === s ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                key={f.key}
+                onClick={() => handleTabChange(f.key)}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors ${filterStatus === f.key
+                  ? f.active
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
               >
-                {{ Pending: "Chờ duyệt", Approved: "Đã duyệt", Rejected: "Từ chối", Locked: "Khoá" }[s]}
+                {f.label}
+                {f.key === "Pending" && counts.Pending > 0 && (
+                  <span className={`inline-flex items-center justify-center w-4 h-4 text-[10px] rounded-full
+                    ${filterStatus === f.key ? "bg-white/30 text-white" : "bg-yellow-100 text-yellow-700"}`}>
+                    {counts.Pending}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -215,13 +277,16 @@ export const SystemStaff1 = () => {
                 {loading ? (
                   [1, 2, 3, 4].map(i => <SkeletonRow key={i} />)
                 ) : filtered.length === 0 ? (
-                  <tr><td colSpan={6} className="text-center py-16 text-gray-400">
-                    <CheckCircle2 className="w-10 h-10 mx-auto mb-2 text-green-300" />
-                    <p>Không có CLB nào trong danh sách</p>
-                  </td></tr>
+                  <tr>
+                    <td colSpan={6} className="text-center py-16 text-gray-400">
+                      <p className="text-3xl mb-2">{emptyMessages[filterStatus]?.icon}</p>
+                      <p className="text-sm">{emptyMessages[filterStatus]?.text}</p>
+                    </td>
+                  </tr>
                 ) : (
                   filtered.map(club => (
-                    <tr key={club._id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
+                    <tr key={club._id}
+                      className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
                       <td className="px-5 py-3.5">
                         <div>
                           <p className="font-medium text-gray-900">{club.name}</p>
@@ -240,6 +305,7 @@ export const SystemStaff1 = () => {
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-2">
+                          {/* Xem chi tiết */}
                           <button
                             onClick={() => setSelected(club)}
                             className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700"
@@ -247,6 +313,8 @@ export const SystemStaff1 = () => {
                           >
                             <Eye className="w-4 h-4" />
                           </button>
+
+                          {/* Pending → Duyệt + Từ chối */}
                           {club.status === "Pending" && (
                             <>
                               <button
@@ -271,6 +339,34 @@ export const SystemStaff1 = () => {
                               </button>
                             </>
                           )}
+
+                          {/* Approved → Khoá */}
+                          {club.status === "Approved" && (
+                            <button
+                              disabled={!!actionLoading[club._id]}
+                              onClick={() => handleLock(club._id)}
+                              className="px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200 disabled:opacity-50 flex items-center gap-1"
+                            >
+                              {actionLoading[club._id] === "lock"
+                                ? <Loader2 className="w-3 h-3 animate-spin" />
+                                : <Lock className="w-3 h-3" />}
+                              Khoá
+                            </button>
+                          )}
+
+                          {/* Locked → Mở khoá */}
+                          {club.status === "Locked" && (
+                            <button
+                              disabled={!!actionLoading[club._id]}
+                              onClick={() => handleUnlock(club._id)}
+                              className="px-3 py-1.5 bg-blue-50 text-blue-600 text-xs font-medium rounded-lg hover:bg-blue-100 disabled:opacity-50 flex items-center gap-1"
+                            >
+                              {actionLoading[club._id] === "unlock"
+                                ? <Loader2 className="w-3 h-3 animate-spin" />
+                                : <LockOpen className="w-3 h-3" />}
+                              Mở khoá
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -279,6 +375,14 @@ export const SystemStaff1 = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Footer count */}
+          {!loading && filtered.length > 0 && (
+            <div className="px-5 py-3 border-t border-gray-100 text-xs text-gray-400">
+              Hiển thị <span className="font-medium text-gray-600">{filtered.length}</span> CLB
+              {search && ` (kết quả tìm kiếm cho "${search}")`}
+            </div>
+          )}
         </div>
       </div>
     </div>
