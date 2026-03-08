@@ -54,7 +54,7 @@ export function LoginClub() {
 
         // 🔥 CHIA ROLE
         if (role === "OWNER") {
-          navigate("/owner/owner1");
+          navigate("/owner/dashboard");
         } else if (role === "STAFF_CLUB") {
           navigate("/staff/staff1");
         } else {

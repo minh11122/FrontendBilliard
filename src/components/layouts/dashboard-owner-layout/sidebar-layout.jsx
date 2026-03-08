@@ -16,7 +16,11 @@ import {
   Building2,
   UserCheck,
   UserPlus,
+  CircleDot,
   Home,
+  User,
+  ConciergeBell,
+  Trophy
 } from "lucide-react";
 
 export const SidebarOwner = () => {
@@ -27,21 +31,30 @@ export const SidebarOwner = () => {
 
   const navigation = [
     {
-      name: "Danh sách tài khoản",
-      href: "/owner/owner1",
-      icon: UsersRound,
+      name: "Tổng quan",
+      href: "/owner/dashboard",
+      icon: LayoutDashboard,
     },
     {
-      name: "Tài khoản chờ duyệt",
-      href: "/owner/owner2",
-      icon: UserCheck,
+      name: "Quản lý bàn",
+      href: "/owner/tables",
+      icon: CircleDot,
     },
     {
-      name: "Danh sách cửa hàng",
-      href: "/owner/owner3",
-      icon: Store,
+      name: "Quản lý nhân viên",
+      href: "/owner/staff",
+      icon: User,
     },
-
+    {
+      name: "Quản lý Dịch vụ",
+      href: "/owner/services",
+      icon: ConciergeBell,
+    },
+    {
+      name: "Quản lý Giải đấu",
+      href: "/owner/tournaments",
+      icon: Trophy,
+    },
   ];
 
   const handleLogout = () => {
@@ -78,7 +91,7 @@ export const SidebarOwner = () => {
                 <span className="text-lg font-semibold text-foreground">
                   Billard
                 </span>
-                <p className="text-xs text-muted-foreground">Quản trị viên</p>
+                <p className="text-xs text-muted-foreground">Chủ quán</p>
               </div>
             </div>
             <Button
