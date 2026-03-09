@@ -35,7 +35,8 @@ import {
   SystemStaff2,
   SystemStaff3,
   SystemStaff4,
-  ProfilePage
+  ProfilePage,
+  AdminSettings
 } from "@/pages";
 
 export const router = createBrowserRouter([
@@ -73,6 +74,7 @@ export const router = createBrowserRouter([
           { path: "list-user", element: <AccountManagement /> },
           { path: "list-acc-pending", element: <AccPendingManagement /> },
           { path: "list-shop", element: <ShopManagement /> },
+          { path: "thongke", element: <AdminSettings /> },
           
         ],
       },
