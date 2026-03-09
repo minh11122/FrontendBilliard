@@ -5,6 +5,7 @@ import {
   AuthLayout,
   HomeMainLayout,
   DashboardMainLayout,
+  DashboardStaffSystemLayout,
   DashboardOwnerLayout
 } from "@/components/layouts";
 
@@ -21,20 +22,18 @@ import {
   Forbidden,
   AccPendingManagement,
   ShopManagement,
-  AdminSettings,
   AccountManagement,
   LoginClub,
   LoginSystem,
   RegisterOwnerAccount,
   OwnerSelectClubPage,
-  OwnerTableListPage,   
+  OwnerTableListPage,
   OwnerCreateTablePage,
   OwnerEditTablePage,
   OwnerServiceListPage,
   OwnerCreateServicePage,
   OwnerEditServicePage,
   OwnerDashboardPage,
-  Owner4,
   Staff1,
   Staff2,
   Staff3,
@@ -42,7 +41,8 @@ import {
   SystemStaff,
   SystemStaff1,
   SystemStaff2,
-  SystemStaff3
+  SystemStaff3,
+  SystemStaff4
 } from "@/pages";
 
 export const router = createBrowserRouter([
@@ -84,7 +84,7 @@ export const router = createBrowserRouter([
           { path: "list-user", element: <AccountManagement /> },
           { path: "list-acc-pending", element: <AccPendingManagement /> },
           { path: "list-shop", element: <ShopManagement /> },
-          { path: "setting", element: <AdminSettings /> },
+
         ],
       },
       {
@@ -102,7 +102,6 @@ export const router = createBrowserRouter([
           { path: "services/create", element: <OwnerCreateServicePage /> },
           { path: "services/edit/:id", element: <OwnerEditServicePage /> },
           { path: "dashboard", element: <OwnerDashboardPage /> },
-          { path: "owner4", element: <Owner4 /> },
         ],
       },
       {
@@ -117,12 +116,13 @@ export const router = createBrowserRouter([
       },
       {
         path: "systemstaff",
-        element: <DashboardMainLayout />,
+        element: <DashboardStaffSystemLayout />,
         children: [
           { path: "systemstaff1", element: <SystemStaff /> },
           { path: "systemstaff2", element: <SystemStaff1 /> },
           { path: "systemstaff3", element: <SystemStaff2 /> },
-          { path: "systemstaff4", element: <SystemStaff3/> },
+          { path: "systemstaff4", element: <SystemStaff3 /> },
+          { path: "systemstaff5", element: <SystemStaff4 /> },
         ],
       },
     ],

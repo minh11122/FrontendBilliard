@@ -41,8 +41,12 @@ export function RegisterForm() {
 
   // validation
   const validationSchema = Yup.object({
-    email: Yup.string().email("Email không hợp lệ").required("Vui lòng nhập email"),
-    password: Yup.string().min(6, "Mật khẩu tối thiểu 6 ký tự").required("Vui lòng nhập mật khẩu"),
+    email: Yup.string()
+      .email("Email không hợp lệ")
+      .required("Vui lòng nhập email"),
+    password: Yup.string()
+      .min(6, "Mật khẩu tối thiểu 6 ký tự")
+      .required("Vui lòng nhập mật khẩu"),
     confirmPassword: Yup.string()
       .oneOf([Yup.ref("password"), null], "Mật khẩu xác nhận không khớp")
       .required("Vui lòng nhập lại mật khẩu"),
@@ -160,7 +164,9 @@ export function RegisterForm() {
               <GoogleLogin
                 onSuccess={async (res) => {
                   try {
-                    await registerGoogle(res.credential);
+                    await registerGoogle({
+                      tokenId: res.credential,
+                    });
                     toast.success("Đăng ký Google thành công!");
                     navigate("/auth/login");
                   } catch (error) {
@@ -237,9 +243,7 @@ export function RegisterForm() {
                   />
                   <button
                     type="button"
-                    onClick={() =>
-                      setShowConfirmPassword(!showConfirmPassword)
-                    }
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
                   >
                     {showConfirmPassword ? (

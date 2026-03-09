@@ -135,7 +135,14 @@ export const SidebarOwner = () => {
 
           {/* Bottom Actions */}
           <div className="border-t border-border p-3 space-y-1">
-
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 text-muted-foreground hover:bg-accent hover:text-foreground"
+              onClick={() => navigate("/owner/settings")}
+            >
+              <Settings className="h-5 w-5" />
+              <span className="text-sm font-medium">Cài đặt</span>
+            </Button>
 
             <Button
               variant="ghost"
