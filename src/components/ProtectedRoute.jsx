@@ -12,7 +12,7 @@ export const ProtectedRoute = ({ allowedRoles, children }) => {
 
   // Chưa đăng nhập → redirect về trang login
   if (!isAuthenticated) {
-    return <Navigate to="/auth/login-club/club" replace />;
+    return <Navigate to="/auth/login" replace />;
   }
 
   // Đã đăng nhập nhưng sai role → redirect về trang Forbidden
