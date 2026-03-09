@@ -4,8 +4,7 @@ import { Eye, EyeOff, Mail, Lock, ShieldCheck } from "lucide-react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import toast from "react-hot-toast";
-import { login, loginGoogle } from "@/services/auth.service";
-import { GoogleLogin } from "@react-oauth/google";
+import { login } from "@/services/auth.service";
 import Cookies from "js-cookie";
 import { AuthContext } from "@/context/AuthContext";
 
@@ -14,10 +13,8 @@ export function LoginSystem() {
   const navigate = useNavigate();
   const { login: loginContext } = useContext(AuthContext);
 
-  // ✅ load remembered email
   const savedEmail = Cookies.get("rememberedEmail") || "";
 
-  // ✅ validation
   const validationSchema = Yup.object({
     email: Yup.string()
       .email("Email không hợp lệ")
@@ -27,7 +24,6 @@ export function LoginSystem() {
       .required("Vui lòng nhập mật khẩu"),
   });
 
-  // ✅ formik
   const formik = useFormik({
     initialValues: {
       email: savedEmail,
@@ -43,7 +39,6 @@ export function LoginSystem() {
 
         loginContext(token);
 
-        // remember me
         if (values.rememberMe) {
           Cookies.set("rememberedEmail", values.email, { expires: 7 });
         } else {
@@ -52,13 +47,12 @@ export function LoginSystem() {
 
         toast.success("Đăng nhập thành công!");
 
-        // 🔥 CHIA ROLE
         if (role === "ADMIN") {
           navigate("/admin/list-user");
         } else if (role === "STAFF_SYSTEM") {
           navigate("/systemstaff/systemstaff1");
         } else {
-          toast.error("Bạn không có quyền truy cập hệ thống club");
+          toast.error("Bạn không có quyền truy cập hệ thống");
           navigate("/");
         }
       } catch (error) {
@@ -68,19 +62,6 @@ export function LoginSystem() {
       }
     },
   });
-
-  // ✅ google login
-  const handleGoogleLogin = async (credentialResponse) => {
-    try {
-      const tokenId = credentialResponse.credential;
-      const res = await loginGoogle(tokenId);
-      toast.success("Đăng nhập Google thành công!");
-      loginContext(res.data.token);
-      navigate("/");
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Đăng nhập Google thất bại");
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-100 px-4 py-6">
@@ -96,7 +77,6 @@ export function LoginSystem() {
         </Link>
       </div>
 
-      {/* Card */}
       <div className="max-w-6xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden grid md:grid-cols-2">
         {/* LEFT */}
         <div className="p-8 md:p-10">
@@ -104,20 +84,6 @@ export function LoginSystem() {
           <p className="text-gray-500 mb-6">
             Đăng nhập để truy cập hệ thống quản lý billiards.
           </p>
-
-          {/* Google */}
-          <div className="mb-6">
-            <GoogleLogin
-              onSuccess={handleGoogleLogin}
-              onError={() => toast.error("Đăng nhập Google thất bại")}
-            />
-          </div>
-
-          <div className="flex items-center gap-3 text-sm text-gray-400 mb-6">
-            <div className="flex-1 h-px bg-gray-200" />
-            Hoặc đăng nhập với email
-            <div className="flex-1 h-px bg-gray-200" />
-          </div>
 
           <form onSubmit={formik.handleSubmit} className="space-y-5">
             {/* Email */}
@@ -167,6 +133,7 @@ export function LoginSystem() {
                   onBlur={formik.handleBlur}
                   className="pl-10 pr-10 border rounded-xl w-full px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-600"
                 />
+
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
@@ -175,6 +142,7 @@ export function LoginSystem() {
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
+
               {formik.touched.password && formik.errors.password && (
                 <p className="text-red-500 text-sm mt-1">
                   {formik.errors.password}
@@ -202,7 +170,7 @@ export function LoginSystem() {
               {formik.isSubmitting ? "Đang đăng nhập..." : "Đăng nhập →"}
             </button>
 
-            <p className="text-center text-sm text-gray-600">
+            {/* <p className="text-center text-sm text-gray-600">
               Bạn chưa có tài khoản?{" "}
               <Link
                 to="/auth/register"
@@ -210,12 +178,8 @@ export function LoginSystem() {
               >
                 Đăng ký ngay
               </Link>
-            </p>
+            </p> */}
           </form>
-
-          <p className="text-xs text-gray-400 mt-8">
-            © 2026 Billiards Manager. All rights reserved.
-          </p>
         </div>
 
         {/* RIGHT HERO */}
