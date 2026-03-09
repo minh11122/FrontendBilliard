@@ -29,6 +29,9 @@ export const SidebarOwner = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const userFullname = localStorage.getItem("user_fullname") || "Chủ quán";
+  const clubName = localStorage.getItem("selected_club_name") || "Billiard Club";
+
   const navigation = [
     {
       name: "Tổng quan",
@@ -58,6 +61,9 @@ export const SidebarOwner = () => {
   ];
 
   const handleLogout = () => {
+    localStorage.removeItem("user_fullname");
+    localStorage.removeItem("selected_club_id");
+    localStorage.removeItem("selected_club_name");
     logout();
     navigate("/");
   };
@@ -88,10 +94,10 @@ export const SidebarOwner = () => {
                 <Store className="h-5 w-5 text-white" />
               </div>
               <div>
-                <span className="text-lg font-semibold text-foreground">
-                  Billard
+                <span className="text-lg font-semibold text-foreground truncate block max-w-[160px]">
+                  {clubName}
                 </span>
-                <p className="text-xs text-muted-foreground">Chủ quán</p>
+                <p className="text-xs text-muted-foreground truncate max-w-[160px]">{userFullname}</p>
               </div>
             </div>
             <Button

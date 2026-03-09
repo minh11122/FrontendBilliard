@@ -19,3 +19,15 @@ export async function registerClub(data) {
 
   return response.data;
 }
+
+export async function getOwnerClubs() {
+  const token = getAuthToken();
+
+  const response = await axios.get(`${API_BASE_URL}/owner/clubs`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  return response.data;
+}
