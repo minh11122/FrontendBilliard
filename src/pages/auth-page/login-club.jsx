@@ -39,9 +39,14 @@ export function LoginClub() {
       try {
         const res = await login(values);
 
-        const { token, role } = res.data;
+        const { token, role, fullname } = res.data;
 
         loginContext(token);
+
+        // Lưu tên người dùng vào localStorage
+        if (fullname) {
+          localStorage.setItem("user_fullname", fullname);
+        }
 
         // remember me
         if (values.rememberMe) {
@@ -54,7 +59,7 @@ export function LoginClub() {
 
         // 🔥 CHIA ROLE
         if (role === "OWNER") {
-          navigate("/owner/dashboard");
+          navigate("/owner/select-club");
         } else if (role === "STAFF_CLUB") {
           navigate("/staff/staff1");
         } else {

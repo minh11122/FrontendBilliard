@@ -22,7 +22,12 @@ export const deleteTable = (id) => {
     return api.delete(`/tables/${id}`);
 };
 
+// Lấy chi tiết bàn
+export const getTableById = (id) => {
+    return api.get(`/tables/${id}`);
+};
+
 // Lấy danh sách Loại bàn (Dùng cho Select Dropdown)
 export const getTableTypes = () => {
-    return api.get("/tables/types");                                                                                                                                                                                                                                                                                                                                                                                                                                             // Đảm bảo bạn có API này ở Backend nhé
+    return api.get("/tables/types");
 };

@@ -3,11 +3,11 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
     Search, Filter, Edit2, Trash2, Plus, LayoutGrid,
-    Circle, Grid3X3, FilterX, ChevronLeft, ChevronRight
+    Circle, Grid3X3, FilterX, ChevronLeft, ChevronRight, Eye, X
 } from "lucide-react";
 
 import useDebounce from "@/hooks/useDebounce";
-import { getTables, deleteTable, getTableTypes } from "@/services/billiardTable.service";
+import { getTables, deleteTable, getTableTypes, getTableById } from "@/services/billiardTable.service";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,7 +52,12 @@ export default function OwnerTableListPage() {
     const [statusFilter, setStatusFilter] = useState("all");
     const [typeFilter, setTypeFilter] = useState("all");
 
-    const CLUB_ID = "65a1234567890abcdef12345";
+    // State cho Modal Xem Chi Tiết
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+    const [selectedTableDetails, setSelectedTableDetails] = useState(null);
+    const [isFetchingDetails, setIsFetchingDetails] = useState(false);
+
+    const CLUB_ID = localStorage.getItem("selected_club_id") || "";
 
     // Lấy dữ liệu danh sách Bàn
     const fetchTables = async () => {
@@ -116,6 +121,22 @@ export default function OwnerTableListPage() {
         setStatusFilter("all");
         setTypeFilter("all");
         setPagination(prev => ({ ...prev, currentPage: 1 }));
+    };
+
+    const handleViewDetails = async (id) => {
+        setIsFetchingDetails(true);
+        setIsViewModalOpen(true);
+        try {
+            const res = await getTableById(id);
+            if (res.data.success) {
+                setSelectedTableDetails(res.data.data);
+            }
+        } catch (error) {
+            toast.error("Không thể tải thông tin chi tiết bàn");
+            setIsViewModalOpen(false);
+        } finally {
+            setIsFetchingDetails(false);
+        }
     };
 
     // UI Helpers: Render Giao diện tùy theo Loại bàn
@@ -327,7 +348,6 @@ export default function OwnerTableListPage() {
                                                     </div>
                                                     <div>
                                                         <p className="font-semibold text-gray-900">{table.table_number}</p>
-                                                        <p className="text-xs text-gray-500">{table.area}</p>
                                                     </div>
                                                 </div>
                                             </TableCell>
@@ -344,6 +364,13 @@ export default function OwnerTableListPage() {
                                             </TableCell>
                                             <TableCell className="px-6 py-4 text-right">
                                                 <div className="flex items-center justify-end gap-2">
+                                                    <button
+                                                        onClick={() => handleViewDetails(table._id)}
+                                                        className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                                        title="Xem chi tiết"
+                                                    >
+                                                        <Eye size={18} />
+                                                    </button>
                                                     <button
                                                         onClick={() => navigate(`/owner/tables/edit/${table._id}`)}
                                                         className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -404,6 +431,128 @@ export default function OwnerTableListPage() {
                     </div>
                 )}
             </div>
+
+            {/* View Details Modal */}
+            {isViewModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                            <h3 className="text-xl font-bold text-gray-900 tracking-tight">Chi tiết Bàn Bida</h3>
+                            <button
+                                onClick={() => {
+                                    setIsViewModalOpen(false);
+                                    setSelectedTableDetails(null);
+                                }}
+                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Modal Body */}
+                        <div className="p-6 overflow-y-auto">
+                            {isFetchingDetails ? (
+                                <div className="flex flex-col items-center justify-center py-12">
+                                    <div className="w-8 h-8 relative mb-4">
+                                        <div className="absolute inset-0 rounded-full border-2 border-gray-200"></div>
+                                        <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+                                    </div>
+                                    <p className="text-gray-500 font-medium">Đang tải thông tin bàn...</p>
+                                </div>
+                            ) : selectedTableDetails ? (
+                                <div className="flex flex-col md:flex-row gap-6">
+                                    {/* Image Section */}
+                                    <div className="w-full md:w-1/3 flex-shrink-0">
+                                        <div className="aspect-square rounded-xl bg-gray-100 overflow-hidden border border-gray-200 relative">
+                                            {selectedTableDetails.image_url ? (
+                                                <img 
+                                                    src={selectedTableDetails.image_url} 
+                                                    alt={selectedTableDetails.table_number} 
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
+                                                    <LayoutGrid size={40} className="mb-2 opacity-50" />
+                                                    <span className="text-sm">Chưa có ảnh</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="mt-4 flex justify-center">
+                                            {renderStatusUI(selectedTableDetails.status)}
+                                        </div>
+                                    </div>
+
+                                    {/* Info Section */}
+                                    <div className="flex-1 flex flex-col gap-4">
+                                        <div>
+                                            <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-1">Tên / Số bàn</h4>
+                                            <p className="text-2xl font-black text-gray-900">{selectedTableDetails.table_number}</p>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                                                <p className="text-sm text-gray-500 mb-1">Loại bàn</p>
+                                                <p className="font-semibold text-gray-900 truncate">
+                                                    {selectedTableDetails.table_type_id?.name || "Khác"}
+                                                </p>
+                                            </div>
+                                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                                                <p className="text-sm text-gray-500 mb-1">Đơn giá / giờ</p>
+                                                <p className="font-semibold text-primary text-lg">
+                                                    {selectedTableDetails.price?.toLocaleString("vi-VN")} VNĐ
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-2">
+                                            <h4 className="text-sm font-medium text-gray-500 mb-2">Mô tả thêm</h4>
+                                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 min-h-[80px]">
+                                                {selectedTableDetails.description ? (
+                                                    <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
+                                                        {selectedTableDetails.description}
+                                                    </p>
+                                                ) : (
+                                                    <p className="text-gray-400 text-sm italic">Không có mô tả chi tiết.</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-center py-10 text-gray-500">
+                                    Không có dữ liệu bàn.
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 mt-auto">
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setIsViewModalOpen(false);
+                                    setSelectedTableDetails(null);
+                                }}
+                                className="px-6 rounded-lg font-medium"
+                            >
+                                Đóng
+                            </Button>
+                            {selectedTableDetails && (
+                                <Button
+                                    onClick={() => {
+                                        setIsViewModalOpen(false);
+                                        navigate(`/owner/tables/edit/${selectedTableDetails._id}`);
+                                    }}
+                                    className="bg-active hover:bg-active/90 text-white px-6 rounded-lg font-medium"
+                                >
+                                    Chỉnh sửa ngay
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

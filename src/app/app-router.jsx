@@ -24,8 +24,10 @@ import {
   LoginClub,
   LoginSystem,
   RegisterOwnerAccount,
+  OwnerSelectClubPage,
   OwnerTableListPage,   
   OwnerCreateTablePage,
+  OwnerEditTablePage,
   OwnerDashboardPage,
   Owner4,
   Staff1,
@@ -67,6 +69,10 @@ export const router = createBrowserRouter([
         ],
       },
       {
+        path: "owner/select-club",
+        element: <OwnerSelectClubPage />
+      },
+      {
         path: "admin",
         element: <DashboardMainLayout />,
         children: [
@@ -82,6 +88,7 @@ export const router = createBrowserRouter([
         children: [
           { path: "tables", element: <OwnerTableListPage /> },
           { path: "tables/create", element: <OwnerCreateTablePage /> },
+          { path: "tables/edit/:id", element: <OwnerEditTablePage /> },
           { path: "dashboard", element: <OwnerDashboardPage /> },
           { path: "owner4", element: <Owner4 /> },
         ],

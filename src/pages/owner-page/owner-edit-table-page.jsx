@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import toast from "react-hot-toast";
 
-import { ImagePlus, Save, Info, Trash2, Plus } from "lucide-react";
+import { ImagePlus, Save, Info, Trash2 } from "lucide-react";
 
-import { createTable, getTableTypes } from "@/services/billiardTable.service";
+import { updateTable, getTableTypes, getTableById } from "@/services/billiardTable.service";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,44 +18,39 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export default function OwnerCreateTablePage() {
+export default function OwnerEditTablePage() {
   const navigate = useNavigate();
+  const { id } = useParams();
   const fileInputRef = useRef(null);
 
   const [imagePreview, setImagePreview] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [tableTypes, setTableTypes] = useState([]);
+  const [isFetchingData, setIsFetchingData] = useState(true);
 
   const CLUB_ID = localStorage.getItem("selected_club_id") || "";
-
-  useEffect(() => {
-    const fetchTableTypes = async () => {
-      try {
-        const res = await getTableTypes();
-        if (res.data.success) {
-          setTableTypes(res.data.data);
-        }
-      } catch (error) {
-        toast.error("Không thể tải danh sách loại bàn");
-      }
-    };
-    fetchTableTypes();
-  }, []);
 
   const formik = useFormik({
     initialValues: {
       table_number: "",
       table_type_id: "",
       price: "",
+      status: "Available",
       description: "",
     },
+    enableReinitialize: true,
     validationSchema: Yup.object({
-      table_number: Yup.string().required("Tên bàn không được để trống"),
+      table_number: Yup.string()
+        .trim()
+        .required("Tên bàn không được để trống")
+        .max(100, "Tên bàn tối đa 100 ký tự"),
       table_type_id: Yup.string().required("Vui lòng chọn loại bàn"),
       price: Yup.number()
         .typeError("Đơn giá phải là số")
         .positive("Đơn giá phải lớn hơn 0")
+        .max(100000000, "Đơn giá tối đa 100,000,000 VNĐ")
         .required("Đơn giá không được để trống"),
+      status: Yup.string().oneOf(["Available", "Maintenance"], "Trạng thái không hợp lệ").required("Vui lòng chọn trạng thái"),
       description: Yup.string().max(500, "Mô tả tối đa 500 ký tự"),
     }),
     onSubmit: async (values) => {
@@ -66,31 +61,72 @@ export default function OwnerCreateTablePage() {
 
       try {
         const formData = new FormData();
-        formData.append("club_id", CLUB_ID); // Gửi ID tự động lấy được
-        formData.append("table_number", values.table_number);
+        formData.append("club_id", CLUB_ID);
+        formData.append("table_number", values.table_number.trim());
         formData.append("table_type_id", values.table_type_id);
         formData.append("price", values.price);
-        formData.append("description", values.description);
+        formData.append("description", values.description || "");
+        formData.append("status", values.status);
 
-        // Dữ liệu mặc định để không lỗi Backend
+        // Dữ liệu mặc định
         formData.append("area", "Khu vực chung");
-        formData.append("isActive", true);
 
         if (selectedFile) {
           formData.append("image", selectedFile);
+        } else if (imagePreview && !imagePreview.startsWith("blob:")) {
+          // Gửi URL ảnh cũ nếu không upload ảnh mới
+          formData.append("image_url", imagePreview);
         }
 
-        const res = await createTable(formData);
+        const res = await updateTable(id, formData);
 
         if (res.data.success) {
-          toast.success("Thêm bàn mới thành công!");
+          toast.success("Cập nhật thông tin bàn thành công!");
           navigate("/owner/tables");
         }
       } catch (error) {
-        toast.error(error.response?.data?.message || "Có lỗi xảy ra khi thêm bàn");
+        toast.error(error.response?.data?.message || "Có lỗi xảy ra khi cập nhật bàn");
       }
     },
   });
+
+  // Fetch danh sách loại bàn + dữ liệu bàn hiện tại
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Lấy danh sách loại bàn
+        const typesRes = await getTableTypes();
+        if (typesRes.data.success) {
+          setTableTypes(typesRes.data.data);
+        }
+
+        // Lấy dữ liệu bàn hiện tại
+        const tableRes = await getTableById(id);
+        if (tableRes.data.success) {
+          const data = tableRes.data.data;
+
+          formik.setValues({
+            table_number: data.table_number || "",
+            table_type_id: data.table_type_id?._id || data.table_type_id || "",
+            price: data.price || "",
+            status: data.status || "Available",
+            description: data.description || "",
+          });
+
+          if (data.image_url) {
+            setImagePreview(data.image_url);
+          }
+        }
+      } catch (error) {
+        toast.error("Không thể tải thông tin bàn");
+        navigate("/owner/tables");
+      } finally {
+        setIsFetchingData(false);
+      }
+    };
+
+    fetchData();
+  }, [id]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -109,6 +145,20 @@ export default function OwnerCreateTablePage() {
 
   const inputClassName = "w-full rounded-lg border-slate-200 bg-slate-50 focus:bg-white focus:border-primary focus:ring-primary/20 transition-all text-slate-900 shadow-none";
 
+  if (isFetchingData) {
+    return (
+      <div className="flex-1 p-6 lg:p-10 flex items-center justify-center min-h-[calc(100vh-80px)]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 relative">
+            <div className="absolute inset-0 rounded-full border-2 border-gray-200"></div>
+            <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-slate-500 font-medium">Đang tải dữ liệu bàn...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 p-6 lg:p-10 max-w-7xl mx-auto w-full min-h-[calc(100vh-80px)]">
       <div className="hidden lg:flex items-center gap-2 text-sm mb-6">
@@ -116,14 +166,14 @@ export default function OwnerCreateTablePage() {
         <span className="text-slate-400">/</span>
         <span className="text-slate-500 hover:text-primary transition-colors cursor-pointer" onClick={() => navigate("/owner/tables")}>Quản lý bàn</span>
         <span className="text-slate-400">/</span>
-        <span className="text-slate-900 font-medium">Thêm bàn mới</span>
+        <span className="text-slate-900 font-medium">Chỉnh sửa thông tin bàn</span>
       </div>
 
       <div className="flex flex-col gap-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Thêm bàn mới</h1>
-            <p className="text-slate-500 mt-1">Nhập thông tin chi tiết để tạo bàn mới vào hệ thống quản lý.</p>
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Chỉnh sửa thông tin bàn</h1>
+            <p className="text-slate-500 mt-1">Cập nhật thông tin chi tiết của bàn bida.</p>
           </div>
           <div className="flex gap-3">
             <button type="button" onClick={() => navigate(-1)} className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 font-medium transition-all shadow-sm">
@@ -131,7 +181,7 @@ export default function OwnerCreateTablePage() {
             </button>
             <button type="button" onClick={formik.handleSubmit} className="px-4 py-2 bg-primary text-slate-900 rounded-lg hover:bg-[#0fd650] font-semibold transition-all shadow-sm shadow-primary/30 flex items-center gap-2">
               <Save size={20} />
-              Lưu bàn
+              Lưu thay đổi
             </button>
           </div>
         </div>
@@ -180,7 +230,7 @@ export default function OwnerCreateTablePage() {
 
                 <div className="col-span-1">
                   <Label className="block text-sm font-medium text-slate-700 mb-2">Loại bàn <span className="text-red-500">*</span></Label>
-                  <Select onValueChange={(val) => formik.setFieldValue("table_type_id", val)} defaultValue={formik.values.table_type_id}>
+                  <Select onValueChange={(val) => formik.setFieldValue("table_type_id", val)} value={formik.values.table_type_id}>
                     <SelectTrigger className={`${inputClassName} ${formik.touched.table_type_id && formik.errors.table_type_id ? "border-red-500" : ""}`}>
                       <SelectValue placeholder="Chọn loại bàn" />
                     </SelectTrigger>
@@ -200,6 +250,20 @@ export default function OwnerCreateTablePage() {
                     <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium bg-slate-200/60 px-2 py-0.5 rounded">đ/giờ</div>
                   </div>
                   {formik.touched.price && formik.errors.price && <p className="text-xs text-red-500 mt-1">{formik.errors.price}</p>}
+                </div>
+
+                <div className="col-span-1">
+                  <Label className="block text-sm font-medium text-slate-700 mb-2">Trạng thái <span className="text-red-500">*</span></Label>
+                  <Select onValueChange={(val) => formik.setFieldValue("status", val)} value={formik.values.status}>
+                    <SelectTrigger className={`${inputClassName} ${formik.touched.status && formik.errors.status ? "border-red-500" : ""}`}>
+                      <SelectValue placeholder="Chọn trạng thái" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Available">Sẵn sàng</SelectItem>
+                      <SelectItem value="Maintenance">Bảo trì</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {formik.touched.status && formik.errors.status && <p className="text-xs text-red-500 mt-1">{formik.errors.status}</p>}
                 </div>
 
                 <div className="col-span-1 md:col-span-2">
