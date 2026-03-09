@@ -43,7 +43,7 @@ export const HomePage = () => {
               className="w-full h-[320px] md:h-[420px] object-cover"
             />
 
-            <div className="absolute inset-0 bg-gradient-to-r from-orange-600/90 to-orange-500/70" />
+            <div className="absolute inset-0 bg-gradient-to-r from-green-600/90 to-green-500/70" />
 
             <div className="absolute inset-0 p-8 md:p-12 flex flex-col justify-center text-white max-w-2xl">
               <span className="bg-green-500/90 w-fit px-3 py-1 rounded-full text-sm mb-4">
@@ -78,22 +78,22 @@ export const HomePage = () => {
       <section className="container mx-auto px-6 py-10">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           <div>
-            <Users className="mx-auto text-orange-500 mb-2" />
+            <Users className="mx-auto text-green-500 mb-2" />
             <p className="text-2xl font-bold">50+</p>
             <p className="text-gray-500 text-sm">Câu lạc bộ liên kết</p>
           </div>
           <div>
-            <Trophy className="mx-auto text-orange-500 mb-2" />
+            <Trophy className="mx-auto text-green-500 mb-2" />
             <p className="text-2xl font-bold">200+</p>
             <p className="text-gray-500 text-sm">Bàn bida chất lượng</p>
           </div>
           <div>
-            <Star className="mx-auto text-orange-500 mb-2" />
+            <Star className="mx-auto text-green-500 mb-2" />
             <p className="text-2xl font-bold">1000+</p>
             <p className="text-gray-500 text-sm">Thành viên hoạt động</p>
           </div>
           <div>
-            <Clock className="mx-auto text-orange-500 mb-2" />
+            <Clock className="mx-auto text-green-500 mb-2" />
             <p className="text-2xl font-bold">24/7</p>
             <p className="text-gray-500 text-sm">Hỗ trợ đặt bàn</p>
           </div>
@@ -104,7 +104,7 @@ export const HomePage = () => {
       <section className="container mx-auto px-6 pb-14">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold">Câu lạc bộ nổi bật</h2>
-          <button className="text-orange-500 hover:underline text-sm">
+          <button className="text-green-500 hover:underline text-sm">
             Xem tất cả →
           </button>
         </div>
@@ -123,7 +123,7 @@ export const HomePage = () => {
               <div className="p-4">
                 <div className="flex justify-between items-start mb-1">
                   <h3 className="font-semibold text-sm">{club.name}</h3>
-                  <span className="flex items-center gap-1 text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded">
+                  <span className="flex items-center gap-1 text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded">
                     <Star size={12} />
                     {club.rating}
                   </span>
@@ -135,7 +135,7 @@ export const HomePage = () => {
 
                 <div className="flex justify-between items-center">
                   <span className="font-semibold">{club.price}</span>
-                  <button className="bg-orange-500 hover:bg-orange-600 text-white text-xs px-3 py-1.5 rounded-lg">
+                  <button className="bg-green-500 hover:bg-green-600 text-white text-xs px-3 py-1.5 rounded-lg">
                     Đặt bàn
                   </button>
                 </div>
@@ -147,7 +147,7 @@ export const HomePage = () => {
 
       {/* OWNER CTA */}
       <section className="container mx-auto px-6 pb-16">
-        <div className="bg-gradient-to-r from-orange-600 to-orange-500 rounded-3xl p-8 md:p-10 text-white flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="bg-gradient-to-r from-green-600 to-green-500 rounded-3xl p-8 md:p-10 text-white flex flex-col md:flex-row items-center justify-between gap-6">
           <div>
             <h3 className="text-2xl font-bold mb-2">
               Bạn là chủ quán Bida?
@@ -159,7 +159,7 @@ export const HomePage = () => {
           </div>
 
           <Link to="/register-owner-account">
-            <button className="bg-white text-orange-600 font-semibold px-6 py-3 rounded-xl hover:bg-gray-100">
+            <button className="bg-white text-green-600 font-semibold px-6 py-3 rounded-xl hover:bg-gray-100">
               Đăng ký đối tác
             </button>
           </Link>

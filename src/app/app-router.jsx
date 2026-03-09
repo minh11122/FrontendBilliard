@@ -34,7 +34,8 @@ import {
   SystemStaff1,
   SystemStaff2,
   SystemStaff3,
-  SystemStaff4
+  SystemStaff4,
+  ProfilePage
 } from "@/pages";
 
 export const router = createBrowserRouter([
@@ -62,6 +63,7 @@ export const router = createBrowserRouter([
           { path: "/booking", element: <BookingPage /> },
           { path: "/booking/:id", element: <ClubDetailPage /> },
           { path: "/register-owner-account", element: <RegisterOwnerAccount /> },
+          { path: "/profile", element: <ProfilePage /> },
         ],
       },
       {

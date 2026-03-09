@@ -21,24 +21,24 @@ export const HeaderHome = () => {
       <div className="container mx-auto px-6 py-3 flex items-center justify-between">
         
         {/* Logo */}
-        <Link to="/" className="hover:text-orange-500">
+        <Link to="/" className="hover:text-green-500">
           <div className="flex items-center gap-2 font-bold text-xl">
-            <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center text-white">
+            <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center text-white">
               🎱
             </div>
             <span>
-              Billiard<span className="text-orange-500">Master</span>
+              Billiard<span className="text-green-500">Master</span>
             </span>
           </div>
         </Link>
 
         {/* Menu */}
         <nav className="hidden md:flex items-center gap-8 text-gray-600 font-medium">
-          <Link to="/" className="hover:text-orange-500">
+          <Link to="/" className="hover:text-green-500">
             Trang chủ
           </Link>
 
-          <Link to="/booking" className="hover:text-orange-500">
+          <Link to="/booking" className="hover:text-green-500">
             CLB
           </Link>
 
@@ -46,7 +46,7 @@ export const HeaderHome = () => {
           <div className="relative">
             <button
               onClick={() => setOpenMenu(!openMenu)}
-              className="flex items-center gap-1 text-orange-500 font-semibold"
+              className="flex items-center gap-1 text-green-500 font-semibold"
             >
               Giải đấu <ChevronDown size={16} />
             </button>
@@ -55,13 +55,13 @@ export const HeaderHome = () => {
               <div className="absolute top-full mt-2 w-40 bg-white border rounded-xl shadow-lg py-2">
                 <Link
                   to="/tournament"
-                  className="block px-4 py-2 hover:bg-orange-50"
+                  className="block px-4 py-2 hover:bg-green-50"
                 >
                   Giải hiện tại
                 </Link>
                 <Link
                   to="/tournament/history"
-                  className="block px-4 py-2 hover:bg-orange-50"
+                  className="block px-4 py-2 hover:bg-green-50"
                 >
                   Đã kết thúc
                 </Link>
@@ -69,7 +69,7 @@ export const HeaderHome = () => {
             )}
           </div>
 
-          <Link to="/ranking" className="hover:text-orange-500">
+          <Link to="/ranking" className="hover:text-green-500">
             Xếp hạng
           </Link>
         </nav>
@@ -85,7 +85,7 @@ export const HeaderHome = () => {
             <div className="relative">
               <button
                 onClick={() => setOpenUserMenu(!openUserMenu)}
-                className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
               >
                 <User size={16} />
                 {user.name || "Tài khoản"}
@@ -96,7 +96,7 @@ export const HeaderHome = () => {
                 <div className="absolute right-0 mt-2 w-44 bg-white border rounded-xl shadow-lg py-2">
                   <Link
                     to="/profile"
-                    className="block px-4 py-2 hover:bg-orange-50"
+                    className="block px-4 py-2 hover:bg-green-50"
                     onClick={() => setOpenUserMenu(false)}
                   >
                     Hồ sơ
@@ -104,7 +104,7 @@ export const HeaderHome = () => {
 
                   <button
                     onClick={handleLogout}
-                    className="w-full text-left px-4 py-2 hover:bg-orange-50 flex items-center gap-2"
+                    className="w-full text-left px-4 py-2 hover:bg-green-50 flex items-center gap-2"
                   >
                     <LogOut size={16} />
                     Đăng xuất
@@ -123,7 +123,7 @@ export const HeaderHome = () => {
 
               <button
                 onClick={() => navigate("/auth/register")}
-                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
               >
                 Đăng ký
               </button>
