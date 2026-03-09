@@ -51,7 +51,6 @@ export const router = createBrowserRouter([
           { path: "register", element: <RegisterForm /> },
           { path: "forgot-password", element: <ForgotPasswordForm /> },
           { path: "login-system/adminstration", element: <LoginSystem /> },
-          { path: "login-club/club", element: <LoginClub /> },
           { path: "forbidden", element: <Forbidden /> },
         ],
       },
