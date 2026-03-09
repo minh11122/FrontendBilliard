@@ -106,6 +106,18 @@ export const ClubDetailPage = () => {
       return;
     }
 
+    // Validate closing time
+    const [startH, startM] = selectedStartTime.split(":").map(Number);
+    const endTotalMinutes = (startH + selectedDuration) * 60 + startM;
+
+    const [closeH, closeM] = (club.closing_time || "23:30").split(":").map(Number);
+    const closeTotalMinutes = closeH * 60 + closeM;
+
+    if (endTotalMinutes > closeTotalMinutes) {
+      toast.error(`Thời gian đặt bàn vượt quá giờ đóng cửa (${club.closing_time || "23:30"})`);
+      return;
+    }
+
     toast.success("Đặt bàn thành công!");
     // You can add API call here
   };
@@ -231,7 +243,7 @@ export const ClubDetailPage = () => {
               </p>
               <div className="flex justify-between items-center text-sm border-b border-dashed pb-3 pt-2">
                 <span className="text-slate-500">Giờ hoạt động</span>
-                <span className="font-bold text-slate-900">08:00 - 23:30</span>
+                <span className="font-bold text-slate-900">{club.opening_time || "08:00"} - {club.closing_time || "23:30"}</span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-slate-500">Giá từ</span>

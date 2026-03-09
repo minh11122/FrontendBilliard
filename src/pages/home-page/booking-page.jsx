@@ -10,7 +10,7 @@ export const BookingPage = () => {
   const [loading, setLoading] = useState(true);
 
   // Districts in Hanoi
-  const districts = ["Tất cả", "Ba Đình", "Hoàn Kiếm", "Tây Hồ", "Long Biên", "Cầu Giấy", "Đống Đa", "Hai Bà Trưng", "Hoàng Mai", "Thanh Xuân", "Sóc Sơn", "Đông Anh", "Gia Lâm", "Nam Từ Liêm", "Bắc Từ Liêm", "Thanh Trì"];
+  const districts = ["Tất cả", "Ba Đình", "Hoàn Kiếm", "Tây Hồ", "Long Biên", "Cầu Giấy", "Đống Đa", "Hai Bà Trưng", "Hoàng Mai", "Thanh Xuân", "Hà Đông", "Bắc Từ Liêm", "Nam Từ Liêm", "Sơn Tây", "Ba Vì", "Chương Mỹ", "Đan Phượng", "Đông Anh", "Gia Lâm", "Hoài Đức", "Mê Linh", "Mỹ Đức", "Phú Xuyên", "Phúc Thọ", "Quốc Oai", "Sóc Sơn", "Thạch Thất", "Thanh Oai", "Thanh Trì", "Thường Tín", "Ứng Hòa"];
 
   // Filters state
   const [searchTerm, setSearchTerm] = useState("");
@@ -94,16 +94,13 @@ export const BookingPage = () => {
   };
 
   const filteredClubs = clubs.filter((club) => {
-    // Luôn lọc theo Hà Nội (giả định address chứa "Hà Nội")
-    const isInHanoi = club.address?.toLowerCase().includes("hà nội");
-    if (!isInHanoi) return false;
-
-    const matchSearch = club.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      club.address.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchSearch = (club.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (club.address?.toLowerCase() || "").includes(searchTerm.toLowerCase());
 
     const matchDistrict = selectedDistrict === "Tất cả"
       ? true
-      : club.address.toLowerCase().includes(selectedDistrict.toLowerCase());
+      : (club.district?.toLowerCase() || "").includes(selectedDistrict.toLowerCase()) ||
+      club.address.toLowerCase().includes(selectedDistrict.toLowerCase());
 
     const matchRating = filterRating ? club.rating >= 4.0 : true;
 
@@ -204,81 +201,93 @@ export const BookingPage = () => {
             </div>
           </div>
 
-          {/* Filters */}
-          <div className="flex flex-wrap items-center gap-2 mt-6">
-            <select
-              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-sm font-medium rounded-full transition-colors border appearance-none outline-none cursor-pointer"
-              value={selectedDistrict}
-              onChange={(e) => setSelectedDistrict(e.target.value)}
-            >
-              <option value="Tất cả">Quận/Huyện (Hà Nội)</option>
-              {districts.filter(d => d !== "Tất cả").map(d => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
+          {/* Filters & Search Row */}
+          <div className="flex flex-col lg:flex-row lg:items-center gap-4 mt-8 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+            <div className="flex flex-wrap items-center gap-2 flex-1">
+              <div className="relative">
+                <select
+                  className="pl-4 pr-10 py-2.5 bg-white hover:border-emerald-500 text-sm font-medium rounded-xl transition-all border border-slate-200 shadow-sm appearance-none outline-none cursor-pointer min-w-[160px]"
+                  value={selectedDistrict}
+                  onChange={(e) => setSelectedDistrict(e.target.value)}
+                >
+                  <option value="Tất cả">Tất cả khu vực</option>
+                  {districts.filter(d => d !== "Tất cả").map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                  <ChevronRight className="w-4 h-4 rotate-90" />
+                </div>
+              </div>
 
-            {/* Multi-select type buttons */}
-            <div className="flex bg-slate-100 p-0.5 rounded-full border">
-              {["Tất cả", "Pool", "3C", "Libre"].map((type) => {
-                const isActive = type === "Tất cả"
-                  ? selectedTypes.length === 0
-                  : selectedTypes.includes(type);
-                return (
-                  <button
-                    key={type}
-                    onClick={() => handleTypeClick(type)}
-                    className={`px-4 py-1.5 shadow-sm text-sm font-medium rounded-full transition-all ${isActive
-                      ? "bg-white text-emerald-600"
-                      : "text-slate-600 hover:text-slate-900"
-                      }`}
-                  >
-                    {type}
-                  </button>
-                );
-              })}
+              {/* Multi-select type buttons */}
+              <div className="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
+                {["Tất cả", "Pool", "3C", "Libre"].map((type) => {
+                  const isActive = type === "Tất cả"
+                    ? selectedTypes.length === 0
+                    : selectedTypes.includes(type);
+                  return (
+                    <button
+                      key={type}
+                      onClick={() => handleTypeClick(type)}
+                      className={`px-4 py-1.5 text-sm font-semibold rounded-lg transition-all ${isActive
+                        ? "bg-emerald-500 text-white shadow-md"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                        }`}
+                    >
+                      {type}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="relative">
+                <select
+                  className="pl-4 pr-10 py-2.5 bg-white hover:border-emerald-500 text-sm font-medium rounded-xl transition-all border border-slate-200 shadow-sm appearance-none outline-none cursor-pointer min-w-[140px]"
+                  value={filterPrice}
+                  onChange={(e) => setFilterPrice(e.target.value)}
+                >
+                  <option value="all">Mọi giá tiền</option>
+                  <option value="under50">Dưới 50k/h</option>
+                  <option value="50to100">50k - 100k/h</option>
+                  <option value="over100">Trên 100k/h</option>
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                  <ChevronRight className="w-4 h-4 rotate-90" />
+                </div>
+              </div>
+
+              <button
+                onClick={() => setFilterRating(!filterRating)}
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl transition-all border shadow-sm ${filterRating
+                  ? "bg-amber-500 text-white border-amber-500 shadow-amber-200"
+                  : "bg-white text-slate-600 hover:bg-slate-50 border-slate-200"
+                  }`}
+              >
+                Top Rating <Star className={`w-4 h-4 ${filterRating ? "fill-white" : "text-amber-500"}`} />
+              </button>
+
+              <button
+                onClick={toggleLocationSorting}
+                disabled={findingLocation}
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl transition-all border shadow-sm ${sortByLocation
+                  ? "bg-emerald-500 text-white border-emerald-500 shadow-emerald-200"
+                  : "bg-white text-slate-600 hover:bg-slate-50 border-slate-200"
+                  }`}
+              >
+                {findingLocation ? "Định vị..." : "Gần tôi"} <Navigation className={`w-4 h-4 ${sortByLocation ? "fill-white" : "text-emerald-500"}`} />
+              </button>
             </div>
 
-            <select
-              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-sm font-medium rounded-full transition-colors border appearance-none outline-none cursor-pointer"
-              value={filterPrice}
-              onChange={(e) => setFilterPrice(e.target.value)}
-            >
-              <option value="all">Mọi Giờ Chơi</option>
-              <option value="under50">Dưới 50.000đ/h</option>
-              <option value="50to100">50.000đ - 100.000đ/h</option>
-              <option value="over100">Trên 100.000đ/h</option>
-            </select>
-
-            <button
-              onClick={() => setFilterRating(!filterRating)}
-              className={`flex items-center gap-1 px-4 py-2 text-sm font-medium rounded-full transition-colors border ${filterRating
-                ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200 border-slate-200"
-                }`}
-            >
-              Đánh giá (4.0+) <Star className={`w-4 h-4 ${filterRating ? "fill-yellow-500 text-yellow-500" : "text-slate-400"}`} />
-            </button>
-
-            <button
-              onClick={toggleLocationSorting}
-              disabled={findingLocation}
-              className={`flex items-center gap-1 px-4 py-2 text-sm font-medium rounded-full transition-colors border ${sortByLocation
-                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200 border-slate-200"
-                }`}
-            >
-              {findingLocation ? "Đang xác vị trí..." : "Gần tôi"} <Navigation className={`w-4 h-4 ${sortByLocation ? "fill-emerald-500 text-emerald-500" : "text-slate-400"}`} />
-            </button>
-
-            <div className="w-full md:w-96 relative md:ml-auto">
+            <div className="w-full lg:w-80 relative">
               <input
                 type="text"
-                placeholder="Tìm kiếm tên câu lạc bộ hoặc địa chỉ..."
-                className="w-full pl-10 pr-4 py-2 border rounded-full bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all shadow-sm"
+                placeholder="Tên club, địa chỉ..."
+                className="w-full pl-11 pr-4 py-2.5 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-sm font-medium"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              <Search className="absolute left-3 top-2.5 text-slate-400 w-5 h-5" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
             </div>
           </div>
         </div>
