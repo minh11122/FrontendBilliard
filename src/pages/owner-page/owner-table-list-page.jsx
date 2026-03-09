@@ -202,8 +202,6 @@ export default function OwnerTableListPage() {
             <div className="flex flex-wrap items-center gap-2 mb-6 text-sm">
                 <span className="text-gray-500 cursor-pointer hover:text-primary transition-colors">Trang chủ</span>
                 <span className="text-gray-400">/</span>
-                <span className="text-gray-500 cursor-pointer hover:text-primary transition-colors">Quản lý cửa hàng</span>
-                <span className="text-gray-400">/</span>
                 <span className="text-gray-900 font-medium">Danh sách bàn</span>
             </div>
 

@@ -8,6 +8,8 @@ import {
   DashboardOwnerLayout
 } from "@/components/layouts";
 
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+
 import {
   LoginForm,
   RegisterForm,
@@ -28,6 +30,9 @@ import {
   OwnerTableListPage,   
   OwnerCreateTablePage,
   OwnerEditTablePage,
+  OwnerServiceListPage,
+  OwnerCreateServicePage,
+  OwnerEditServicePage,
   OwnerDashboardPage,
   Owner4,
   Staff1,
@@ -84,11 +89,18 @@ export const router = createBrowserRouter([
       },
       {
         path: "owner",
-        element: <DashboardOwnerLayout />,
+        element: (
+          <ProtectedRoute allowedRoles={["OWNER"]}>
+            <DashboardOwnerLayout />
+          </ProtectedRoute>
+        ),
         children: [
           { path: "tables", element: <OwnerTableListPage /> },
           { path: "tables/create", element: <OwnerCreateTablePage /> },
           { path: "tables/edit/:id", element: <OwnerEditTablePage /> },
+          { path: "services", element: <OwnerServiceListPage /> },
+          { path: "services/create", element: <OwnerCreateServicePage /> },
+          { path: "services/edit/:id", element: <OwnerEditServicePage /> },
           { path: "dashboard", element: <OwnerDashboardPage /> },
           { path: "owner4", element: <Owner4 /> },
         ],
