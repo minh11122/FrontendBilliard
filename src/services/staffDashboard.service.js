@@ -30,8 +30,8 @@ export async function approveClub(id) {
     return res.data;
 }
 
-export async function rejectClub(id) {
-    const res = await axios.patch(`${BASE_URL}/clubs/${id}/reject`, {}, {
+export async function rejectClub(id, reason = "") {
+    const res = await axios.patch(`${BASE_URL}/clubs/${id}/reject`, { reason }, {
         headers: authHeader()
     });
     return res.data;

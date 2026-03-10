@@ -166,8 +166,15 @@ export const SystemStaff1 = () => {
   const handleApprove = (id) =>
     withAction(id, "approve", "Đã duyệt CLB thành công!", "Lỗi khi duyệt CLB", () => approveClub(id));
 
-  const handleReject = (id) =>
-    withAction(id, "reject", "Đã từ chối CLB.", "Lỗi khi từ chối CLB", () => rejectClub(id));
+  const handleReject = (id) => {
+    const reason = window.prompt("Vui lòng nhập lý do từ chối:");
+    if (reason === null) return; // user cancelled
+    if (!reason.trim()) {
+      showToast("Vui lòng nhập lý do từ chối", "error");
+      return;
+    }
+    withAction(id, "reject", "Đã từ chối CLB.", "Lỗi khi từ chối CLB", () => rejectClub(id, reason.trim()));
+  };
 
   const handleLock = (id) =>
     withAction(id, "lock", "Đã khoá CLB.", "Lỗi khi khoá CLB", () => lockClub(id));
