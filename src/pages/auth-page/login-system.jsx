@@ -14,6 +14,7 @@ export function LoginSystem() {
   const { login: loginContext } = useContext(AuthContext);
 
   const savedEmail = Cookies.get("rememberedEmail") || "";
+  const savedPassword = Cookies.get("rememberedPassword") || "";
 
   const validationSchema = Yup.object({
     email: Yup.string()
@@ -27,7 +28,7 @@ export function LoginSystem() {
   const formik = useFormik({
     initialValues: {
       email: savedEmail,
-      password: "",
+      password: savedPassword,
       rememberMe: !!savedEmail,
     },
     validationSchema,
@@ -39,10 +40,13 @@ export function LoginSystem() {
 
         loginContext(token);
 
+        // remember me
         if (values.rememberMe) {
           Cookies.set("rememberedEmail", values.email, { expires: 7 });
+          Cookies.set("rememberedPassword", values.password, { expires: 7 });
         } else {
           Cookies.remove("rememberedEmail");
+          Cookies.remove("rememberedPassword");
         }
 
         toast.success("Đăng nhập thành công!");
@@ -88,9 +92,7 @@ export function LoginSystem() {
           <form onSubmit={formik.handleSubmit} className="space-y-5">
             {/* Email */}
             <div>
-              <label className="text-sm font-medium text-gray-700">
-                Email
-              </label>
+              <label className="text-sm font-medium text-gray-700">Email</label>
               <div className="relative mt-1">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
