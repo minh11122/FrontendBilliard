@@ -43,7 +43,8 @@ import {
   SystemStaff3,
   SystemStaff4,
   ProfilePage,
-  AdminSettings
+  AdminSettings,
+  SettingPage
 } from "@/pages";
 
 export const router = createBrowserRouter([
@@ -103,6 +104,7 @@ export const router = createBrowserRouter([
           { path: "services/create", element: <OwnerCreateServicePage /> },
           { path: "services/edit/:id", element: <OwnerEditServicePage /> },
           { path: "dashboard", element: <OwnerDashboardPage /> },
+          { path: "settings", element: <SettingPage /> }
         ],
       },
       {
