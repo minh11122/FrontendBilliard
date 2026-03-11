@@ -1,0 +1,388 @@
+import { useState, useEffect, useContext, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { MapPin, Clock, Calendar, ChevronRight, X, Star, AlertCircle, CheckCircle2, Loader2, CalendarClock } from "lucide-react";
+import { getMyBookings } from "@/services/booking.service";
+import { AuthContext } from "@/context/AuthContext";
+import toast from "react-hot-toast";
+
+const STATUS_CONFIG = {
+  Pending: { label: "Chờ thanh toán", color: "bg-amber-100 text-amber-700 border-amber-200", dot: "bg-amber-500" },
+  Booked: { label: "Đã đặt", color: "bg-emerald-100 text-emerald-700 border-emerald-200", dot: "bg-emerald-500" },
+  Playing: { label: "Đang chơi", color: "bg-blue-100 text-blue-700 border-blue-200", dot: "bg-blue-500" },
+  Cancelled: { label: "Đã hủy", color: "bg-red-100 text-red-700 border-red-200", dot: "bg-red-500" },
+  Completed: { label: "Hoàn thành", color: "bg-slate-100 text-slate-600 border-slate-200", dot: "bg-slate-500" },
+};
+
+const TABS = [
+  { key: "all", label: "Tất cả" },
+  { key: "Pending", label: "Chờ thanh toán" },
+  { key: "Booked", label: "Đã đặt" },
+  { key: "Cancelled", label: "Đã hủy" },
+  { key: "Completed", label: "Hoàn thành" },
+];
+
+export const BookingHistoryPage = () => {
+  const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("all");
+  const [selectedBooking, setSelectedBooking] = useState(null);
+
+  useEffect(() => {
+    if (!user) {
+      toast("Vui lòng đăng nhập để xem lịch sử đặt bàn", { icon: "🔒" });
+      navigate("/auth/login");
+      return;
+    }
+    fetchBookings();
+  }, [user]);
+
+  const fetchBookings = async () => {
+    try {
+      setLoading(true);
+      const res = await getMyBookings();
+      if (res.success) setBookings(res.data);
+    } catch (err) {
+      toast.error("Không thể tải lịch sử đặt bàn");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Auto-refresh khi có Pending bookings (để cập nhật countdown + auto-cancel)
+  useEffect(() => {
+    const hasPending = bookings.some(b => b.status === "Pending" && b.held_until);
+    if (!hasPending) return;
+
+    const interval = setInterval(() => {
+      // Kiểm tra nếu có booking nào vừa hết hạn → refresh
+      const expired = bookings.some(b =>
+        b.status === "Pending" && b.held_until && new Date(b.held_until) <= new Date()
+      );
+      if (expired) fetchBookings();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [bookings]);
+
+  const filtered = activeTab === "all" ? bookings : bookings.filter(b => b.status === activeTab);
+  const tabCounts = TABS.map(t => ({
+    ...t,
+    count: t.key === "all" ? bookings.length : bookings.filter(b => b.status === t.key).length
+  }));
+
+  const handleCardClick = (booking) => {
+    if (booking.status === "Pending") {
+      // Redirect to payment page with booking data
+      // Tính số phút còn lại từ held_until
+      const remainingMs = booking.held_until ? new Date(booking.held_until).getTime() - Date.now() : 0;
+      const remainingMins = Math.max(0, Math.ceil(remainingMs / 60000));
+
+      navigate(`/payment/${booking._id}`, {
+        state: {
+          booking: {
+            ...booking,
+            depositPercent: 30,
+            totalBill: booking.total_bill,
+            deposit: booking.deposit
+          },
+          table: booking.table_info,
+          club: booking.club,
+          holdMinutes: remainingMins,
+          heldUntil: booking.held_until
+        }
+      });
+    } else {
+      setSelectedBooking(booking);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex justify-center items-center">
+        <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-8 gap-4">
+          <div>
+            <h1 className="text-3xl font-black text-slate-900">Lịch sử đặt bàn</h1>
+            <p className="text-slate-500 mt-1">Quản lý và xem lại tất cả các hoạt động đặt bàn bida của bạn.</p>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-2 mb-8 overflow-x-auto no-scrollbar pb-1">
+          {tabCounts.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all border ${activeTab === tab.key
+                ? "bg-emerald-500 text-white border-emerald-500 shadow-md"
+                : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
+                }`}
+            >
+              {tab.label}
+              <span className={`text-xs px-2 py-0.5 rounded-full font-black ${activeTab === tab.key
+                ? "bg-white/20 text-white"
+                : "bg-slate-100 text-slate-500"
+                }`}>
+                {tab.count}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Booking Cards */}
+        <div className="space-y-4">
+          {filtered.length === 0 ? (
+            <div className="text-center py-20 bg-white rounded-2xl border">
+              <CalendarClock className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+              <p className="text-lg text-slate-500 font-medium">Chưa có đơn đặt bàn nào</p>
+              <button onClick={() => navigate("/booking")} className="mt-4 text-emerald-600 font-bold hover:underline">
+                Đặt bàn ngay →
+              </button>
+            </div>
+          ) : filtered.map(booking => {
+            const sc = STATUS_CONFIG[booking.status] || STATUS_CONFIG.Pending;
+            return (
+              <div
+                key={booking._id}
+                onClick={() => handleCardClick(booking)}
+                className="bg-white rounded-2xl border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer p-5 flex flex-col sm:flex-row sm:items-center gap-4"
+              >
+                {/* Club Avatar */}
+                <div className="w-14 h-14 rounded-xl bg-slate-100 overflow-hidden flex-shrink-0 border">
+                  {booking.club?.avatar ? (
+                    <img src={booking.club.avatar} className="w-full h-full object-cover" alt="" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-slate-400 font-black text-lg">
+                      {booking.club?.name?.charAt(0) || "B"}
+                    </div>
+                  )}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-bold text-slate-900 truncate">{booking.club?.name || "CLB Billiard"}</h3>
+                    <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${sc.color}`}>
+                      {sc.label}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" /> {booking.start_time} - {booking.end_time}, {booking.play_date ? new Date(booking.play_date).toLocaleDateString("vi-VN") : "—"}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      🎱 Bàn {booking.table_info?.table_number || "—"} ({booking.table_info?.table_type || "Pool"})
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <MapPin className="w-3 h-3" /> {booking.club?.address || "—"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Price + Action */}
+                <div className="flex items-center gap-4 flex-shrink-0 sm:flex-col sm:items-end sm:gap-1">
+                  <div className="text-right">
+                    <p className="text-[10px] text-slate-400 uppercase font-bold">Tổng tiền</p>
+                    <p className="text-lg font-black text-emerald-600">{(booking.total_bill || 0).toLocaleString()}đ</p>
+                  </div>
+                  {booking.status === "Pending" && booking.held_until && (
+                    <HoldCountdown heldUntil={booking.held_until} />
+                  )}
+                  {booking.status === "Pending" && (
+                    <span className="text-xs font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded-lg border border-amber-200">
+                      Thanh toán →
+                    </span>
+                  )}
+                  {(booking.status === "Booked" || booking.status === "Completed" || booking.status === "Cancelled") && (
+                    <span className="text-xs font-bold text-slate-500 flex items-center gap-1">
+                      Chi tiết <ChevronRight className="w-3 h-3" />
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Detail Modal */}
+      {selectedBooking && (
+        <BookingDetailModal booking={selectedBooking} onClose={() => setSelectedBooking(null)} />
+      )}
+    </div>
+  );
+};
+
+// ===== HOLD COUNTDOWN COMPONENT =====
+const HoldCountdown = ({ heldUntil }) => {
+  const [timeLeft, setTimeLeft] = useState(0);
+
+  useEffect(() => {
+    const target = new Date(heldUntil).getTime();
+
+    const updateTimer = () => {
+      const remaining = Math.max(0, Math.floor((target - Date.now()) / 1000));
+      setTimeLeft(remaining);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [heldUntil]);
+
+  if (timeLeft <= 0) {
+    return (
+      <span className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded border border-red-200">
+        Hết hạn
+      </span>
+    );
+  }
+
+  const m = Math.floor(timeLeft / 60);
+  const s = timeLeft % 60;
+  const display = `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  const isWarning = timeLeft <= 60;
+
+  return (
+    <span className={`text-xs font-black px-2.5 py-1 rounded-lg border flex items-center gap-1 tabular-nums ${isWarning
+      ? "text-red-600 bg-red-50 border-red-200 animate-pulse"
+      : "text-amber-600 bg-amber-50 border-amber-200"
+      }`}>
+      <Clock className="w-3 h-3" /> {display}
+    </span>
+  );
+};
+
+// ===== DETAIL MODAL =====
+const BookingDetailModal = ({ booking, onClose }) => {
+  const sc = STATUS_CONFIG[booking.status] || STATUS_CONFIG.Pending;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
+          <h3 className="font-bold text-slate-900 text-lg">Chi tiết đặt bàn</h3>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-100 transition-colors">
+            <X className="w-5 h-5 text-slate-400" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+
+          {/* Status Badge */}
+          <div className="flex justify-center">
+            <span className={`text-sm font-bold px-4 py-1.5 rounded-full border ${sc.color}`}>
+              ● {sc.label}
+            </span>
+          </div>
+
+          {/* Cancelled Banner */}
+          {booking.status === "Cancelled" && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-bold text-red-800 text-sm">Đặt bàn đã bị hủy</p>
+                  <p className="text-xs text-red-600 mt-1">
+                    Mã đặt: #{booking.code_number}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Completed Banner */}
+          {booking.status === "Completed" && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="w-5 h-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-bold text-emerald-800 text-sm">Buổi chơi đã hoàn thành</p>
+                  <p className="text-xs text-emerald-600 mt-1">
+                    Mã đặt: #{booking.code_number}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Club Info */}
+          <div className="flex items-start gap-3 bg-slate-50 p-4 rounded-xl border">
+            <div className="w-12 h-12 rounded-xl bg-white overflow-hidden border flex-shrink-0">
+              {booking.club?.avatar ? (
+                <img src={booking.club.avatar} className="w-full h-full object-cover" alt="" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-slate-400 font-black">
+                  {booking.club?.name?.charAt(0) || "B"}
+                </div>
+              )}
+            </div>
+            <div>
+              <p className="font-bold text-slate-900">{booking.club?.name || "CLB Billiard"}</p>
+              <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                <MapPin className="w-3 h-3" /> {booking.club?.address || "—"}
+              </p>
+            </div>
+          </div>
+
+          {/* Booking code */}
+          <div className="text-center">
+            <p className="text-xs text-slate-400 uppercase font-bold">Mã đặt bàn</p>
+            <p className="text-lg font-black text-slate-900 tracking-wider mt-1">#{booking.code_number}</p>
+          </div>
+
+          {/* Details Grid */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-slate-50 rounded-xl p-4 border">
+              <p className="text-[10px] text-slate-400 uppercase font-bold mb-1">📅 Ngày</p>
+              <p className="font-bold text-sm text-slate-900">
+                {booking.play_date ? new Date(booking.play_date).toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "numeric" }) : "—"}
+              </p>
+            </div>
+            <div className="bg-slate-50 rounded-xl p-4 border">
+              <p className="text-[10px] text-slate-400 uppercase font-bold mb-1">🕐 Giờ nhận</p>
+              <p className="font-bold text-sm text-slate-900">{booking.start_time} - {booking.end_time}</p>
+            </div>
+            <div className="bg-slate-50 rounded-xl p-4 border">
+              <p className="text-[10px] text-slate-400 uppercase font-bold mb-1">🎱 Số bàn</p>
+              <p className="font-bold text-sm text-slate-900">Bàn {booking.table_info?.table_number || "—"}</p>
+            </div>
+            <div className="bg-slate-50 rounded-xl p-4 border">
+              <p className="text-[10px] text-slate-400 uppercase font-bold mb-1">🏷️ Loại bàn</p>
+              <p className="font-bold text-sm text-slate-900">Bàn {booking.table_info?.table_type || "Pool"}</p>
+            </div>
+          </div>
+
+          {/* Price Summary */}
+          <div className="border-t pt-5 space-y-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-slate-500">Tiền bàn ({booking.hour_price?.toLocaleString()}đ/giờ)</span>
+              <span className="font-medium text-slate-900">{(booking.total_bill || 0).toLocaleString()}đ</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-slate-500">Tiền cọc đã thanh toán</span>
+              <span className="font-medium text-slate-900">{(booking.deposit || 0).toLocaleString()}đ</span>
+            </div>
+            <div className="flex justify-between font-bold pt-3 border-t border-dashed">
+              <span className="text-slate-700">Tổng cộng</span>
+              <span className="text-xl text-emerald-600">{(booking.total_bill || 0).toLocaleString()}đ</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

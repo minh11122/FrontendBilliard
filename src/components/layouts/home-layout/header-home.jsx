@@ -19,7 +19,7 @@ export const HeaderHome = () => {
   return (
     <header className="w-full bg-white border-b shadow-sm relative z-[9999]">
       <div className="container mx-auto px-6 py-3 flex items-center justify-between">
-        
+
         {/* Logo */}
         <Link to="/" className="hover:text-orange-500">
           <div className="flex items-center gap-2 font-bold text-xl">
@@ -71,6 +71,10 @@ export const HeaderHome = () => {
 
           <Link to="/ranking" className="hover:text-orange-500">
             Xếp hạng
+          </Link>
+
+          <Link to="/my-bookings" className="hover:text-orange-500">
+            Đặt bàn
           </Link>
         </nav>
 

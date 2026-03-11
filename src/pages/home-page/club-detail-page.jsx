@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { MapPin, Star, Clock, Wifi, Coffee, CigaretteOff, ChevronLeft, ChevronRight, Info, MessageSquare } from "lucide-react";
 import { getClubById } from "@/services/club.service";
+import { createBooking } from "@/services/booking.service";
 import { AuthContext } from "@/context/AuthContext";
 import toast from "react-hot-toast";
 
@@ -89,7 +90,7 @@ export const ClubDetailPage = () => {
     }
   }, [timeOptionsStr, selectedStartTime]);
 
-  const handleBooking = () => {
+  const handleBooking = async () => {
     if (!user) {
       toast("Vui lòng đăng nhập để đặt bàn", { icon: "🔒" });
       navigate("/auth/login");
@@ -118,8 +119,29 @@ export const ClubDetailPage = () => {
       return;
     }
 
-    toast.success("Đặt bàn thành công!");
-    // You can add API call here
+    // Gọi API tạo booking
+    try {
+      const res = await createBooking({
+        table_id: selectedTable._id,
+        club_id: id,
+        play_date: selectedDate,
+        start_time: selectedStartTime,
+        end_time: endTime,
+        duration: selectedDuration
+      });
+
+      if (res.success) {
+        // Chuyển sang trang thanh toán
+        navigate("/payment/" + res.data.booking._id, {
+          state: res.data
+        });
+      } else {
+        toast.error(res.message || "Đặt bàn thất bại");
+      }
+    } catch (err) {
+      const msg = err?.response?.data?.message || "Lỗi đặt bàn, vui lòng thử lại";
+      toast.error(msg);
+    }
   };
 
   if (loading) {
@@ -397,7 +419,7 @@ export const ClubDetailPage = () => {
                     </h3>
                     <div className="flex gap-4 text-xs font-medium text-slate-500 bg-white px-3 py-1.5 rounded-lg border shadow-sm">
                       <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded box-border border bg-white"></span> Trống</span>
-                      <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-slate-200"></span> Đã đặt</span>
+                      <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-amber-200 border border-amber-400"></span> Đang giữ chỗ</span>
                       <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded box-border border bg-slate-200 ring-2 ring-inset ring-slate-300"></span> Bảo trì</span>
                       <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded border border-emerald-500 bg-emerald-100"></span> Đang chọn</span>
                     </div>
@@ -408,12 +430,21 @@ export const ClubDetailPage = () => {
                     {availableTables.length > 0 ? availableTables.map(t => (
                       <div
                         key={t._id}
-                        onClick={() => t.status !== "Maintenance" && setSelectedTable(t)}
+                        onClick={() => {
+                          if (t.status === "Maintenance") return;
+                          if (t.status === "Holding") {
+                            toast("Bàn này đang được giữ chỗ", { icon: "⏳" });
+                            return;
+                          }
+                          setSelectedTable(t);
+                        }}
                         className={`w-[140px] h-[80px] rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all relative select-none ${selectedTable?._id === t._id
                           ? "bg-emerald-50 border-2 border-emerald-500 shadow-md text-emerald-700"
-                          : t.status === "Maintenance"
-                            ? "bg-slate-100 border-2 border-slate-200 text-slate-400 cursor-not-allowed opacity-80"
-                            : "bg-white border-2 border-slate-100 text-slate-700 shadow-sm hover:border-emerald-300 hover:shadow-md hover:-translate-y-0.5"
+                          : t.status === "Holding"
+                            ? "bg-amber-50 border-2 border-amber-400 text-amber-700 cursor-not-allowed"
+                            : t.status === "Maintenance"
+                              ? "bg-slate-100 border-2 border-slate-200 text-slate-400 cursor-not-allowed opacity-80"
+                              : "bg-white border-2 border-slate-100 text-slate-700 shadow-sm hover:border-emerald-300 hover:shadow-md hover:-translate-y-0.5"
                           }`}
                       >
                         {selectedTable?._id === t._id && (
@@ -421,9 +452,12 @@ export const ClubDetailPage = () => {
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                           </div>
                         )}
+                        {t.status === "Holding" && (
+                          <div className="absolute -top-2 -right-2 w-6 h-6 bg-amber-500 rounded-full text-white flex items-center justify-center shadow-md text-xs">⏳</div>
+                        )}
                         <span className="font-bold text-lg">{t.table_number}</span>
                         <span className="text-[10px] mt-1 text-slate-400 font-bold tracking-wide uppercase">
-                          {t.status === "Maintenance" ? "Bảo trì" : `Bàn ${selectedTableType}`}
+                          {t.status === "Holding" ? "Đang giữ chỗ" : t.status === "Maintenance" ? "Bảo trì" : `Bàn ${selectedTableType}`}
                         </span>
                       </div>
                     )) : (

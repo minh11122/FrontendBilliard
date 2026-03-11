@@ -17,6 +17,8 @@ import {
   TournamentPage,
   BookingPage,
   ClubDetailPage,
+  PaymentPage,
+  BookingHistoryPage,
   Forbidden,
   AccPendingManagement,
   ShopManagement,
@@ -63,6 +65,8 @@ export const router = createBrowserRouter([
           { path: "/tournament", element: <TournamentPage /> },
           { path: "/booking", element: <BookingPage /> },
           { path: "/booking/:id", element: <ClubDetailPage /> },
+          { path: "/payment/:bookingId", element: <PaymentPage /> },
+          { path: "/my-bookings", element: <BookingHistoryPage /> },
           { path: "/register-owner-account", element: <RegisterOwnerAccount /> },
         ],
       },
@@ -73,7 +77,7 @@ export const router = createBrowserRouter([
           { path: "list-user", element: <AccountManagement /> },
           { path: "list-acc-pending", element: <AccPendingManagement /> },
           { path: "list-shop", element: <ShopManagement /> },
-          
+
         ],
       },
       {
