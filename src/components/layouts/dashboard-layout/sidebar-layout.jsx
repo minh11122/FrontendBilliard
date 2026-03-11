@@ -1,29 +1,29 @@
-// src/components/admin/SidebarAdmin.jsx
 import { useState, useContext } from "react";
-import { useLocation, useNavigate, NavLink } from "react-router-dom";
-import { AuthContext } from "@/context/AuthContext";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
-  LayoutDashboard,
+  UsersRound,
+  UserCheck,
   Store,
   Menu,
   X,
-  ChevronRight,
-  LogOut,
-  HelpCircle,
   Settings,
-  UsersRound,
-  Building2,
-  UserCheck,
-  UserPlus,
-  Home,
+  LogOut,
+  Shield,
+  BarChart3
 } from "lucide-react";
+import { AuthContext } from "@/context/AuthContext";
 
 export const SidebarAdmin = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { logout } = useContext(AuthContext);
-  const navigate = useNavigate();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useContext(AuthContext);
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
 
   const navigation = [
     {
@@ -41,20 +41,16 @@ export const SidebarAdmin = () => {
       href: "/admin/list-shop",
       icon: Store,
     },
-    
+    {
+      name: "Thống Kê",
+      href: "/admin/thongke",
+      icon: BarChart3,
+    },
   ];
-
-  const handleLogout = () => {
-    logout();
-    navigate("/");
-  };
-
-  const handleProfile = () => navigate("/profile");
-  const handleSupport = () => navigate("/support");
 
   return (
     <>
-      {/* Mobile backdrop */}
+      {/* Overlay mobile */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/50 lg:hidden"
@@ -64,79 +60,104 @@ export const SidebarAdmin = () => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-72 transform border-r border-border bg-card transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`
+        fixed inset-y-0 left-0 z-50 flex h-screen w-64 flex-col
+        border-r border-slate-200 bg-white shadow-sm
+        transition-transform duration-300 ease-in-out
+        lg:sticky lg:top-0 lg:translate-x-0
+        ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
+      `}
       >
-        <div className="flex h-full flex-col">
-          {/* Logo & Brand */}
-          <div className="flex h-16 items-center justify-between border-b border-border px-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500">
-                <Store className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <span className="text-lg font-semibold text-foreground">
-                  Billard
-                </span>
-                <p className="text-xs text-muted-foreground">Quản trị viên</p>
-              </div>
+        {/* Logo */}
+        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 shadow-md shadow-emerald-200">
+              <Shield className="h-5 w-5 text-white" />
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden"
-              onClick={() => setSidebarOpen(false)}
-            >
-              <X className="h-5 w-5" />
-            </Button>
+
+            <div>
+              <p className="text-sm font-bold text-slate-900">
+                BilliardsMaster
+              </p>
+              <p className="text-[11px] text-slate-400">Admin Panel</p>
+            </div>
           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+          <button
+            className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
+          <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+            Quản trị
+          </p>
+
+          <ul className="space-y-0.5">
             {navigation.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.href;
+
               return (
-                <NavLink
-                  key={item.name}
-                  to={item.href}
-                  className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                    isActive
-                      ? "bg-orange-500/10 text-orange-600"
-                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                  }`}
-                  onClick={() => setSidebarOpen(false)} // Đóng sidebar trên mobile khi click
-                >
-                  <Icon className="h-5 w-5 shrink-0" />
-                  <span className="flex-1">{item.name}</span>
-                  {isActive && <ChevronRight className="h-4 w-4" />}
-                </NavLink>
+                <li key={item.name}>
+                  <NavLink
+                    to={item.href}
+                    onClick={() => setSidebarOpen(false)}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
+                      isActive
+                        ? "bg-emerald-50 text-emerald-600"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    }`}
+                  >
+                    <Icon
+                      className={`h-4 w-4 shrink-0 ${
+                        isActive ? "text-emerald-500" : "text-slate-400"
+                      }`}
+                    />
+
+                    <span className="flex-1">{item.name}</span>
+
+                    {isActive && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    )}
+                  </NavLink>
+                </li>
               );
             })}
-          </nav>
+          </ul>
+        </nav>
 
-          {/* Bottom Actions */}
-          <div className="border-t border-border p-3 space-y-1">
-           
-           
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3 text-destructive hover:bg-destructive/10 hover:text-destructive"
-              onClick={handleLogout}
-            >
-              <LogOut className="h-5 w-5" />
-              <span className="text-sm font-medium">Đăng xuất</span>
-            </Button>
-          </div>
+        {/* Footer */}
+        <div className="border-t border-slate-100 px-3 py-3">
+
+          <button
+            onClick={() => navigate("/admin/settings")}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+          >
+            <Settings className="h-4 w-4 text-slate-400" />
+            <span>Cài đặt</span>
+          </button>
+
+          <button
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-red-500 hover:bg-red-50 hover:text-red-600"
+          >
+            <LogOut className="h-4 w-4" />
+            <span>Đăng xuất</span>
+          </button>
+
         </div>
       </aside>
 
-      {/* Mobile menu button */}
+      {/* Mobile menu */}
       <Button
         variant="ghost"
         size="icon"
-        className="fixed left-4 top-4 z-30 lg:hidden"
+        className="fixed left-4 top-4 z-30 text-slate-700 hover:text-slate-900 lg:hidden"
         onClick={() => setSidebarOpen(true)}
       >
         <Menu className="h-5 w-5" />

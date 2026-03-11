@@ -9,11 +9,11 @@ export const FooterHome = () => {
           {/* Left */}
           <div>
             <div className="flex items-center gap-2 font-bold text-xl mb-4">
-              <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center text-white">
+              <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center text-white">
                 🎮
               </div>
               <span>
-                Billiard<span className="text-orange-500">Master</span>
+                Billiard<span className="text-green-500">Master</span>
               </span>
             </div>
             <p className="text-gray-500 leading-relaxed">
@@ -29,13 +29,13 @@ export const FooterHome = () => {
             </h3>
             <ul className="space-y-3 text-gray-500">
               <li>
-                <a href="#" className="hover:text-orange-500">Trang chủ</a>
+                <a href="#" className="hover:text-green-500">Trang chủ</a>
               </li>
               <li>
-                <a href="#" className="hover:text-orange-500">Về chúng tôi</a>
+                <a href="#" className="hover:text-green-500">Về chúng tôi</a>
               </li>
               <li>
-                <a href="#" className="hover:text-orange-500">Quy định giải đấu</a>
+                <a href="#" className="hover:text-green-500">Quy định giải đấu</a>
               </li>
             </ul>
           </div>

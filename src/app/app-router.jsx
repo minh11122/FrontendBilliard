@@ -9,6 +9,8 @@ import {
   DashboardOwnerLayout
 } from "@/components/layouts";
 
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+
 import {
   LoginForm,
   RegisterForm,
@@ -23,12 +25,16 @@ import {
   AccPendingManagement,
   ShopManagement,
   AccountManagement,
-  LoginClub,
   LoginSystem,
   RegisterOwnerAccount,
-  Owner1,
-  Owner2,
-  Owner3,
+  OwnerSelectClubPage,
+  OwnerTableListPage,
+  OwnerCreateTablePage,
+  OwnerEditTablePage,
+  OwnerServiceListPage,
+  OwnerCreateServicePage,
+  OwnerEditServicePage,
+  OwnerDashboardPage,
   Staff1,
   Staff2,
   Staff3,
@@ -37,7 +43,10 @@ import {
   SystemStaff1,
   SystemStaff2,
   SystemStaff3,
-  SystemStaff4
+  SystemStaff4,
+  ProfilePage,
+  AdminSettings,
+  SettingPage
 } from "@/pages";
 
 export const router = createBrowserRouter([
@@ -53,7 +62,6 @@ export const router = createBrowserRouter([
           { path: "register", element: <RegisterForm /> },
           { path: "forgot-password", element: <ForgotPasswordForm /> },
           { path: "login-system/adminstration", element: <LoginSystem /> },
-          { path: "login-club/club", element: <LoginClub /> },
           { path: "forbidden", element: <Forbidden /> },
         ],
       },
@@ -68,7 +76,12 @@ export const router = createBrowserRouter([
           { path: "/payment/:bookingId", element: <PaymentPage /> },
           { path: "/my-bookings", element: <BookingHistoryPage /> },
           { path: "/register-owner-account", element: <RegisterOwnerAccount /> },
+          { path: "/profile", element: <ProfilePage /> },
         ],
+      },
+      {
+        path: "owner/select-club",
+        element: <OwnerSelectClubPage />
       },
       {
         path: "admin",
@@ -78,15 +91,25 @@ export const router = createBrowserRouter([
           { path: "list-acc-pending", element: <AccPendingManagement /> },
           { path: "list-shop", element: <ShopManagement /> },
 
+          { path: "thongke", element: <AdminSettings /> },
         ],
       },
       {
         path: "owner",
-        element: <DashboardOwnerLayout />,
+        element: (
+          <ProtectedRoute allowedRoles={["OWNER"]}>
+            <DashboardOwnerLayout />
+          </ProtectedRoute>
+        ),
         children: [
-          { path: "owner1", element: <Owner1 /> },
-          { path: "owner2", element: <Owner2 /> },
-          { path: "owner3", element: <Owner3 /> },
+          { path: "tables", element: <OwnerTableListPage /> },
+          { path: "tables/create", element: <OwnerCreateTablePage /> },
+          { path: "tables/edit/:id", element: <OwnerEditTablePage /> },
+          { path: "services", element: <OwnerServiceListPage /> },
+          { path: "services/create", element: <OwnerCreateServicePage /> },
+          { path: "services/edit/:id", element: <OwnerEditServicePage /> },
+          { path: "dashboard", element: <OwnerDashboardPage /> },
+          { path: "settings", element: <SettingPage /> }
         ],
       },
       {

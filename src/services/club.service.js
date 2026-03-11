@@ -36,11 +36,23 @@ export const registerClub = async (data) => {
   }
 };
 
-// Hỗ trợ cả named export và default export để không làm lỗi code của các thành viên khác
 export const clubService = {
   getAllClubs,
   getClubById,
   registerClub
 };
+
+
+export async function getOwnerClubs() {
+  const token = getAuthToken();
+
+  const response = await axios.get(`${API_BASE_URL}/owner/clubs`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  return response.data;
+}
 
 export default clubService;

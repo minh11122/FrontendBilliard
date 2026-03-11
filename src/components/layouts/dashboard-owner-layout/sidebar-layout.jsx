@@ -16,7 +16,11 @@ import {
   Building2,
   UserCheck,
   UserPlus,
+  CircleDot,
   Home,
+  User,
+  ConciergeBell,
+  Trophy
 } from "lucide-react";
 
 export const SidebarOwner = () => {
@@ -25,26 +29,41 @@ export const SidebarOwner = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const userFullname = localStorage.getItem("user_fullname") || "Chủ quán";
+  const clubName = localStorage.getItem("selected_club_name") || "Billiard Club";
+
   const navigation = [
     {
-      name: "Danh sách tài khoản",
-      href: "/owner/owner1",
-      icon: UsersRound,
+      name: "Tổng quan",
+      href: "/owner/dashboard",
+      icon: LayoutDashboard,
     },
     {
-      name: "Tài khoản chờ duyệt",
-      href: "/owner/owner2",
-      icon: UserCheck,
+      name: "Quản lý bàn",
+      href: "/owner/tables",
+      icon: CircleDot,
     },
     {
-      name: "Danh sách cửa hàng",
-      href: "/owner/owner3",
-      icon: Store,
+      name: "Quản lý nhân viên",
+      href: "/owner/staff",
+      icon: User,
     },
-
+    {
+      name: "Quản lý Dịch vụ",
+      href: "/owner/services",
+      icon: ConciergeBell,
+    },
+    {
+      name: "Quản lý Giải đấu",
+      href: "/owner/tournaments",
+      icon: Trophy,
+    },
   ];
 
   const handleLogout = () => {
+    localStorage.removeItem("user_fullname");
+    localStorage.removeItem("selected_club_id");
+    localStorage.removeItem("selected_club_name");
     logout();
     navigate("/");
   };
@@ -75,10 +94,10 @@ export const SidebarOwner = () => {
                 <Store className="h-5 w-5 text-white" />
               </div>
               <div>
-                <span className="text-lg font-semibold text-foreground">
-                  Billard
+                <span className="text-lg font-semibold text-foreground truncate block max-w-[160px]">
+                  {clubName}
                 </span>
-                <p className="text-xs text-muted-foreground">Quản trị viên</p>
+                <p className="text-xs text-muted-foreground truncate max-w-[160px]">{userFullname}</p>
               </div>
             </div>
             <Button
@@ -101,8 +120,8 @@ export const SidebarOwner = () => {
                   key={item.name}
                   to={item.href}
                   className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive
-                      ? "bg-orange-500/10 text-orange-600"
-                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                    ? "bg-orange-500/10 text-orange-600"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
                     }`}
                   onClick={() => setSidebarOpen(false)} // Đóng sidebar trên mobile khi click
                 >

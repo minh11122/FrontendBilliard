@@ -16,6 +16,7 @@ export function LoginForm() {
 
   // ✅ load remembered email
   const savedEmail = Cookies.get("rememberedEmail") || "";
+  const savedPassword = Cookies.get("rememberedPassword") || "";
 
   // ✅ validation
   const validationSchema = Yup.object({
@@ -31,7 +32,7 @@ export function LoginForm() {
   const formik = useFormik({
     initialValues: {
       email: savedEmail,
-      password: "",
+      password: savedPassword,
       rememberMe: !!savedEmail,
     },
     validationSchema,
@@ -46,15 +47,17 @@ export function LoginForm() {
         // remember me
         if (values.rememberMe) {
           Cookies.set("rememberedEmail", values.email, { expires: 7 });
+          Cookies.set("rememberedPassword", values.password, { expires: 7 });
         } else {
           Cookies.remove("rememberedEmail");
+          Cookies.remove("rememberedPassword");
         }
 
         toast.success("Đăng nhập thành công!");
 
         // 🔥 CHIA ROLE
         if (role === "OWNER") {
-          navigate("/owner/owner1");
+          navigate("/owner/select-club");
         } else if (role === "STAFF_CLUB") {
           navigate("/staff/staff1");
         } else if (role === "CUSTOMER") {

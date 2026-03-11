@@ -7,7 +7,6 @@ const baseURL = import.meta.env.VITE_API_URL || "http://localhost:9999/api";
 
 const api = axios.create({
   baseURL,
-  headers: { "Content-Type": "application/json" },
   timeout: 15000, // 15 seconds
 });
 
@@ -17,6 +16,12 @@ api.interceptors.request.use(
     const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    // Nếu data là FormData (upload file), để Axios tự set Content-Type (multipart/form-data + boundary)
+    // Nếu không, mặc định là application/json
+    if (!(config.data instanceof FormData)) {
+      config.headers["Content-Type"] = "application/json";
     }
 
     // Bắt đầu loading
