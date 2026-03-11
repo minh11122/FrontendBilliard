@@ -1,4 +1,11 @@
 import api from "../lib/axios";
+import axios from "axios";
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:9999/api";
+
+function getAuthToken() {
+  return localStorage.getItem("token");
+}
 
 // Lấy tất cả câu lạc bộ (có hỗ trợ params tìm kiếm/lọc)
 export const getAllClubs = async (params = {}) => {
@@ -46,7 +53,7 @@ export const clubService = {
 export async function getOwnerClubs() {
   const token = getAuthToken();
 
-  const response = await axios.get(`${API_BASE_URL}/owner/clubs`, {
+  const response = await axios.get(`${API_BASE_URL}/clubs/owner/clubs`, {
     headers: {
       Authorization: `Bearer ${token}`
     }
