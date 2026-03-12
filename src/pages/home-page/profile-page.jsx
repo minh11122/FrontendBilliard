@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getProfileById } from "@/services/auth.service";
 import {
   User,
   Mail,
@@ -11,26 +12,30 @@ import {
 } from "lucide-react";
 
 export const ProfilePage = () => {
-  const [user] = useState({
-    fullname: "Nguyễn Văn A",
-    email: "admin@billiards.com",
-    phone: "0123456789",
-    address: "Hà Nội",
-    role: "ADMIN",
-    createdAt: "01/01/2026",
-  });
+  const [user, setUser] = useState(null);
 
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await getProfileById();
+        setUser(res.data.data);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+  if (!user) return <div>Loading...</div>;
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-6xl mx-auto space-y-6">
-
         {/* HEADER */}
         <div className="bg-white rounded-2xl shadow p-6 flex items-center gap-6">
-
           {/* Avatar */}
           <div className="relative">
             <img
-              src="https://i.pravatar.cc/150"
+              src={user.avatar_url || "https://i.pravatar.cc/150"}
               className="w-24 h-24 rounded-full object-cover"
             />
             <button className="absolute bottom-0 right-0 bg-green-600 text-white p-2 rounded-full">
@@ -47,21 +52,18 @@ export const ProfilePage = () => {
             <div className="flex items-center gap-2 mt-2 text-sm">
               <ShieldCheck className="text-green-600" size={16} />
               <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs">
-                {user.role}
+               {user.role_id?.name}
               </span>
             </div>
           </div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">
-
           {/* LEFT PROFILE INFO */}
           <div className="md:col-span-2 bg-white rounded-2xl shadow p-6 space-y-6">
-
             <h3 className="text-lg font-semibold">Thông tin cá nhân</h3>
 
             <div className="grid md:grid-cols-2 gap-4">
-
               {/* Fullname */}
               <div>
                 <label className="text-sm text-gray-500">Họ và tên</label>
@@ -102,7 +104,7 @@ export const ProfilePage = () => {
 
                   <input
                     type="text"
-                    defaultValue={user.phone}
+                    defaultValue={user.phone || ""}
                     className="pl-9 border rounded-xl w-full px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-600"
                   />
                 </div>
@@ -131,10 +133,8 @@ export const ProfilePage = () => {
 
           {/* RIGHT SIDE */}
           <div className="space-y-6">
-
             {/* Account Info */}
             <div className="bg-white rounded-2xl shadow p-6 space-y-4">
-
               <h3 className="font-semibold">Thông tin tài khoản</h3>
 
               <div className="flex items-center gap-3 text-sm">
@@ -149,14 +149,13 @@ export const ProfilePage = () => {
                 <Calendar className="text-green-600" size={18} />
                 <div>
                   <p className="text-gray-500">Ngày tạo</p>
-                  <p className="font-medium">{user.createdAt}</p>
+                  {new Date(user.created_at).toLocaleDateString("vi-VN")}
                 </div>
               </div>
             </div>
 
             {/* Change Password */}
             <div className="bg-white rounded-2xl shadow p-6 space-y-4">
-
               <h3 className="font-semibold flex items-center gap-2">
                 <Key size={18} />
                 Đổi mật khẩu
@@ -184,7 +183,6 @@ export const ProfilePage = () => {
                 Cập nhật mật khẩu
               </button>
             </div>
-
           </div>
         </div>
       </div>
