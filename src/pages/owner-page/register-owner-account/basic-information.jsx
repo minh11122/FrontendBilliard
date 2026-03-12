@@ -4,13 +4,31 @@ import * as Yup from "yup";
 import toast from "react-hot-toast";
 import { Building, MapPin, Phone, FileText, Image } from "lucide-react";
 import { registerClub } from "@/services/club.service";
+import { getProvinces, getDistrictsByProvince } from "@/services/location.service";
+import { useState, useEffect } from "react";
 
 export function RegisterOwnerAccount() {
   const navigate = useNavigate();
+  const [provinces, setProvinces] = useState([]);
+  const [districts, setDistricts] = useState([]);
+
+  useEffect(() => {
+    const fetchProvinces = async () => {
+      try {
+        const res = await getProvinces();
+        setProvinces(res);
+      } catch (error) {
+        console.error("Error fetching provinces:", error);
+      }
+    };
+    fetchProvinces();
+  }, []);
 
   const validationSchema = Yup.object({
     name: Yup.string().required("Vui lòng nhập tên CLB"),
-    address: Yup.string().required("Vui lòng nhập địa chỉ"),
+    province_code: Yup.string().required("Vui lòng chọn Tỉnh/Thành phố"),
+    district_code: Yup.string().required("Vui lòng chọn Quận/Phuyện/Phường"),
+    address: Yup.string().required("Vui lòng nhập địa chỉ chi tiết"),
     phone: Yup.string().required("Vui lòng nhập số điện thoại"),
     tax_code: Yup.string().required("Vui lòng nhập mã số thuế"),
   });
@@ -18,6 +36,8 @@ export function RegisterOwnerAccount() {
   const formik = useFormik({
     initialValues: {
       name: "",
+      province_code: "",
+      district_code: "",
       address: "",
       phone: "",
       tax_code: "",
@@ -43,6 +63,23 @@ export function RegisterOwnerAccount() {
       }
     },
   });
+
+  // Fetch districts when province changes
+  useEffect(() => {
+    const fetchDistricts = async () => {
+      if (formik.values.province_code) {
+        try {
+          const res = await getDistrictsByProvince(formik.values.province_code);
+          setDistricts(res);
+        } catch (error) {
+          console.error("Error fetching districts:", error);
+        }
+      } else {
+        setDistricts([]);
+      }
+    };
+    fetchDistricts();
+  }, [formik.values.province_code]);
 
   // upload ảnh
   const handleImageUpload = (e) => {
@@ -98,9 +135,54 @@ export function RegisterOwnerAccount() {
               </div>
             </div>
 
-            {/* Địa chỉ */}
+            {/* Tỉnh/Thành phố */}
             <div>
-              <label className="text-sm font-medium">Địa chỉ</label>
+              <label className="text-sm font-medium">Tỉnh / Thành phố</label>
+              <div className="relative mt-1">
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 text-gray-400"/>
+                <select
+                  name="province_code"
+                  onChange={formik.handleChange}
+                  value={formik.values.province_code}
+                  className="pl-10 border rounded-xl w-full px-3 py-2.5 appearance-none"
+                >
+                  <option value="">Chọn Tỉnh / Thành phố</option>
+                  {provinces.map((p) => (
+                    <option key={p.code} value={p.code}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+              {formik.touched.province_code && formik.errors.province_code && (
+                <div className="text-red-500 text-xs mt-1">{formik.errors.province_code}</div>
+              )}
+            </div>
+
+            {/* Quận/Huyện/Phường */}
+            <div>
+              <label className="text-sm font-medium">Quận / Huyện / Phường</label>
+              <div className="relative mt-1">
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 text-gray-400"/>
+                <select
+                  name="district_code"
+                  onChange={formik.handleChange}
+                  value={formik.values.district_code}
+                  className="pl-10 border rounded-xl w-full px-3 py-2.5 appearance-none"
+                  disabled={!formik.values.province_code}
+                >
+                  <option value="">Chọn Quận / Huyện / Phường</option>
+                  {districts.map((d) => (
+                    <option key={d.code} value={d.code}>{d.name_with_type}</option>
+                  ))}
+                </select>
+              </div>
+              {formik.touched.district_code && formik.errors.district_code && (
+                <div className="text-red-500 text-xs mt-1">{formik.errors.district_code}</div>
+              )}
+            </div>
+
+            {/* Địa chỉ chi tiết */}
+            <div>
+              <label className="text-sm font-medium">Địa chỉ chi tiết</label>
               <div className="relative mt-1">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 text-gray-400"/>
                 <input
@@ -108,9 +190,12 @@ export function RegisterOwnerAccount() {
                   onChange={formik.handleChange}
                   value={formik.values.address}
                   className="pl-10 border rounded-xl w-full px-3 py-2.5"
-                  placeholder="Hà Nội..."
+                  placeholder="Số nhà, tên đường..."
                 />
               </div>
+              {formik.touched.address && formik.errors.address && (
+                <div className="text-red-500 text-xs mt-1">{formik.errors.address}</div>
+              )}
             </div>
 
             {/* Phone */}

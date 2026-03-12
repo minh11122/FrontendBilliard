@@ -1,29 +1,59 @@
+import api from "../lib/axios";
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:9999/api/clubs"; // sửa theo port/back-end của bạn
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:9999/api";
 
-// token lấy từ localStorage (sau khi login)
 function getAuthToken() {
   return localStorage.getItem("token");
 }
 
-export async function registerClub(data) {
-  const token = getAuthToken();
+// Lấy tất cả câu lạc bộ (có hỗ trợ params tìm kiếm/lọc)
+export const getAllClubs = async (params = {}) => {
+  try {
+    const response = await api.get("/clubs", { params });
+    return response.data;
+  } catch (error) {
+    console.error("Error in getAllClubs:", error);
+    throw error;
+  }
+};
 
-  const response = await axios.post(`${API_BASE_URL}/register-owner-account`, data, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json"
-    }
-  });
+// Lấy chi tiết câu lạc bộ theo ID
+export const getClubById = async (id) => {
+  try {
+    const response = await api.get(`/clubs/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error in getClubById for id ${id}:`, error);
+    throw error;
+  }
+};
 
-  return response.data;
-}
+/**
+ * Chủ quán đăng ký thông tin CLB mới
+ * Kết hợp từ code cũ của thành viên khác
+ */
+export const registerClub = async (data) => {
+  try {
+    const response = await api.post("/clubs/register-owner-account", data);
+    return response.data;
+  } catch (error) {
+    console.error("Error in registerClub:", error);
+    throw error;
+  }
+};
+
+export const clubService = {
+  getAllClubs,
+  getClubById,
+  registerClub
+};
+
 
 export async function getOwnerClubs() {
   const token = getAuthToken();
 
-  const response = await axios.get(`${API_BASE_URL}/owner/clubs`, {
+  const response = await axios.get(`${API_BASE_URL}/clubs/owner/clubs`, {
     headers: {
       Authorization: `Bearer ${token}`
     }
@@ -31,3 +61,5 @@ export async function getOwnerClubs() {
 
   return response.data;
 }
+
+export default clubService;
