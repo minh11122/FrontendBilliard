@@ -1,3 +1,31 @@
+import api from "../lib/axios";
+
+/**
+ * Fetch list of provinces from backend
+ */
+export const getProvinces = async () => {
+  try {
+    const response = await api.get("/locations/provinces");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching provinces:", error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch list of districts/wards by province code
+ */
+export const getDistrictsByProvince = async (provinceCode) => {
+  try {
+    const response = await api.get(`/locations/provinces/${provinceCode}/districts`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching districts for province ${provinceCode}:`, error);
+    throw error;
+  }
+};
+
 /**
  * Calculate distance between two points using Haversine formula
  * @param {number} lat1 Latitude of point 1
