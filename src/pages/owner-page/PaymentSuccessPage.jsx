@@ -26,7 +26,7 @@ export default function PaymentSuccessPage() {
 
         toast.success("Thanh toán thành công!");
 
-        navigate("/settings");
+        navigate("/owner/settings");
 
       } catch (err) {
 
