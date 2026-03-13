@@ -12,6 +12,9 @@ export const PaymentPage = () => {
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   const allowNavRef = useRef(false);
+  const [showQRModal, setShowQRModal] = useState(false);
+
+
 
   // Chặn mọi điều hướng trong React Router (back, navbar, link...)
   const blocker = useBlocker(({ currentLocation, nextLocation }) => {
@@ -29,8 +32,9 @@ export const PaymentPage = () => {
   // Tính thời gian giữ chỗ còn lại
   useEffect(() => {
     if (!bookingData?.heldUntil) return;
-    const heldUntil = new Date(bookingData.heldUntil).getTime();
-
+    const holdMinutes = 5;
+    // const heldUntil = new Date(bookingData.heldUntil).getTime();
+    const heldUntil = new Date(Date.now() + holdMinutes * 60 * 1000);
     const updateTimer = () => {
       const now = Date.now();
       const remaining = Math.max(0, Math.floor((heldUntil - now) / 1000));
@@ -98,19 +102,27 @@ export const PaymentPage = () => {
   }
 
   const { booking, table, club, holdMinutes } = bookingData;
+    const BANK_ID = "MB";
+const ACCOUNT_NO = "123456789";
+const ACCOUNT_NAME = "NGUYEN VAN A";
+const TEMPLATE = "compact2";
+
+const description = `Dat coc ban ${table?.table_number} tu ${booking?.start_time} den ${booking?.end_time}`;
+
+const qrUrl = `https://img.vietqr.io/image/${BANK_ID}-${ACCOUNT_NO}-${TEMPLATE}.png?amount=${booking?.deposit}&addInfo=${encodeURIComponent(description)}&accountName=${encodeURIComponent(ACCOUNT_NAME)}`;
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
   const timerDisplay = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
   const isTimerWarning = timeLeft <= 120;
 
   const handleConfirmPayment = () => {
-    if (!agreedToTerms) {
-      toast.error("Vui lòng đồng ý với điều khoản đặt bàn");
-      return;
-    }
-    toast.success("Xác nhận thanh toán thành công! Đang chờ xử lý...");
-    // Logic thanh toán thực tế sẽ do thành viên khác xử lý
-  };
+  if (!agreedToTerms) {
+    toast.error("Vui lòng đồng ý với điều khoản đặt bàn");
+    return;
+  }
+
+  setShowQRModal(true);
+};
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -292,7 +304,35 @@ export const PaymentPage = () => {
       <div className="border-t mt-16 py-6 text-center text-xs text-slate-400">
         © 2026 BilliardMaster System. All rights reserved.
       </div>
+      {showQRModal && (
+  <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+    <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
 
+      <h3 className="text-xl font-bold text-center mb-4">
+        Quét QR để thanh toán
+      </h3>
+
+      <div className="flex justify-center mb-4">
+        <img src={qrUrl} alt="QR Payment" className="w-64 h-64 border rounded-lg"/>
+      </div>
+
+      <div className="text-sm space-y-1 mb-4">
+        <p><b>Ngân hàng:</b> MB Bank</p>
+        <p><b>Số tài khoản:</b> {ACCOUNT_NO}</p>
+        <p><b>Chủ tài khoản:</b> {ACCOUNT_NAME}</p>
+        <p><b>Số tiền:</b> {booking?.deposit?.toLocaleString()}đ</p>
+      </div>
+
+      <button
+        onClick={() => setShowQRModal(false)}
+        className="w-full py-3 bg-gray-200 rounded-lg font-bold"
+      >
+        Đóng
+      </button>
+
+    </div>
+  </div>
+)}
       {/* Leave Dialog */}
       {showLeaveDialog && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
