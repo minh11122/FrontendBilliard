@@ -20,7 +20,8 @@ import {
   Home,
   User,
   ConciergeBell,
-  Trophy
+  Trophy,
+  ArrowLeftCircle
 } from "lucide-react";
 
 export const SidebarOwner = () => {
@@ -60,12 +61,10 @@ export const SidebarOwner = () => {
     },
   ];
 
-  const handleLogout = () => {
-    localStorage.removeItem("user_fullname");
+  const handleBackToSelection = () => {
     localStorage.removeItem("selected_club_id");
     localStorage.removeItem("selected_club_name");
-    logout();
-    navigate("/");
+    navigate("/owner/select-club");
   };
 
   const handleProfile = () => navigate("/profile");
@@ -83,7 +82,7 @@ export const SidebarOwner = () => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-72 transform border-r border-border bg-card transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        className={`fixed inset-y-0 left-0 z-50 w-72 transform border-r border-border bg-card transition-transform duration-300 ease-in-out lg:sticky lg:top-0 lg:h-screen lg:flex lg:flex-col lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
           }`}
       >
         <div className="flex h-full flex-col">
@@ -146,11 +145,11 @@ export const SidebarOwner = () => {
 
             <Button
               variant="ghost"
-              className="w-full justify-start gap-3 text-destructive hover:bg-destructive/10 hover:text-destructive"
-              onClick={handleLogout}
+              className="w-full justify-start gap-3 text-muted-foreground hover:bg-accent hover:text-foreground"
+              onClick={handleBackToSelection}
             >
-              <LogOut className="h-5 w-5" />
-              <span className="text-sm font-medium">Đăng xuất</span>
+              <ArrowLeftCircle className="h-5 w-5" />
+              <span className="text-sm font-medium">Chọn quán khác</span>
             </Button>
           </div>
         </div>

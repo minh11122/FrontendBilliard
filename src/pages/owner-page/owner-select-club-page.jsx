@@ -2,12 +2,23 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getOwnerClubs } from "@/services/club.service";
 import toast from "react-hot-toast";
-import { Store, ArrowRight, Loader } from "lucide-react";
+import { Store, ArrowRight, Loader, LogOut } from "lucide-react";
+import { AuthContext } from "@/context/AuthContext";
+import { useContext } from "react";
 
 export function OwnerSelectClubPage() {
   const [clubs, setClubs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { logout } = useContext(AuthContext);
   const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("user_fullname");
+    localStorage.removeItem("selected_club_id");
+    localStorage.removeItem("selected_club_name");
+    logout();
+    navigate("/");
+  };
 
   useEffect(() => {
     fetchMyClubs();
@@ -49,7 +60,17 @@ export function OwnerSelectClubPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 md:p-12">
+    <div className="min-h-screen bg-gray-50 p-6 md:p-12 relative">
+      {/* Logout Button Top-Right */}
+      <div className="absolute top-6 right-6 md:top-8 md:right-12">
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-destructive hover:bg-destructive/5 rounded-xl transition-all"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>Đăng xuất</span>
+        </button>
+      </div>
       <div className="max-w-4xl mx-auto flex flex-col items-center">
         <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
           <Store className="w-8 h-8 text-green-600" />

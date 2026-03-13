@@ -3,19 +3,21 @@ import { Link } from "react-router-dom";
 import { MapPin, Search, Star, ChevronRight, ChevronLeft, Navigation } from "lucide-react";
 import axios from "axios";
 import { getAllClubs } from "@/services/club.service";
-import { getCurrentPosition, calculateDistance, formatDistance } from "@/services/location.service";
+import { getProvinces, getDistrictsByProvince, getCurrentPosition, calculateDistance, formatDistance } from "@/services/location.service";
 
 export const BookingPage = () => {
   const [clubs, setClubs] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Districts in Hanoi
-  const districts = ["Tất cả", "Ba Đình", "Hoàn Kiếm", "Tây Hồ", "Long Biên", "Cầu Giấy", "Đống Đa", "Hai Bà Trưng", "Hoàng Mai", "Thanh Xuân", "Hà Đông", "Bắc Từ Liêm", "Nam Từ Liêm", "Sơn Tây", "Ba Vì", "Chương Mỹ", "Đan Phượng", "Đông Anh", "Gia Lâm", "Hoài Đức", "Mê Linh", "Mỹ Đức", "Phú Xuyên", "Phúc Thọ", "Quốc Oai", "Sóc Sơn", "Thạch Thất", "Thanh Oai", "Thanh Trì", "Thường Tín", "Ứng Hòa"];
+  // Administrative units state
+  const [provinces, setProvinces] = useState([]);
+  const [districts, setDistricts] = useState([]);
+  const [selectedProvinceCode, setSelectedProvinceCode] = useState("all");
+  const [selectedDistrictCode, setSelectedDistrictCode] = useState("all");
 
   // Filters state
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTypes, setSelectedTypes] = useState([]); // mảng rỗng = Tất cả
-  const [selectedDistrict, setSelectedDistrict] = useState("Tất cả");
   const [filterRating, setFilterRating] = useState(false);
   const [filterPrice, setFilterPrice] = useState("all");
   const [userLocation, setUserLocation] = useState(null);
@@ -26,9 +28,41 @@ export const BookingPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
+  // Initial data fetch
   useEffect(() => {
     fetchClubs();
+    fetchInitialLocations();
   }, []);
+
+  const fetchInitialLocations = async () => {
+    try {
+      const provinceList = await getProvinces();
+      setProvinces(provinceList);
+    } catch (error) {
+      console.error("Error fetching provinces:", error);
+    }
+  };
+
+  // Fetch districts when province changes
+  useEffect(() => {
+    if (selectedProvinceCode === "all") {
+      setDistricts([]);
+      setSelectedDistrictCode("all");
+      return;
+    }
+
+    const fetchDistricts = async () => {
+      try {
+        const districtList = await getDistrictsByProvince(selectedProvinceCode);
+        setDistricts(districtList);
+        setSelectedDistrictCode("all");
+      } catch (error) {
+        console.error("Error fetching districts:", error);
+      }
+    };
+
+    fetchDistricts();
+  }, [selectedProvinceCode]);
 
   const fetchClubs = async () => {
     try {
@@ -70,7 +104,7 @@ export const BookingPage = () => {
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedTypes, selectedDistrict, filterRating, filterPrice, sortByLocation]);
+  }, [searchTerm, selectedTypes, selectedProvinceCode, selectedDistrictCode, filterRating, filterPrice, sortByLocation]);
 
   // Helper map Table DB Types to UI Types
   const mapTypeToUI = (dbType) => {
@@ -97,10 +131,9 @@ export const BookingPage = () => {
     const matchSearch = (club.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
       (club.address?.toLowerCase() || "").includes(searchTerm.toLowerCase());
 
-    const matchDistrict = selectedDistrict === "Tất cả"
-      ? true
-      : (club.district?.toLowerCase() || "").includes(selectedDistrict.toLowerCase()) ||
-      club.address.toLowerCase().includes(selectedDistrict.toLowerCase());
+    const matchProvince = selectedProvinceCode === "all" || club.province_code === selectedProvinceCode;
+    
+    const matchDistrict = selectedDistrictCode === "all" || club.district_code === selectedDistrictCode;
 
     const matchRating = filterRating ? club.rating >= 4.0 : true;
 
@@ -115,7 +148,7 @@ export const BookingPage = () => {
       return true;
     })();
 
-    return matchSearch && matchDistrict && matchRating && matchType && matchPrice;
+    return matchSearch && matchProvince && matchDistrict && matchRating && matchType && matchPrice;
   }).map(club => {
     if (userLocation && club.lat && club.lng) {
       const dist = calculateDistance(userLocation.lat, userLocation.lng, club.lat, club.lng);
@@ -204,15 +237,36 @@ export const BookingPage = () => {
           {/* Filters & Search Row */}
           <div className="flex flex-col lg:flex-row lg:items-center gap-4 mt-8 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
             <div className="flex flex-wrap items-center gap-2 flex-1">
+              {/* Province Select */}
               <div className="relative">
                 <select
                   className="pl-4 pr-10 py-2.5 bg-white hover:border-emerald-500 text-sm font-medium rounded-xl transition-all border border-slate-200 shadow-sm appearance-none outline-none cursor-pointer min-w-[160px]"
-                  value={selectedDistrict}
-                  onChange={(e) => setSelectedDistrict(e.target.value)}
+                  value={selectedProvinceCode}
+                  onChange={(e) => setSelectedProvinceCode(e.target.value)}
                 >
-                  <option value="Tất cả">Tất cả khu vực</option>
-                  {districts.filter(d => d !== "Tất cả").map(d => (
-                    <option key={d} value={d}>{d}</option>
+                  <option value="all">Tất cả Tỉnh/Thành</option>
+                  {provinces.map(p => (
+                    <option key={p.code} value={p.code}>{p.name}</option>
+                  ))}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                  <ChevronRight className="w-4 h-4 rotate-90" />
+                </div>
+              </div>
+
+              {/* District Select */}
+              <div className="relative">
+                <select
+                  className="pl-4 pr-10 py-2.5 bg-white hover:border-emerald-500 text-sm font-medium rounded-xl transition-all border border-slate-200 shadow-sm appearance-none outline-none cursor-pointer min-w-[160px] disabled:bg-slate-50 disabled:cursor-not-allowed"
+                  value={selectedDistrictCode}
+                  onChange={(e) => setSelectedDistrictCode(e.target.value)}
+                  disabled={selectedProvinceCode === "all"}
+                >
+                  <option value="all">
+                    {selectedProvinceCode === "all" ? "Chọn Tỉnh/Thành trước" : "Tất cả Quận/Huyện"}
+                  </option>
+                  {districts.map(d => (
+                    <option key={d.code} value={d.code}>{d.name_with_type || d.name}</option>
                   ))}
                 </select>
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">

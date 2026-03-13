@@ -18,10 +18,10 @@ export const getAllClubs = async (params = {}) => {
   }
 };
 
-// Lấy chi tiết câu lạc bộ theo ID
-export const getClubById = async (id) => {
+// Lấy chi tiết câu lạc bộ theo ID (hỗ trợ truyền params như play_date, startTime)
+export const getClubById = async (id, params = {}) => {
   try {
-    const response = await api.get(`/clubs/${id}`);
+    const response = await api.get(`/clubs/${id}`, { params });
     return response.data;
   } catch (error) {
     console.error(`Error in getClubById for id ${id}:`, error);
@@ -31,7 +31,6 @@ export const getClubById = async (id) => {
 
 /**
  * Chủ quán đăng ký thông tin CLB mới
- * Kết hợp từ code cũ của thành viên khác
  */
 export const registerClub = async (data) => {
   try {
@@ -43,10 +42,21 @@ export const registerClub = async (data) => {
   }
 };
 
+export const updateClub = async (id, data) => {
+  try {
+    const response = await api.put(`/clubs/${id}`, data);
+    return response.data;
+  } catch (error) {
+    console.error(`Error in updateClub for id ${id}:`, error);
+    throw error;
+  }
+};
+
 export const clubService = {
   getAllClubs,
   getClubById,
-  registerClub
+  registerClub,
+  updateClub
 };
 
 
