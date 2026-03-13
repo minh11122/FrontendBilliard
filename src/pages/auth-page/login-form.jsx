@@ -59,7 +59,7 @@ export function LoginForm() {
         if (role === "OWNER") {
           navigate("/owner/select-club");
         } else if (role === "STAFF_CLUB") {
-          navigate("/staff/staff1");
+          navigate("/staff/dashboard");
         } else if (role === "CUSTOMER") {
           navigate("/");
         } else {
@@ -88,7 +88,7 @@ export function LoginForm() {
       if (role === "OWNER") {
         navigate("/owner/owner1");
       } else if (role === "STAFF_CLUB") {
-        navigate("/staff/staff1");
+        navigate("/staff/dashboard");
       } else if (role === "CUSTOMER") {
         navigate("/");
       } else {
