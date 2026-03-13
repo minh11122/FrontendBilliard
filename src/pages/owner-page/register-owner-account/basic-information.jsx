@@ -2,10 +2,11 @@ import { useNavigate, Link } from "react-router-dom";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import toast from "react-hot-toast";
-import { Building, MapPin, Phone, FileText, Image } from "lucide-react";
+import { Building, MapPin, Phone, FileText, Image, Search } from "lucide-react";
 import { registerClub } from "@/services/club.service";
-import { getProvinces, getDistrictsByProvince } from "@/services/location.service";
+import { getProvinces, getDistrictsByProvince, matchAdministrativeUnit } from "@/services/location.service";
 import { useState, useEffect } from "react";
+import { MapAddressPicker } from "@/components/common/MapAddressPicker";
 
 export function RegisterOwnerAccount() {
   const navigate = useNavigate();
@@ -39,6 +40,8 @@ export function RegisterOwnerAccount() {
       province_code: "",
       district_code: "",
       address: "",
+      lat: null,
+      lng: null,
       phone: "",
       tax_code: "",
       description: "",
@@ -81,6 +84,44 @@ export function RegisterOwnerAccount() {
     fetchDistricts();
   }, [formik.values.province_code]);
 
+  const handleLocationSelect = async (locationData) => {
+    const { lat, lng, address, provinceName, districtName, isFromSearch } = locationData;
+    
+    // 1. Update lat/lng
+    formik.setFieldValue("lat", lat);
+    formik.setFieldValue("lng", lng);
+
+    // Nếu không phải từ search (tức là từ kéo marker), update lại ô input địa chỉ cho chuẩn
+    if (!isFromSearch) {
+      formik.setFieldValue("address", address);
+    }
+
+    // 2. Map Province Name to Code
+    const matchedProvince = matchAdministrativeUnit(provinceName, provinces);
+    if (matchedProvince) {
+      formik.setFieldValue("province_code", matchedProvince.code);
+      
+      // 3. Map District Name to Code
+      try {
+        const districtList = await getDistrictsByProvince(matchedProvince.code);
+        setDistricts(districtList);
+        
+        const matchedDistrict = matchAdministrativeUnit(districtName, districtList);
+        if (matchedDistrict) {
+          formik.setFieldValue("district_code", matchedDistrict.code);
+        } else {
+            // Xóa code nếu không khớp để tránh data cũ
+            formik.setFieldValue("district_code", "");
+        }
+      } catch (error) {
+        console.error("Error matching district:", error);
+      }
+    } else {
+        formik.setFieldValue("province_code", "");
+        formik.setFieldValue("district_code", "");
+    }
+  };
+
   // upload ảnh
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
@@ -121,80 +162,93 @@ export function RegisterOwnerAccount() {
           <form onSubmit={formik.handleSubmit} className="space-y-5">
 
             {/* Tên CLB */}
-            <div>
-              <label className="text-sm font-medium">Tên CLB</label>
-              <div className="relative mt-1">
-                <Building className="absolute left-3 top-1/2 -translate-y-1/2 w-5 text-gray-400"/>
+            <div className="group">
+              <label className="text-sm font-bold text-gray-700 mb-1.5 block">Tên câu lạc bộ</label>
+              <div className="relative">
+                <Building className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 text-gray-400 group-focus-within:text-green-600 transition-colors"/>
                 <input
                   name="name"
                   onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
                   value={formik.values.name}
-                  className="pl-10 border rounded-xl w-full px-3 py-2.5"
-                  placeholder="CLB Billiards ABC"
+                  className="pl-11 border-2 border-gray-100 focus:border-green-500 focus:ring-4 focus:ring-green-500/10 rounded-2xl w-full px-3 py-3 outline-none transition-all"
+                  placeholder="Ví dụ: Billiards Club Hà Đông"
                 />
               </div>
-            </div>
-
-            {/* Tỉnh/Thành phố */}
-            <div>
-              <label className="text-sm font-medium">Tỉnh / Thành phố</label>
-              <div className="relative mt-1">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 text-gray-400"/>
-                <select
-                  name="province_code"
-                  onChange={formik.handleChange}
-                  value={formik.values.province_code}
-                  className="pl-10 border rounded-xl w-full px-3 py-2.5 appearance-none"
-                >
-                  <option value="">Chọn Tỉnh / Thành phố</option>
-                  {provinces.map((p) => (
-                    <option key={p.code} value={p.code}>{p.name}</option>
-                  ))}
-                </select>
-              </div>
-              {formik.touched.province_code && formik.errors.province_code && (
-                <div className="text-red-500 text-xs mt-1">{formik.errors.province_code}</div>
+              {formik.touched.name && formik.errors.name && (
+                <p className="text-red-500 text-[11px] mt-1 ml-1">{formik.errors.name}</p>
               )}
             </div>
 
-            {/* Quận/Huyện/Phường */}
-            <div>
-              <label className="text-sm font-medium">Quận / Huyện / Phường</label>
-              <div className="relative mt-1">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 text-gray-400"/>
-                <select
-                  name="district_code"
-                  onChange={formik.handleChange}
-                  value={formik.values.district_code}
-                  className="pl-10 border rounded-xl w-full px-3 py-2.5 appearance-none"
-                  disabled={!formik.values.province_code}
-                >
-                  <option value="">Chọn Quận / Huyện / Phường</option>
-                  {districts.map((d) => (
-                    <option key={d.code} value={d.code}>{d.name_with_type}</option>
-                  ))}
-                </select>
-              </div>
-              {formik.touched.district_code && formik.errors.district_code && (
-                <div className="text-red-500 text-xs mt-1">{formik.errors.district_code}</div>
-              )}
-            </div>
-
-            {/* Địa chỉ chi tiết */}
-            <div>
-              <label className="text-sm font-medium">Địa chỉ chi tiết</label>
-              <div className="relative mt-1">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 text-gray-400"/>
+            {/* Địa chỉ chi tiết (Search Box) */}
+            <div className="group">
+              <label className="text-sm font-bold text-gray-700 mb-1.5 block">Địa chỉ chi tiết (Dùng để tìm trên Map)</label>
+              <div className="relative">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 text-gray-400 group-focus-within:text-green-600 transition-colors"/>
                 <input
                   name="address"
                   onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
                   value={formik.values.address}
-                  className="pl-10 border rounded-xl w-full px-3 py-2.5"
-                  placeholder="Số nhà, tên đường..."
+                  className="pl-11 border-2 border-gray-100 focus:border-green-500 focus:ring-4 focus:ring-green-500/10 rounded-2xl w-full px-3 py-3 outline-none transition-all font-medium"
+                  placeholder="Gõ số nhà, tên đường để Map tự tìm..."
                 />
               </div>
-              {formik.touched.address && formik.errors.address && (
-                <div className="text-red-500 text-xs mt-1">{formik.errors.address}</div>
+              <p className="text-[10px] text-gray-400 mt-1 ml-1">
+                💡 Bản đồ bên dưới sẽ tự động di chuyển khi bạn nhập địa chỉ.
+              </p>
+            </div>
+
+            {/* Bản đồ chọn địa chỉ */}
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-bold flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
+                    <MapPin className="w-5 text-green-600" />
+                  </div>
+                  Xác nhận vị trí trên bản đồ
+                </label>
+                {formik.values.lat && (
+                  <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-1 rounded-full font-mono border border-gray-200">
+                    {formik.values.lat.toFixed(6)}, {formik.values.lng.toFixed(6)}
+                  </span>
+                )}
+              </div>
+              
+              <div className="h-[400px] overflow-hidden rounded-3xl border-4 border-gray-50 shadow-inner relative group">
+                <MapAddressPicker 
+                    onLocationSelect={handleLocationSelect} 
+                    searchQuery={formik.values.address}
+                />
+              </div>
+
+              {/* Thông tin vùng hành chính tự động */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-blue-50/50 p-3 rounded-2xl border border-blue-100/50 transition-all hover:bg-blue-50">
+                  <span className="text-[10px] text-blue-600 uppercase font-black tracking-wider block mb-1">Tỉnh / Thành phố</span>
+                  <p className="text-sm font-bold text-gray-800 truncate">
+                    {provinces.find(p => p.code === formik.values.province_code)?.name || (
+                        <span className="text-gray-400 font-normal italic">Đang xác định...</span>
+                    )}
+                  </p>
+                </div>
+                <div className="bg-orange-50/50 p-3 rounded-2xl border border-orange-100/50 transition-all hover:bg-orange-50">
+                  <span className="text-[10px] text-orange-600 uppercase font-black tracking-wider block mb-1">Quận / Huyện</span>
+                  <p className="text-sm font-bold text-gray-800 truncate">
+                    {districts.find(d => d.code === formik.values.district_code)?.name_with_type || (
+                         <span className="text-gray-400 font-normal italic">Đang xác định...</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {(formik.errors.province_code || formik.errors.address) && formik.touched.address && (
+                <div className="bg-red-50 text-red-600 text-[11px] p-3 rounded-2xl border border-red-100 flex items-start gap-3 animate-pulse">
+                  <div className="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center shrink-0">!</div>
+                  <p className="leading-relaxed">
+                    Hệ thống chưa tìm thấy tọa độ chính xác. Vui lòng gõ địa chỉ chi tiết hơn hoặc kéo biểu tượng ghim trên bản đồ.
+                  </p>
+                </div>
               )}
             </div>
 

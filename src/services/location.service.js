@@ -91,3 +91,57 @@ export const formatDistance = (km) => {
   }
   return `${km.toFixed(1)} km`;
 };
+
+/**
+ * Normalizes a string for comparison (lowercase, remove accents)
+ */
+const normalizeString = (str) => {
+  if (!str) return "";
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+};
+
+/**
+ * Matches a name against a list of administrative units (Provinces or Districts)
+ * @param {string} searchName Name from Goong Maps
+ * @param {Array} units List of units from DB
+ * @returns {Object|null} The matched unit
+ */
+export const matchAdministrativeUnit = (searchName, units) => {
+  if (!searchName || !units || units.length === 0) return null;
+
+  const normalizedSearch = normalizeString(searchName);
+
+  // Helper to remove prefixes like "Tinh", "Thanh pho", "Quan", "Huyen"
+  const cleanType = (str) => {
+    return normalizeString(str)
+      .replace(/^(tinh|thanh pho|quan|huyen|thi xa|phuong|xa)\s+/i, "")
+      .trim();
+  };
+
+  const searchCleaned = cleanType(normalizedSearch);
+
+  // 1. Try exact match on name or name_with_type
+  let match = units.find(
+    (u) => normalizeString(u.name) === normalizedSearch || 
+           normalizeString(u.name_with_type) === normalizedSearch ||
+           cleanType(u.name) === searchCleaned
+  );
+
+  if (match) return match;
+
+  // 2. Try partial match: Is the search name contained in the unit name or vice versa?
+  match = units.find((u) => {
+    const unitName = normalizeString(u.name);
+    const unitCleaned = cleanType(u.name);
+    return normalizedSearch.includes(unitName) || 
+           unitName.includes(normalizedSearch) ||
+           searchCleaned.includes(unitCleaned) ||
+           unitCleaned.includes(searchCleaned);
+  });
+
+  return match || null;
+};
