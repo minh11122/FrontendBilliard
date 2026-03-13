@@ -40,14 +40,28 @@ export const ClubDetailPage = () => {
 
   useEffect(() => {
     fetchClubDetails();
-  }, [id]);
+  }, [id, selectedDate, selectedStartTime, selectedDuration]);
 
   const fetchClubDetails = async () => {
     try {
-      setLoading(true);
-      const res = await getClubById(id);
+      // Pass slot parameters to get accurate table availability
+      const params = {
+        play_date: selectedDate,
+        startTime: selectedStartTime,
+        duration: selectedDuration
+      };
+      
+      const res = await getClubById(id, params);
       if (res.success) {
         setClub(res.data);
+        
+        // If current selected table is no longer available in the new slot, clear it
+        if (selectedTable) {
+           const updatedTable = res.data.tables?.find(t => t._id === selectedTable._id);
+           if (updatedTable && updatedTable.status !== "Available") {
+             setSelectedTable(null);
+           }
+        }
       }
     } catch (error) {
       console.error("Error fetching club details:", error);

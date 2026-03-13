@@ -18,10 +18,10 @@ export const getAllClubs = async (params = {}) => {
   }
 };
 
-// Lấy chi tiết câu lạc bộ theo ID
-export const getClubById = async (id) => {
+// Lấy chi tiết câu lạc bộ theo ID (hỗ trợ truyền params như play_date, startTime)
+export const getClubById = async (id, params = {}) => {
   try {
-    const response = await api.get(`/clubs/${id}`);
+    const response = await api.get(`/clubs/${id}`, { params });
     return response.data;
   } catch (error) {
     console.error(`Error in getClubById for id ${id}:`, error);
