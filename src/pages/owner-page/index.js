@@ -9,11 +9,11 @@ export { default as OwnerCreateTablePage } from "./owner-create-table-page";
 export * from "./owner-dashboard-page"
 export * from './register-owner-account/basic-information';
 export * from './setting-page'
-
+export { default as PaymentSuccessPage } from "./PaymentSuccessPage";
 export { default as OwnerSelectClubPage } from "./owner-select-club-page";
 export { default as OwnerEditTablePage } from "./owner-edit-table-page";
 export { default as OwnerServiceListPage } from "./owner-service-list-page";
 export { default as OwnerCreateServicePage } from "./owner-create-service-page";
 export { default as OwnerEditServicePage } from "./owner-edit-service-page";
-export * from './register-owner-account/basic-information'
-export * from './setting-page'
+
+

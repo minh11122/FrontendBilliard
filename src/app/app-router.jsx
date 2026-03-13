@@ -46,7 +46,8 @@ import {
   SystemStaff4,
   ProfilePage,
   AdminSettings,
-  SettingPage
+  SettingPage,
+  PaymentSuccessPage 
 } from "@/pages";
 
 export const router = createBrowserRouter([
@@ -109,7 +110,8 @@ export const router = createBrowserRouter([
           { path: "services/create", element: <OwnerCreateServicePage /> },
           { path: "services/edit/:id", element: <OwnerEditServicePage /> },
           { path: "dashboard", element: <OwnerDashboardPage /> },
-          { path: "settings", element: <SettingPage /> }
+          { path: "settings", element: <SettingPage /> },
+          { path: "payment-success", element: <PaymentSuccessPage  /> }
         ],
       },
       {
