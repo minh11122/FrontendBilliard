@@ -6,7 +6,8 @@ import {
   HomeMainLayout,
   DashboardMainLayout,
   DashboardStaffSystemLayout,
-  DashboardOwnerLayout
+  DashboardOwnerLayout,
+  DashboardStaffClubLayout
 } from "@/components/layouts";
 
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -114,7 +115,7 @@ export const router = createBrowserRouter([
       },
       {
         path: "staff",
-        element: <DashboardMainLayout />,
+        element: <DashboardStaffClubLayout />,
         children: [
           { path: "staff1", element: <Staff1 /> },
           { path: "staff2", element: <Staff2 /> },
