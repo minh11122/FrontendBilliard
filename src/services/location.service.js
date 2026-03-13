@@ -118,7 +118,7 @@ export const matchAdministrativeUnit = (searchName, units) => {
   // Helper to remove prefixes like "Tinh", "Thanh pho", "Quan", "Huyen"
   const cleanType = (str) => {
     return normalizeString(str)
-      .replace(/^(tinh|thanh pho|quan|huyen|thi xa|phuong|xa)\s+/i, "")
+      .replace(/^(tinh|thanh pho|tp\.|tp|quan|huyen|q\.|h\.|thi xa|phuong|xa|p\.|x\.)\s+/i, "")
       .trim();
   };
 

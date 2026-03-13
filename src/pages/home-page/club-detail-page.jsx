@@ -13,6 +13,7 @@ export const ClubDetailPage = () => {
 
   const [club, setClub] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [galleryIdx, setGalleryIdx] = useState(0); // for gallery navigation
 
   const [activeTab, setActiveTab] = useState("booking"); // booking, info, reviews
   const [selectedTableType, setSelectedTableType] = useState("Pool");
@@ -82,18 +83,45 @@ export const ClubDetailPage = () => {
   const currentHour = now.getHours();
   const currentMinute = now.getMinutes();
 
-  let timeOptions = Array.from({ length: 29 }).map((_, i) => {
-    const h = Math.floor(i / 2) + 8;
-    const m = i % 2 === 0 ? "00" : "30";
-    return `${h.toString().padStart(2, '0')}:${m}`;
-  });
+  // Generate time slots based on club operating hours, supports cross-midnight and 24/24
+  const generateTimeSlots = (openingTime, closingTime) => {
+    const [openH, openM] = (openingTime || "08:00").split(":").map(Number);
+    const [closeH, closeM] = (closingTime || "23:30").split(":").map(Number);
+    
+    const openMinutes = openH * 60 + openM;
+    const closeMinutes = closeH * 60 + closeM;
+    
+    // 24/24: opening === closing means open all day (48 slots)
+    const is24h = openMinutes === closeMinutes;
+    const totalMinutes = is24h ? 24 * 60 : (
+      closeMinutes <= openMinutes ? closeMinutes + 24 * 60 : closeMinutes
+    );
+    
+    const slots = [];
+    const limit = is24h ? openMinutes + 24 * 60 : totalMinutes;
+    for (let t = openMinutes; t < limit - 29; t += 30) {
+      const realMins = t % (24 * 60);
+      const h = Math.floor(realMins / 60);
+      const m = realMins % 60;
+      slots.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+    }
+    return slots;
+  };
+
+  let timeOptions = club ? generateTimeSlots(club.opening_time, club.closing_time) : generateTimeSlots("08:00", "23:30");
 
   if (isToday) {
     timeOptions = timeOptions.filter(timeStr => {
       const [h, m] = timeStr.split(":").map(Number);
-      if (h > currentHour) return true;
-      if (h === currentHour && m > currentMinute) return true;
-      return false;
+      // Handle slots after midnight (e.g. 01:00 generated for cross-midnight club)
+      const slotMinutes = h * 60 + m;
+      const nowMinutes = currentHour * 60 + currentMinute;
+      // If slot hour is small (00-07) and we're generating for cross-midnight club, it's next-day slots -> always valid for today
+      const [openH] = (club?.opening_time || "08:00").split(":").map(Number);
+      const [closeH] = (club?.closing_time || "23:30").split(":").map(Number);
+      const isCrossMidnight = closeH < openH;
+      if (isCrossMidnight && h < openH) return true; // next-day wrap-around slot
+      return slotMinutes > nowMinutes;
     });
   }
 
@@ -121,19 +149,30 @@ export const ClubDetailPage = () => {
       return;
     }
 
-    // Validate closing time
-    const [startH, startM] = selectedStartTime.split(":").map(Number);
-    const endTotalMinutes = (startH + selectedDuration) * 60 + startM;
+    // Booking validation: handle 24/24, cross-midnight
+    const validateBookingTime = () => {
+      const [startH, startM] = selectedStartTime.split(":").map(Number);
+      const [openH] = (club.opening_time || "08:00").split(":").map(Number);
+      const [closeH, closeM] = (club.closing_time || "23:30").split(":").map(Number);
+      const openMinutes = openH * 60;
+      const closeMinutes24 = closeH * 60 + closeM;
+      const is24h = openMinutes === closeMinutes24;
+      if (is24h) return true;
+      const isCrossMidnight = closeH <= openH && !is24h;
+      let effectiveClose = closeMinutes24;
+      if (isCrossMidnight) effectiveClose += 24 * 60;
+      const startMins = startH * 60 + startM;
+      let adjustedStart = startMins;
+      if (isCrossMidnight && startH < openH) adjustedStart += 24 * 60;
+      return adjustedStart + selectedDuration * 60 <= effectiveClose;
+    };
 
-    const [closeH, closeM] = (club.closing_time || "23:30").split(":").map(Number);
-    const closeTotalMinutes = closeH * 60 + closeM;
-
-    if (endTotalMinutes > closeTotalMinutes) {
+    if (!validateBookingTime()) {
       toast.error(`Thời gian đặt bàn vượt quá giờ đóng cửa (${club.closing_time || "23:30"})`);
       return;
     }
 
-    // Gọi API tạo booking
+
     try {
       const res = await createBooking({
         table_id: selectedTable._id,
@@ -174,12 +213,16 @@ export const ClubDetailPage = () => {
     );
   }
 
-  // Lấy ảnh bìa và các ảnh khác
-  const bannerImage = club.images?.find((img) => img.image_type === "Banner")?.image_url || null;
-  const otherImages = club.images?.filter(img => img.image_type !== "Banner") || [];
+  // Ảnh avatar chính và danh sách background
+  const avatarImage = club.images?.find((img) => img.image_type === "Avatar")?.image_url || 
+                      club.images?.find((img) => img.image_type === "Banner")?.image_url || null;
+  
+  const backgroundImages = club.images?.filter(img => img.image_type === "Background").map(img => img.image_url) || [];
+  
+  // Tổng hợp tất cả ảnh: Avatar đầu, sau đó Background
   let displayImages = [];
-  if (bannerImage) displayImages.push(bannerImage);
-  displayImages = [...displayImages, ...otherImages.map(img => img.image_url)].slice(0, 5);
+  if (avatarImage) displayImages.push(avatarImage);
+  displayImages = [...displayImages, ...backgroundImages]; // show ALL, no slice
 
   // Lọc danh sách bàn theo tab loại bàn
   const availableTables = club.tables?.filter(t => mapTypeToUI(t.table_type_id?.name) === selectedTableType) || [];
@@ -191,8 +234,10 @@ export const ClubDetailPage = () => {
   const calculateEndTime = (start, duration) => {
     if (!start) return "";
     const [h, m] = start.split(":").map(Number);
-    const endH = h + duration;
-    return `${endH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+    const totalMins = h * 60 + m + duration * 60;
+    const endH = Math.floor(totalMins / 60) % 24;
+    const endM = totalMins % 60;
+    return `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
   };
   const endTime = calculateEndTime(selectedStartTime, selectedDuration);
 
@@ -224,34 +269,64 @@ export const ClubDetailPage = () => {
         {/* Info Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
 
-          {/* Gallery - 2 Cols */}
+          {/* Gallery - 2 Cols: Avatar fixed at top, Backgrounds with arrows below */}
           <div className="lg:col-span-2">
-            <div className="bg-white p-2 border rounded-2xl shadow-sm">
-              <div className="aspect-[2/1] bg-slate-200 rounded-xl overflow-hidden mb-2 relative">
-                {displayImages.length > 0 ? (
-                  <img src={displayImages[0]} alt={club.name} className="w-full h-full object-cover" />
+            <div className="bg-white p-2 border rounded-2xl shadow-sm space-y-2">
+              {/* Avatar / Main image — fixed, no navigation */}
+              <div className="aspect-[2/1] bg-slate-200 rounded-xl overflow-hidden relative">
+                {avatarImage ? (
+                  <img src={avatarImage} alt={club.name} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-slate-400">Không có ảnh</div>
                 )}
+                {avatarImage && (
+                  <div className="absolute bottom-2 left-2 bg-black/50 text-white text-[10px] px-2 py-0.5 rounded-full font-medium">Ảnh đại diện</div>
+                )}
               </div>
-              <div className="grid grid-cols-4 gap-2">
-                {[1, 2, 3, 4].map((_, idx) => (
-                  <div key={idx} className="aspect-square bg-slate-100 rounded-lg overflow-hidden border relative group">
-                    {displayImages[idx + 1] ? (
-                      <>
-                        <img src={displayImages[idx + 1]} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity cursor-pointer" />
-                        {idx === 3 && displayImages.length > 5 && (
-                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-bold cursor-pointer hover:bg-black/60 transition-colors">
-                            +{displayImages.length - 4}
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-300 text-xs">-</div>
-                    )}
+
+              {/* Background images — with arrow navigation */}
+              {backgroundImages.length > 0 && (
+                <div className="relative">
+                  <div className="grid grid-cols-4 gap-2">
+                    {Array.from({ length: Math.min(4, backgroundImages.length) }).map((_, offset) => {
+                      const bgIdx = (galleryIdx + offset) % backgroundImages.length;
+                      const img = backgroundImages[bgIdx];
+                      return (
+                        <div key={offset} className="aspect-square rounded-lg overflow-hidden border border-slate-100 relative group cursor-pointer"
+                          onClick={() => setGalleryIdx(bgIdx)}
+                        >
+                          <img src={img} className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
+                          {offset === 3 && backgroundImages.length > 4 && (
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white text-xs font-bold">
+                              +{backgroundImages.length - 4}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                ))}
-              </div>
+                  {/* Navigation arrows and counter */}
+                  {backgroundImages.length > 4 && (
+                    <div className="flex items-center justify-between mt-2 px-1">
+                      <span className="text-xs text-slate-400">{backgroundImages.length} ảnh nền</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setGalleryIdx(i => (i - 1 + backgroundImages.length) % backgroundImages.length)}
+                          className="w-7 h-7 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all"
+                        >
+                          <ChevronLeft className="w-4 h-4 text-slate-600" />
+                        </button>
+                        <button
+                          onClick={() => setGalleryIdx(i => (i + 1) % backgroundImages.length)}
+                          className="w-7 h-7 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all"
+                        >
+                          <ChevronRight className="w-4 h-4 text-slate-600" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -274,12 +349,24 @@ export const ClubDetailPage = () => {
 
             <div className="space-y-4 mb-6">
               <p className="flex items-start gap-3 text-sm text-slate-600">
-                <MapPin className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
-                <span>{club.address}</span>
+                <MapPin className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                <a 
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(club.address || club.name)}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="hover:text-emerald-600 hover:underline cursor-pointer"
+                  title="Xem trên bản đồ"
+                >
+                  {club.address}
+                </a>
               </p>
               <div className="flex justify-between items-center text-sm border-b border-dashed pb-3 pt-2">
                 <span className="text-slate-500">Giờ hoạt động</span>
-                <span className="font-bold text-slate-900">{club.opening_time || "08:00"} - {club.closing_time || "23:30"}</span>
+                <span className="font-bold text-slate-900">
+                  {(club.opening_time === "00:00" && club.closing_time === "00:00") 
+                    ? "Mở cửa 24/24" 
+                    : `${club.opening_time || "08:00"} - ${club.closing_time || "23:30"}`}
+                </span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-slate-500">Giá từ</span>
