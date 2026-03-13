@@ -42,3 +42,6 @@ export const getRoleNameById = (data) => {
 export const getProfileById = () => {
   return api.get("/getprofile");
 };
+export const updateProfile = (data) => {
+  return api.post("/updateprofile", data);
+};

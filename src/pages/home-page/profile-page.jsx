@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getProfileById } from "@/services/auth.service";
+import { getProfileById, updateProfile } from "@/services/auth.service";
 import {
   User,
   Mail,
@@ -10,15 +10,45 @@ import {
   Calendar,
   Camera,
 } from "lucide-react";
+import toast from "react-hot-toast";
+import { uploadImages } from "@/utils/cloudinary";
 
 export const ProfilePage = () => {
   const [user, setUser] = useState(null);
+  const [fullname, setFullname] = useState("");
+  const [phone, setPhone] = useState("");
+  const [uploading, setUploading] = useState(false);
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      const urls = await uploadImages([file], setUploading);
+      const avatarUrl = urls[0];
+
+      const res = await updateProfile({
+        avatar_url: avatarUrl,
+      });
+
+      setUser(res.data.data);
+
+      toast.success("Cập nhật avatar thành công");
+    } catch (error) {
+      console.log(error);
+      toast.error("Upload avatar thất bại");
+    }
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const res = await getProfileById();
-        setUser(res.data.data);
+        const data = res.data.data;
+
+        setUser(data);
+        setFullname(data.fullname || "");
+        setPhone(data.phone || "");
       } catch (error) {
         console.log(error);
       }
@@ -26,6 +56,29 @@ export const ProfilePage = () => {
 
     fetchProfile();
   }, []);
+
+  const handleUpdate = async () => {
+    try {
+      const res = await updateProfile({
+        fullname,
+        phone,
+      });
+
+      const data = res.data.data;
+
+      setUser(data);
+      setFullname(data.fullname || "");
+      setPhone(data.phone || "");
+
+      toast.success("Cập nhật thông tin thành công");
+    } catch (error) {
+      console.log(error);
+
+      toast.error(
+        error?.response?.data?.message || "Cập nhật thông tin thất bại",
+      );
+    }
+  };
   if (!user) return <div>Loading...</div>;
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -38,9 +91,20 @@ export const ProfilePage = () => {
               src={user.avatar_url || "https://i.pravatar.cc/150"}
               className="w-24 h-24 rounded-full object-cover"
             />
-            <button className="absolute bottom-0 right-0 bg-green-600 text-white p-2 rounded-full">
-              <Camera size={16} />
-            </button>
+
+            <label className="absolute bottom-0 right-0 bg-green-600 text-white p-2 rounded-full cursor-pointer">
+              {uploading ? (
+                <span className="text-xs">...</span>
+              ) : (
+                <Camera size={16} />
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarChange}
+                className="hidden"
+              />
+            </label>
           </div>
 
           {/* Info */}
@@ -52,7 +116,7 @@ export const ProfilePage = () => {
             <div className="flex items-center gap-2 mt-2 text-sm">
               <ShieldCheck className="text-green-600" size={16} />
               <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs">
-               {user.role_id?.name}
+                {user.role_id?.name}
               </span>
             </div>
           </div>
@@ -73,7 +137,8 @@ export const ProfilePage = () => {
 
                   <input
                     type="text"
-                    defaultValue={user.fullname}
+                    value={fullname}
+                    onChange={(e) => setFullname(e.target.value)}
                     className="pl-9 border rounded-xl w-full px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-600"
                   />
                 </div>
@@ -104,7 +169,8 @@ export const ProfilePage = () => {
 
                   <input
                     type="text"
-                    defaultValue={user.phone || ""}
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
                     className="pl-9 border rounded-xl w-full px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-600"
                   />
                 </div>
@@ -126,7 +192,10 @@ export const ProfilePage = () => {
               </div>
             </div>
 
-            <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-xl">
+            <button
+              onClick={handleUpdate}
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-xl"
+            >
               Cập nhật thông tin
             </button>
           </div>
@@ -141,7 +210,7 @@ export const ProfilePage = () => {
                 <ShieldCheck className="text-green-600" size={18} />
                 <div>
                   <p className="text-gray-500">Vai trò</p>
-                  <p className="font-medium">{user.role}</p>
+                  <p className="font-medium">{user.role_id?.name}</p>
                 </div>
               </div>
 
