@@ -71,7 +71,7 @@ export const bookingService = {
   cancelHold,
   getMyBookings,
   checkInBooking,
-  getClubBookings
+  getClubBookings,
   markPaymentPending
 };
 
