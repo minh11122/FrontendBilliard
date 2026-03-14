@@ -38,6 +38,16 @@ export function SettingPage() {
   const [bgGalleryPage, setBgGalleryPage] = useState(0); // for background image page navigation
   const BG_PER_PAGE = 4;
 
+  // Bank info states
+  const [clubBank, setClubBank] = useState({
+    bank_name: "",
+    account_number: "",
+    account_name: ""
+  });
+  const [bankSaving, setBankSaving] = useState(false);
+  const [isBankModalOpen, setIsBankModalOpen] = useState(false);
+  const [isBankRequired, setIsBankRequired] = useState(false);
+
   // Club Info states
   const [clubData, setClubData] = useState({
     name: "",
@@ -108,6 +118,28 @@ export function SettingPage() {
             setDistricts(res.data || []);
           });
         }
+      }
+
+      // Load bank info of club
+      try {
+        const bankRes = await clubService.getClubBank(clubId);
+        const bank = bankRes?.data;
+        if (bank) {
+          setClubBank({
+            bank_name: bank.bank_name || "",
+            account_number: bank.account_number || "",
+            account_name: bank.account_name || ""
+          });
+          setIsBankRequired(false);
+        } else {
+          setIsBankRequired(true);
+          setIsBankModalOpen(true);
+        }
+      } catch (bankErr) {
+        console.error(bankErr);
+        toast.error("Không tải được thông tin ngân hàng của quán");
+        setIsBankRequired(true);
+        setIsBankModalOpen(true);
       }
     } catch (err) {
       console.error(err);
@@ -228,6 +260,28 @@ export function SettingPage() {
 
     }
 
+  };
+
+  const handleSaveBankInfo = async () => {
+    if (!clubId) {
+      toast.error("Không tìm thấy câu lạc bộ được chọn");
+      return;
+    }
+    if (!clubBank.bank_name || !clubBank.account_number || !clubBank.account_name) {
+      toast.error("Vui lòng nhập đầy đủ thông tin ngân hàng");
+      return;
+    }
+    setBankSaving(true);
+    try {
+      await clubService.saveClubBank(clubId, clubBank);
+      toast.success("Lưu thông tin ngân hàng thành công");
+      setIsBankRequired(false);
+      setIsBankModalOpen(false);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Lỗi khi lưu thông tin ngân hàng");
+    } finally {
+      setBankSaving(false);
+    }
   };
 
 
@@ -743,51 +797,172 @@ export function SettingPage() {
         {/* TAB CONTENT: PAYMENT */}
         {activeTab === "payment" && (
           <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
-             <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
-                <h3 className="text-xl font-bold mb-8 flex items-center gap-3">
-                   <div className="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center"><CreditCard className="w-5 h-5" /></div>
-                   Phương thức thanh toán
-                </h3>
+            <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
+              <h3 className="text-xl font-bold mb-8 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center">
+                  <CreditCard className="w-5 h-5" />
+                </div>
+                Phương thức thanh toán
+              </h3>
 
-                <div className="grid gap-4">
-                  <div className="p-6 rounded-2xl border-2 border-orange-500 bg-orange-50/20 flex items-center justify-between group transition-all">
-                    <div className="flex items-center gap-5">
-                       <div className="w-14 h-14 bg-white rounded-2xl shadow-sm flex items-center justify-center p-2">
-                          <img src="/vnpay-logo.png" alt="VNPay" className="w-full h-auto" onError={(e) => e.target.src = "https://play-lh.googleusercontent.com/9_S-O96O3K0X5G-w-6S8-3H-6X5-X-O-6-X-O-6-X-O-6-X-O-6-X-O-6-X-O-6-X-O-6-X-O-6-X-O-6-X"} />
-                       </div>
-                       <div>
-                          <p className="font-black text-gray-900">Ví VNPay / Ngân hàng</p>
-                          <p className="text-sm text-gray-500">Mặc định - Đang hoạt động</p>
-                       </div>
+              <div className="grid gap-4">
+                <div className="p-6 rounded-2xl border-2 border-orange-500 bg-orange-50/20 flex items-center justify-between group transition-all">
+                  <div className="flex items-center gap-5">
+                    <div className="w-14 h-14 bg-white rounded-2xl shadow-sm flex items-center justify-center p-2">
+                      <img
+                        src="/vnpay-logo.png"
+                        alt="VNPay"
+                        className="w-full h-auto"
+                        onError={(e) => {
+                          e.target.src =
+                            "https://play-lh.googleusercontent.com/9_S-O96O3K0X5G-w-6S8-3H-6X5-X-O-6-X-O-6-X-O-6-X-O-6-X-O-6-X-O-6-X-O-6-X-O-6-X-O-6-X-O-6-X";
+                        }}
+                      />
                     </div>
-                    <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-white">✓</div>
+                    <div>
+                      <p className="font-black text-gray-900">Ví VNPay / Ngân hàng</p>
+                      <p className="text-sm text-gray-500">Mặc định - Đang hoạt động</p>
+                    </div>
                   </div>
+                  <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-white">✓</div>
+                </div>
 
-                  <div className="p-6 rounded-2xl border-2 border-gray-50 bg-gray-50/30 flex items-center justify-between group grayscale hover:grayscale-0 transition-all cursor-not-allowed opacity-60">
-                    <div className="flex items-center gap-5">
-                       <div className="w-14 h-14 bg-white rounded-2xl shadow-sm flex items-center justify-center p-2">
-                          <img src="https://upload.wikimedia.org/wikipedia/vi/f/fe/MoMo_Logo.png" alt="MoMo" className="w-full h-auto" />
-                       </div>
-                       <div>
-                          <p className="font-bold text-gray-900">Ví MoMo</p>
-                          <p className="text-sm text-gray-500">Đang bảo trì...</p>
-                       </div>
+                <div className="p-6 rounded-2xl border-2 border-gray-50 bg-gray-50/30 flex items-center justify-between group grayscale hover:grayscale-0 transition-all cursor-not-allowed opacity-60">
+                  <div className="flex items-center gap-5">
+                    <div className="w-14 h-14 bg-white rounded-2xl shadow-sm flex items-center justify-center p-2">
+                      <img src="https://upload.wikimedia.org/wikipedia/vi/f/fe/MoMo_Logo.png" alt="MoMo" className="w-full h-auto" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-gray-900">Ví MoMo</p>
+                      <p className="text-sm text-gray-500">Đang bảo trì...</p>
                     </div>
                   </div>
                 </div>
-             </div>
+              </div>
+            </div>
 
-             <div className="bg-orange-50 border border-orange-100 p-6 rounded-3xl">
-                <h4 className="font-bold text-orange-800 mb-2">💡 Lưu ý quan trọng</h4>
-                <p className="text-sm text-orange-700/80 leading-relaxed">
-                   Các giao dịch thanh toán Subscription sẽ được xử lý ngay lập tức thông qua cổng thanh toán bảo mật. 
-                   Hóa đơn điện tử sẽ được gửi về email tài khoản của bạn sau khi thanh toán thành công.
-                </p>
-             </div>
+            {/* Bank account info for club */}
+            <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                  <CreditCard className="w-4 h-4" />
+                </div>
+                Tài khoản ngân hàng nhận tiền cọc
+              </h3>
+              <p className="text-sm text-gray-500 mb-6">
+                Thông tin này sẽ hiển thị cho khách khi họ xác nhận thanh toán tiền cọc. Vui lòng nhập chính xác để tránh nhầm lẫn.
+              </p>
+
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700">Tên ngân hàng</label>
+                  <input
+                    type="text"
+                    value={clubBank.bank_name}
+                    onChange={(e) => setClubBank({ ...clubBank, bank_name: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                    placeholder="VD: MB Bank, Vietcombank..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700">Số tài khoản</label>
+                  <input
+                    type="text"
+                    value={clubBank.account_number}
+                    onChange={(e) => setClubBank({ ...clubBank, account_number: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                    placeholder="Nhập số tài khoản nhận cọc"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700">Chủ tài khoản</label>
+                  <input
+                    type="text"
+                    value={clubBank.account_name}
+                    onChange={(e) => setClubBank({ ...clubBank, account_name: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                    placeholder="Nhập tên chủ tài khoản"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end mt-6">
+                <button
+                  onClick={handleSaveBankInfo}
+                  disabled={bankSaving}
+                  className="px-6 py-3 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-all disabled:opacity-60"
+                >
+                  {bankSaving ? "Đang lưu..." : "Lưu thông tin ngân hàng"}
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-orange-50 border border-orange-100 p-6 rounded-3xl">
+              <h4 className="font-bold text-orange-800 mb-2">💡 Lưu ý quan trọng</h4>
+              <p className="text-sm text-orange-700/80 leading-relaxed">
+                Các giao dịch thanh toán Subscription sẽ được xử lý ngay lập tức thông qua cổng thanh toán bảo mật.
+                Hóa đơn điện tử sẽ được gửi về email tài khoản của bạn sau khi thanh toán thành công.
+              </p>
+            </div>
           </div>
         )}
       </div>
+
+      {/* Bank info required modal */}
+      {isBankModalOpen && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl">
+            <h3 className="text-lg font-bold mb-2 text-gray-900">Thiết lập thông tin ngân hàng</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Vui lòng nhập thông tin tài khoản ngân hàng để hệ thống hiển thị cho khách khi thanh toán tiền cọc.
+              Bạn cần hoàn thành bước này trước khi sử dụng đầy đủ các chức năng quản lý quán.
+            </p>
+
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-700">Tên ngân hàng</label>
+                <input
+                  type="text"
+                  value={clubBank.bank_name}
+                  onChange={(e) => setClubBank({ ...clubBank, bank_name: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                  placeholder="VD: MB Bank, Vietcombank..."
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-700">Số tài khoản</label>
+                <input
+                  type="text"
+                  value={clubBank.account_number}
+                  onChange={(e) => setClubBank({ ...clubBank, account_number: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                  placeholder="Nhập số tài khoản nhận cọc"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-700">Chủ tài khoản</label>
+                <input
+                  type="text"
+                  value={clubBank.account_name}
+                  onChange={(e) => setClubBank({ ...clubBank, account_name: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                  placeholder="Nhập tên chủ tài khoản"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end mt-5">
+              <button
+                onClick={handleSaveBankInfo}
+                disabled={bankSaving}
+                className="px-5 py-2.5 rounded-xl bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 transition-all disabled:opacity-60"
+              >
+                {bankSaving ? "Đang lưu..." : "Lưu & tiếp tục"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-

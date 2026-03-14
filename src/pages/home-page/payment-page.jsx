@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, useNavigate, useBlocker } from "react-router-dom";
 import { ChevronLeft, QrCode, Shield, Clock, MapPin, Star, Lock } from "lucide-react";
 import toast from "react-hot-toast";
+import { clubService } from "@/services/club.service";
+import { markPaymentPending } from "@/services/booking.service";
 
 export const PaymentPage = () => {
   const location = useLocation();
@@ -12,9 +14,10 @@ export const PaymentPage = () => {
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   const allowNavRef = useRef(false);
-  const [showQRModal, setShowQRModal] = useState(false);
-
-
+  const [showBankModal, setShowBankModal] = useState(false);
+  const [bankInfo, setBankInfo] = useState(null);
+  const [bankLoading, setBankLoading] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   // Chặn mọi điều hướng trong React Router (back, navbar, link...)
   const blocker = useBlocker(({ currentLocation, nextLocation }) => {
@@ -102,27 +105,70 @@ export const PaymentPage = () => {
   }
 
   const { booking, table, club, holdMinutes } = bookingData;
-    const BANK_ID = "MB";
-const ACCOUNT_NO = "123456789";
-const ACCOUNT_NAME = "NGUYEN VAN A";
-const TEMPLATE = "compact2";
-
-const description = `Dat coc ban ${table?.table_number} tu ${booking?.start_time} den ${booking?.end_time}`;
-
-const qrUrl = `https://img.vietqr.io/image/${BANK_ID}-${ACCOUNT_NO}-${TEMPLATE}.png?amount=${booking?.deposit}&addInfo=${encodeURIComponent(description)}&accountName=${encodeURIComponent(ACCOUNT_NAME)}`;
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
   const timerDisplay = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
   const isTimerWarning = timeLeft <= 120;
 
-  const handleConfirmPayment = () => {
-  if (!agreedToTerms) {
-    toast.error("Vui lòng đồng ý với điều khoản đặt bàn");
-    return;
-  }
+  const description = `Dat ban ${booking?.start_time}-${booking?.end_time} ${new Date(
+    booking?.play_date
+  ).toLocaleDateString("vi-VN")} ${booking?.account_name || ""} ${booking?.phone || ""}`;
 
-  setShowQRModal(true);
-};
+  const qrUrl =
+    bankInfo &&
+    `https://img.vietqr.io/image/${bankInfo.bank_name}-${bankInfo.account_number}-compact.png?amount=${booking?.deposit}&addInfo=${encodeURIComponent(
+      description
+    )}&accountName=${encodeURIComponent(bankInfo.account_name)}`;
+
+  useEffect(() => {
+    const fetchBankInfo = async () => {
+      if (!club?._id) return;
+      try {
+        setBankLoading(true);
+        const res = await clubService.getClubBank(club._id);
+        if (res?.success) {
+          setBankInfo(res.data);
+        }
+      } catch (error) {
+        console.error("Không lấy được thông tin ngân hàng CLB:", error);
+        toast.error("Không lấy được thông tin ngân hàng của quán");
+      } finally {
+        setBankLoading(false);
+      }
+    };
+
+    fetchBankInfo();
+  }, [club?._id]);
+
+  const handleConfirmPayment = () => {
+    if (!agreedToTerms) {
+      toast.error("Vui lòng đồng ý với điều khoản đặt bàn");
+      return;
+    }
+
+    if (!bankInfo) {
+      toast.error("Quán chưa thiết lập thông tin ngân hàng, vui lòng liên hệ chủ quán");
+      return;
+    }
+
+    setShowBankModal(true);
+  };
+
+  const handleConfirmBankPaid = async () => {
+    try {
+      setUpdatingStatus(true);
+      await markPaymentPending(booking?._id);
+      toast.success("Đã xác nhận, đơn đang chờ quán xác nhận thanh toán");
+      allowNavRef.current = true;
+      navigate("/my-bookings", { state: { activeTab: "Payment Pending" } });
+    } catch (error) {
+      console.error("Lỗi khi cập nhật trạng thái booking:", error);
+      toast.error(error.response?.data?.message || "Không cập nhật được trạng thái đặt bàn");
+    } finally {
+      setUpdatingStatus(false);
+      setShowBankModal(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -304,35 +350,60 @@ const qrUrl = `https://img.vietqr.io/image/${BANK_ID}-${ACCOUNT_NO}-${TEMPLATE}.
       <div className="border-t mt-16 py-6 text-center text-xs text-slate-400">
         © 2026 BilliardMaster System. All rights reserved.
       </div>
-      {showQRModal && (
-  <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-    <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
+      {showBankModal && bankInfo && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
+            <h3 className="text-xl font-bold text-center mb-4">Thông tin chuyển khoản</h3>
 
-      <h3 className="text-xl font-bold text-center mb-4">
-        Quét QR để thanh toán
-      </h3>
+            <div className="flex justify-center mb-4">
+              {qrUrl && (
+                <img
+                  src={qrUrl}
+                  alt="QR thanh toán"
+                  className="w-64 h-64 border rounded-xl shadow"
+                />
+              )}
+            </div>
 
-      <div className="flex justify-center mb-4">
-        <img src={qrUrl} alt="QR Payment" className="w-64 h-64 border rounded-lg"/>
-      </div>
+            <div className="text-sm space-y-2 mb-4">
+              <p>
+                <b>Ngân hàng:</b> {bankInfo.bank_name}
+              </p>
+              <p>
+                <b>Số tài khoản:</b> {bankInfo.account_number}
+              </p>
+              <p>
+                <b>Chủ tài khoản:</b> {bankInfo.account_name}
+              </p>
+              <p>
+                <b>Số tiền cọc:</b> {booking?.deposit?.toLocaleString()}đ
+              </p>
+              <p>
+                <b>Nội dung CK:</b> {description}
+              </p>
+              <p className="text-xs text-slate-500 mt-2">
+                Vui lòng chuyển khoản đúng nội dung và số tiền, sau đó bấm "Xác nhận đã thanh toán" để hệ thống ghi nhận yêu cầu.
+              </p>
+            </div>
 
-      <div className="text-sm space-y-1 mb-4">
-        <p><b>Ngân hàng:</b> MB Bank</p>
-        <p><b>Số tài khoản:</b> {ACCOUNT_NO}</p>
-        <p><b>Chủ tài khoản:</b> {ACCOUNT_NAME}</p>
-        <p><b>Số tiền:</b> {booking?.deposit?.toLocaleString()}đ</p>
-      </div>
-
-      <button
-        onClick={() => setShowQRModal(false)}
-        className="w-full py-3 bg-gray-200 rounded-lg font-bold"
-      >
-        Đóng
-      </button>
-
-    </div>
-  </div>
-)}
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => setShowBankModal(false)}
+                className="flex-1 py-3 bg-slate-100 rounded-lg font-semibold text-slate-700 hover:bg-slate-200 transition-colors"
+              >
+                Đóng
+              </button>
+              <button
+                onClick={handleConfirmBankPaid}
+                disabled={updatingStatus}
+                className="flex-1 py-3 bg-emerald-500 rounded-lg font-semibold text-white hover:bg-emerald-600 transition-colors disabled:opacity-60"
+              >
+                {updatingStatus ? "Đang xử lý..." : "Xác nhận đã thanh toán"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Leave Dialog */}
       {showLeaveDialog && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
