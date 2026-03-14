@@ -22,6 +22,17 @@ export const cancelHold = async (bookingId) => {
   }
 };
 
+// Đánh dấu booking là Payment Pending sau khi khách đã chuyển khoản
+export const markPaymentPending = async (bookingId) => {
+  try {
+    const response = await api.post(`/bookings/${bookingId}/payment-pending`);
+    return response.data;
+  } catch (error) {
+    console.error("Error in markPaymentPending:", error);
+    throw error;
+  }
+};
+
 // Lấy danh sách booking của tôi
 export const getMyBookings = async () => {
   try {
@@ -61,6 +72,7 @@ export const bookingService = {
   getMyBookings,
   checkInBooking,
   getClubBookings
+  markPaymentPending
 };
 
 export default bookingService;

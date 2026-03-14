@@ -52,11 +52,35 @@ export const updateClub = async (id, data) => {
   }
 };
 
+// Lấy thông tin tài khoản ngân hàng của CLB theo id
+export const getClubBank = async (clubId) => {
+  try {
+    const response = await api.get(`/clubs/${clubId}/bank`);
+    return response.data;
+  } catch (error) {
+    console.error("Error in getClubBank:", error);
+    throw error;
+  }
+};
+
+// Tạo / cập nhật thông tin tài khoản ngân hàng cho CLB
+export const saveClubBank = async (clubId, data) => {
+  try {
+    const response = await api.put(`/clubs/${clubId}/bank`, data);
+    return response.data;
+  } catch (error) {
+    console.error("Error in saveClubBank:", error);
+    throw error;
+  }
+};
+
 export const clubService = {
   getAllClubs,
   getClubById,
   registerClub,
-  updateClub
+  updateClub,
+  getClubBank,
+  saveClubBank
 };
 
 
