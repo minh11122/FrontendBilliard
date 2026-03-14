@@ -33,10 +33,34 @@ export const getMyBookings = async () => {
   }
 };
 
+// Nhân viên check-in
+export const checkInBooking = async (code_number) => {
+  try {
+    const response = await api.post("/bookings/checkin", { code_number });
+    return response.data;
+  } catch (error) {
+    console.error("Error in checkInBooking:", error);
+    throw error;
+  }
+};
+
+// Lấy danh sách booking của club (staff / owner)
+export const getClubBookings = async (params = {}) => {
+  try {
+    const response = await api.get("/bookings/club", { params });
+    return response.data;
+  } catch (error) {
+    console.error("Error in getClubBookings:", error);
+    throw error;
+  }
+};
+
 export const bookingService = {
   createBooking,
   cancelHold,
-  getMyBookings
+  getMyBookings,
+  checkInBooking,
+  getClubBookings
 };
 
 export default bookingService;

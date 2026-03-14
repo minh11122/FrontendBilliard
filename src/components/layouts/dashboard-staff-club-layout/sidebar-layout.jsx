@@ -37,9 +37,14 @@ export const SidebarClub = () => {
       icon: LayoutDashboard,
     },
     {
-      name: "Quản lý bàn bi-a",
+      name: "Sơ đồ bàn bi-a",
       href: "/staff/tables",
       icon: LayoutList,
+    },
+    {
+      name: "Quản lý đặt bàn",
+      href: "/staff/bookings",
+      icon: CalendarCheck,
     },
     {
       name: "Quản lý giải đấu",
