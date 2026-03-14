@@ -57,10 +57,13 @@ export function LoginForm() {
 
         // 🔥 CHIA ROLE
         if (role === "OWNER") {
+          console.log("Đang chuyển hướng sang OWNER...");
           navigate("/owner/select-club");
         } else if (role === "STAFF_CLUB") {
+          console.log("Đang chuyển hướng sang STAFF_CLUB...");
           navigate("/staff/staff1");
         } else if (role === "CUSTOMER") {
+          console.log("Đang chuyển hướng sang CUSTOMER...");
           navigate("/");
         } else {
           toast.error("Bạn không có quyền truy cập hệ thống club");
@@ -86,8 +89,10 @@ export function LoginForm() {
       toast.success("Đăng nhập Google thành công!");
 
       if (role === "OWNER") {
-        navigate("/owner/owner1");
+        console.log("Đang chuyển hướng sang OWNER...");
+        navigate("/owner/select-club");
       } else if (role === "STAFF_CLUB") {
+        console.log("Đang chuyển hướng sang STAFF_CLUB...");
         navigate("/staff/staff1");
       } else if (role === "CUSTOMER") {
         navigate("/");

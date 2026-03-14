@@ -45,7 +45,7 @@ export const SidebarOwner = () => {
     },
     {
       name: "Quản lý nhân viên",
-      href: "/owner/staff",
+      href: "/owner/list-employee",
       icon: User,
     },
     {
@@ -58,6 +58,7 @@ export const SidebarOwner = () => {
       href: "/owner/tournaments",
       icon: Trophy,
     },
+
   ];
 
   const handleLogout = () => {
