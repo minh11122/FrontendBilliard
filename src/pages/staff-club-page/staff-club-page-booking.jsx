@@ -2,10 +2,11 @@ import React, { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 import {
   Search, Calendar as CalendarIcon, MoreVertical, TrendingUp, Loader2,
-  LogIn, List, User, Clock, CreditCard, MapPin, Hash, Phone, ArrowRight
+  LogIn, List, User, Clock, CreditCard, MapPin, Hash, Phone, ArrowRight,
+  CheckCircle, XCircle
 } from "lucide-react";
 
-import { checkInBooking, getClubBookings } from "@/services/booking.service";
+import { checkInBooking, getClubBookings, confirmPayment } from "@/services/booking.service";
 import useDebounce from "@/hooks/useDebounce";
 
 import { Button } from "@/components/ui/button";
@@ -110,11 +111,22 @@ const CheckInSection = ({ onCheckInSuccess }) => {
   };
 
   const getStatusLabel = (status) => {
-    const map = { Pending: "Chờ thanh toán", Booked: "Chờ check-in", Playing: "Đang chơi", Completed: "Hoàn thành", Cancelled: "Đã hủy" };
+    const map = {
+      Pending: "Chờ thanh toán",
+      Booked: "Đã đặt",
+      Playing: "Đang chơi",
+      Completed: "Hoàn thành",
+      Cancelled: "Đã hủy"
+    };
     return map[status] || status;
   };
+
   const getStatusColor = (status) => {
-    const map = { Pending: "bg-amber-100 text-amber-700", Booked: "bg-blue-100 text-blue-700", Playing: "bg-green-100 text-green-700" };
+    const map = {
+      Pending: "bg-amber-100 text-amber-700",
+      Booked: "bg-blue-100 text-blue-700",
+      Playing: "bg-green-100 text-green-700"
+    };
     return map[status] || "bg-gray-100 text-gray-600";
   };
 
@@ -254,6 +266,7 @@ const CheckInSection = ({ onCheckInSuccess }) => {
 const BookingListSection = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [processingId, setProcessingId] = useState(null);
   const [statusCounts, setStatusCounts] = useState({
     total: 0, Pending: 0, Booked: 0, Playing: 0, Completed: 0, Cancelled: 0,
   });
@@ -287,11 +300,27 @@ const BookingListSection = () => {
 
   useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
+  // Xử lý xác nhận thanh toán
+  const handleConfirmPayment = async (bookingId) => {
+    try {
+      setProcessingId(bookingId);
+      const res = await confirmPayment(bookingId);
+      if (res.success) {
+        toast.success("Xác nhận thanh toán thành công!");
+        fetchBookings(); // Refresh lại danh sách
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Lỗi xác nhận thanh toán");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   const getStatusBadge = (status) => {
     const cfg = {
+      Pending: { label: "Chờ thanh toán", cls: "bg-amber-100 text-amber-700" },
       Booked: { label: "Đã đặt", cls: "bg-blue-100 text-blue-700" },
       Playing: { label: "Đang chơi", cls: "bg-green-100 text-green-700" },
-      Pending: { label: "Chờ xác nhận", cls: "bg-orange-100 text-orange-700" },
       Completed: { label: "Hoàn thành", cls: "bg-gray-100 text-gray-700" },
       Cancelled: { label: "Đã hủy", cls: "bg-red-100 text-red-700" },
     };
@@ -301,7 +330,7 @@ const BookingListSection = () => {
 
   const tabs = [
     { key: "all", label: "Tất cả đơn", count: statusCounts.total },
-    { key: "Pending", label: "Chờ xác nhận", count: statusCounts.Pending },
+    { key: "Pending", label: "Chờ thanh toán", count: statusCounts.Pending },
     { key: "Booked", label: "Đã đặt", count: statusCounts.Booked },
     { key: "Playing", label: "Đang chơi", count: statusCounts.Playing },
     { key: "Completed", label: "Hoàn thành", count: statusCounts.Completed },
@@ -342,9 +371,9 @@ const BookingListSection = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tất cả trạng thái</SelectItem>
+                    <SelectItem value="Pending">Chờ thanh toán</SelectItem>
                     <SelectItem value="Booked">Đã đặt</SelectItem>
                     <SelectItem value="Playing">Đang chơi</SelectItem>
-                    <SelectItem value="Pending">Chờ xác nhận</SelectItem>
                     <SelectItem value="Completed">Hoàn thành</SelectItem>
                     <SelectItem value="Cancelled">Đã hủy</SelectItem>
                   </SelectContent>
@@ -436,7 +465,26 @@ const BookingListSection = () => {
                       <div className="text-gray-400 text-xs mt-0.5">{formatDate(booking.play_date)}</div>
                     </TableCell>
                     <TableCell className="px-6 py-4">
-                      {getStatusBadge(booking.status)}
+                      <div className="flex items-center gap-2">
+                        {getStatusBadge(booking.status)}
+                        {booking.status === "Pending" && (
+                          <Button
+                            size="sm"
+                            className="h-7 px-2 bg-green-500 hover:bg-green-600 text-white text-xs font-medium"
+                            onClick={() => handleConfirmPayment(booking._id)}
+                            disabled={processingId === booking._id}
+                          >
+                            {processingId === booking._id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <>
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Xác nhận
+                              </>
+                            )}
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="px-6 py-4 text-right font-medium text-gray-900">
                       {booking.deposit > 0 ? `${booking.deposit.toLocaleString("vi-VN")}đ` : "0đ"}
@@ -461,7 +509,8 @@ const BookingListSection = () => {
             </div>
             <div className="text-sm text-gray-600">
               <span className="mr-4">⏱️ Đang chơi: <span className="font-semibold text-green-600">{statusCounts.Playing}</span></span>
-              <span>📅 Đã đặt: <span className="font-semibold text-blue-600">{statusCounts.Booked}</span></span>
+              <span className="mr-4">📅 Đã đặt: <span className="font-semibold text-blue-600">{statusCounts.Booked}</span></span>
+              <span>💰 Chờ TT: <span className="font-semibold text-amber-600">{statusCounts.Pending}</span></span>
             </div>
           </div>
         )}

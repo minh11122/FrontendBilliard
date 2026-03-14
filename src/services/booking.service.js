@@ -66,13 +66,25 @@ export const getClubBookings = async (params = {}) => {
   }
 };
 
+// Xác nhận thanh toán (Dành cho STAFF / OWNER)
+export const confirmPayment = async (bookingId) => {
+  try {
+    const response = await api.post(`/bookings/${bookingId}/confirm-payment`);
+    return response.data;
+  } catch (error) {
+    console.error("Error in confirmPayment:", error);
+    throw error;
+  }
+};
+
 export const bookingService = {
   createBooking,
   cancelHold,
   getMyBookings,
   checkInBooking,
   getClubBookings,
-  markPaymentPending
+  markPaymentPending,
+  confirmPayment
 };
 
 export default bookingService;
