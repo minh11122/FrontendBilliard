@@ -60,8 +60,7 @@ export function LoginForm() {
           console.log("Đang chuyển hướng sang OWNER...");
           navigate("/owner/select-club");
         } else if (role === "STAFF_CLUB") {
-          console.log("Đang chuyển hướng sang STAFF_CLUB...");
-          navigate("/staff/staff1");
+          navigate("/staff/dashboard");
         } else if (role === "CUSTOMER") {
           console.log("Đang chuyển hướng sang CUSTOMER...");
           navigate("/");
@@ -92,8 +91,7 @@ export function LoginForm() {
         console.log("Đang chuyển hướng sang OWNER...");
         navigate("/owner/select-club");
       } else if (role === "STAFF_CLUB") {
-        console.log("Đang chuyển hướng sang STAFF_CLUB...");
-        navigate("/staff/staff1");
+        navigate("/staff/dashboard");
       } else if (role === "CUSTOMER") {
         navigate("/");
       } else {

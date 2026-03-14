@@ -6,7 +6,8 @@ import {
   HomeMainLayout,
   DashboardMainLayout,
   DashboardStaffSystemLayout,
-  DashboardOwnerLayout
+  DashboardOwnerLayout,
+  DashboardStaffClubLayout
 } from "@/components/layouts";
 
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -35,10 +36,10 @@ import {
   OwnerCreateServicePage,
   OwnerEditServicePage,
   OwnerDashboardPage,
-  Staff1,
-  Staff2,
-  Staff3,
-  Staff4,
+  StaffClubPageManagerTable,
+  StaffClubPageBooking,
+  StaffClubPageStatic,
+  StaffClubPageTournament,
   SystemStaff,
   SystemStaff1,
   SystemStaff2,
@@ -120,12 +121,12 @@ export const router = createBrowserRouter([
       },
       {
         path: "staff",
-        element: <DashboardMainLayout />,
+        element: <DashboardStaffClubLayout />,
         children: [
-          { path: "staff1", element: <Staff1 /> },
-          { path: "staff2", element: <Staff2 /> },
-          { path: "staff3", element: <Staff3 /> },
-          { path: "staff4", element: <Staff4 /> },
+          { path: "dashboard", element: <StaffClubPageStatic /> },
+          { path: "tables", element: <StaffClubPageManagerTable /> },
+          { path: "bookings", element: <StaffClubPageBooking /> },
+          { path: "tournaments", element: <StaffClubPageTournament /> },
         ],
       },
       {
