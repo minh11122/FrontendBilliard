@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
-import { getProfileById, updateProfile } from "@/services/auth.service";
+import {
+  getProfileById,
+  updateProfile,
+  updatePassword,
+} from "@/services/auth.service";
 import {
   User,
   Mail,
@@ -9,6 +13,8 @@ import {
   Key,
   Calendar,
   Camera,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { uploadImages } from "@/utils/cloudinary";
@@ -18,6 +24,12 @@ export const ProfilePage = () => {
   const [fullname, setFullname] = useState("");
   const [phone, setPhone] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
@@ -79,7 +91,47 @@ export const ProfilePage = () => {
       );
     }
   };
+
+  const handleChangePassword = async () => {
+    try {
+      if (!oldPassword || !newPassword || !confirmPassword) {
+        return toast.error("Vui lòng nhập đầy đủ mật khẩu");
+      }
+
+      // validate password
+      const passwordRegex =
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{6,}$/;
+
+      if (!passwordRegex.test(newPassword)) {
+        return toast.error(
+          "Mật khẩu ≥6 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt",
+        );
+      }
+
+      if (newPassword !== confirmPassword) {
+        return toast.error("Mật khẩu xác nhận không khớp");
+      }
+
+      const res = await updatePassword({
+        oldPassword,
+        newPassword,
+        confirmPassword,
+      });
+
+      toast.success(res.data.message || "Đổi mật khẩu thành công");
+
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error) {
+      console.log(error);
+
+      toast.error(error?.response?.data?.message || "Đổi mật khẩu thất bại");
+    }
+  };
+
   if (!user) return <div>Loading...</div>;
+
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -230,25 +282,68 @@ export const ProfilePage = () => {
                 Đổi mật khẩu
               </h3>
 
-              <input
-                type="password"
-                placeholder="Mật khẩu hiện tại"
-                className="border rounded-xl w-full px-3 py-2"
-              />
+              <div className="relative">
+                <input
+                  type={showOldPassword ? "text" : "password"}
+                  placeholder="Mật khẩu hiện tại"
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                  className="border rounded-xl w-full px-3 py-2 pr-10"
+                />
 
-              <input
-                type="password"
-                placeholder="Mật khẩu mới"
-                className="border rounded-xl w-full px-3 py-2"
-              />
+                <button
+                  type="button"
+                  onClick={() => setShowOldPassword(!showOldPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                >
+                  {showOldPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
 
-              <input
-                type="password"
-                placeholder="Xác nhận mật khẩu"
-                className="border rounded-xl w-full px-3 py-2"
-              />
+              <div className="relative">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  placeholder="Mật khẩu mới"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="border rounded-xl w-full px-3 py-2 pr-10"
+                />
 
-              <button className="w-full bg-green-600 text-white py-2 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                >
+                  {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Xác nhận mật khẩu"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="border rounded-xl w-full px-3 py-2 pr-10"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff size={18} />
+                  ) : (
+                    <Eye size={18} />
+                  )}
+                </button>
+              </div>
+
+              <button
+                onClick={handleChangePassword}
+                className="w-full bg-green-600 text-white py-2 rounded-xl"
+              >
                 Cập nhật mật khẩu
               </button>
             </div>

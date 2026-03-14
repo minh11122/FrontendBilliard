@@ -45,3 +45,6 @@ export const getProfileById = () => {
 export const updateProfile = (data) => {
   return api.post("/updateprofile", data);
 };
+export const updatePassword = (data) => {
+  return api.post("/updatepassword", data);
+};
