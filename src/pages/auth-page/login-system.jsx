@@ -49,11 +49,12 @@ export function LoginSystem() {
           Cookies.remove("rememberedPassword");
         }
 
-        toast.success("Đăng nhập thành công!");
 
         if (role === "ADMIN") {
+          toast.success("Đăng nhập thành công!");
           navigate("/admin/list-user");
         } else if (role === "STAFF_SYSTEM") {
+          toast.success("Đăng nhập thành công!");
           navigate("/systemstaff/systemstaff1");
         } else {
           toast.error("Bạn không có quyền truy cập hệ thống");
