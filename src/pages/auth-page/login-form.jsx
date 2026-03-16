@@ -53,13 +53,14 @@ export function LoginForm() {
           Cookies.remove("rememberedPassword");
         }
 
-        toast.success("Đăng nhập thành công!");
 
         // 🔥 CHIA ROLE
         if (role === "OWNER") {
+          toast.success("Đăng nhập thành công!");
           console.log("Đang chuyển hướng sang OWNER...");
           navigate("/owner/select-club");
         } else if (role === "STAFF_CLUB") {
+          toast.success("Đăng nhập thành công!");
           navigate("/staff/dashboard");
         } else if (role === "CUSTOMER") {
           console.log("Đang chuyển hướng sang CUSTOMER...");

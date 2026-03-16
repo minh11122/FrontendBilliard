@@ -42,7 +42,10 @@ export function SettingPage() {
   const [clubBank, setClubBank] = useState({
     bank_name: "",
     account_number: "",
-    account_name: ""
+    account_name: "",
+    payos_client_id: "",
+    payos_api_key: "",
+    payos_checksum_key: ""
   });
   const [bankSaving, setBankSaving] = useState(false);
   const [isBankModalOpen, setIsBankModalOpen] = useState(false);
@@ -74,6 +77,7 @@ export function SettingPage() {
 
   useEffect(() => {
     loadAllData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clubId]);
 
   const loadAllData = async () => {
@@ -128,9 +132,16 @@ export function SettingPage() {
           setClubBank({
             bank_name: bank.bank_name || "",
             account_number: bank.account_number || "",
-            account_name: bank.account_name || ""
+            account_name: bank.account_name || "",
+            payos_client_id: bank.payos_client_id || "",
+            payos_api_key: bank.can_view_payos_secrets ? (bank.payos_api_key || "") : "",
+            payos_checksum_key: bank.can_view_payos_secrets ? (bank.payos_checksum_key || "") : ""
           });
-          setIsBankRequired(false);
+          const missingPayOS = !(bank.payos_client_id && bank.has_payos_keys);
+          const missingBank = !(bank.bank_name && bank.account_number && bank.account_name);
+          const required = missingBank || missingPayOS;
+          setIsBankRequired(required);
+          if (required) setIsBankModalOpen(true);
         } else {
           setIsBankRequired(true);
           setIsBankModalOpen(true);
@@ -159,7 +170,7 @@ export function SettingPage() {
       try {
         const res = await getDistrictsByProvince(code);
         setDistricts(res.data || []);
-      } catch (err) {
+      } catch {
         toast.error("Không tải được danh sách quận huyện");
       }
     }
@@ -230,8 +241,8 @@ export function SettingPage() {
       await clubService.updateClub(clubId, clubData);
       toast.success("Cập nhật thông tin quán thành công!");
       setIsEditing(false);
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Lỗi khi lưu thông tin");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Lỗi khi lưu thông tin");
     } finally {
       setSaving(false);
     }
@@ -254,8 +265,7 @@ export function SettingPage() {
       // redirect PayOS
       window.location.href = payment.checkoutUrl;
 
-    } catch (err) {
-
+    } catch {
       toast.error("Không tạo được thanh toán");
 
     }
@@ -269,6 +279,10 @@ export function SettingPage() {
     }
     if (!clubBank.bank_name || !clubBank.account_number || !clubBank.account_name) {
       toast.error("Vui lòng nhập đầy đủ thông tin ngân hàng");
+      return;
+    }
+    if (!clubBank.payos_client_id || !clubBank.payos_api_key || !clubBank.payos_checksum_key) {
+      toast.error("Vui lòng nhập đầy đủ PayOS Client ID, API Key, Checksum Key");
       return;
     }
     setBankSaving(true);
@@ -338,6 +352,7 @@ export function SettingPage() {
         <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100 mb-8 w-fit">
           <button
             onClick={() => setActiveTab("info")}
+            disabled={isBankRequired}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-medium transition-all ${
               activeTab === "info" ? "bg-orange-500 text-white shadow-md shadow-orange-100" : "text-gray-500 hover:bg-gray-50"
             }`}
@@ -347,6 +362,7 @@ export function SettingPage() {
           </button>
           <button
             onClick={() => setActiveTab("subscription")}
+            disabled={isBankRequired}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-medium transition-all ${
               activeTab === "subscription" ? "bg-orange-500 text-white shadow-md shadow-orange-100" : "text-gray-500 hover:bg-gray-50"
             }`}
@@ -886,6 +902,45 @@ export function SettingPage() {
                 </div>
               </div>
 
+              <div className="mt-8 pt-6 border-t border-gray-100">
+                <h4 className="text-base font-bold text-gray-900 mb-2">Cấu hình PayOS (theo từng CLB)</h4>
+                <p className="text-sm text-gray-500 mb-6">
+                  Dùng để tạo mã thanh toán tiền cọc qua PayOS. Thông tin này là bí mật, chỉ chủ quán nhìn thấy.
+                </p>
+                <div className="grid gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-gray-700">PayOS Client ID</label>
+                    <input
+                      type="text"
+                      value={clubBank.payos_client_id}
+                      onChange={(e) => setClubBank({ ...clubBank, payos_client_id: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                      placeholder="Nhập PayOS Client ID"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-gray-700">PayOS API Key</label>
+                    <input
+                      type="password"
+                      value={clubBank.payos_api_key}
+                      onChange={(e) => setClubBank({ ...clubBank, payos_api_key: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                      placeholder="Nhập PayOS API Key"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-gray-700">PayOS Checksum Key</label>
+                    <input
+                      type="password"
+                      value={clubBank.payos_checksum_key}
+                      onChange={(e) => setClubBank({ ...clubBank, payos_checksum_key: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                      placeholder="Nhập PayOS Checksum Key"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="flex justify-end mt-6">
                 <button
                   onClick={handleSaveBankInfo}
@@ -947,6 +1002,37 @@ export function SettingPage() {
                   onChange={(e) => setClubBank({ ...clubBank, account_name: e.target.value })}
                   className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
                   placeholder="Nhập tên chủ tài khoản"
+                />
+              </div>
+              <div className="pt-2 mt-2 border-t border-gray-100" />
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-700">PayOS Client ID</label>
+                <input
+                  type="text"
+                  value={clubBank.payos_client_id}
+                  onChange={(e) => setClubBank({ ...clubBank, payos_client_id: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                  placeholder="Nhập PayOS Client ID"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-700">PayOS API Key</label>
+                <input
+                  type="password"
+                  value={clubBank.payos_api_key}
+                  onChange={(e) => setClubBank({ ...clubBank, payos_api_key: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                  placeholder="Nhập PayOS API Key"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-700">PayOS Checksum Key</label>
+                <input
+                  type="password"
+                  value={clubBank.payos_checksum_key}
+                  onChange={(e) => setClubBank({ ...clubBank, payos_checksum_key: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                  placeholder="Nhập PayOS Checksum Key"
                 />
               </div>
             </div>
