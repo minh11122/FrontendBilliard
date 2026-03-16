@@ -22,13 +22,24 @@ export const cancelHold = async (bookingId) => {
   }
 };
 
-// Đánh dấu booking là Payment Pending sau khi khách đã chuyển khoản
-export const markPaymentPending = async (bookingId) => {
+// Create PayOS payment link for booking deposit
+export const createPayOSBookingPayment = async (bookingId) => {
   try {
-    const response = await api.post(`/bookings/${bookingId}/payment-pending`);
+    const response = await api.post(`/bookings/${bookingId}/payos/create-payment`);
     return response.data;
   } catch (error) {
-    console.error("Error in markPaymentPending:", error);
+    console.error("Error in createPayOSBookingPayment:", error);
+    throw error;
+  }
+};
+
+// Verify PayOS payment for booking (after redirect from PayOS)
+export const verifyBookingPayOSPayment = async (orderCode) => {
+  try {
+    const response = await api.post("/bookings/payos/verify", { orderCode });
+    return response.data;
+  } catch (error) {
+    console.error("Error in verifyBookingPayOSPayment:", error);
     throw error;
   }
 };
@@ -83,8 +94,9 @@ export const bookingService = {
   getMyBookings,
   checkInBooking,
   getClubBookings,
-  markPaymentPending,
-  confirmPayment
+  confirmPayment,
+  createPayOSBookingPayment,
+  verifyBookingPayOSPayment
 };
 
 export default bookingService;

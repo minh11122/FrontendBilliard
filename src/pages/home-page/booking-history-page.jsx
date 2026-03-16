@@ -1,13 +1,12 @@
 import { useState, useEffect, useContext } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { MapPin, Clock, Calendar, ChevronRight, X, Star, AlertCircle, CheckCircle2, Loader2, CalendarClock } from "lucide-react";
-import { getMyBookings } from "@/services/booking.service";
+import { getMyBookings, verifyBookingPayOSPayment } from "@/services/booking.service";
 import { AuthContext } from "@/context/AuthContext";
 import toast from "react-hot-toast";
 
 const STATUS_CONFIG = {
   Pending: { label: "Chờ thanh toán", color: "bg-amber-100 text-amber-700 border-amber-200", dot: "bg-amber-500" },
-  "Payment Pending": { label: "Chờ xác nhận", color: "bg-indigo-100 text-indigo-700 border-indigo-200", dot: "bg-indigo-500" },
   Booked: { label: "Đã đặt", color: "bg-emerald-100 text-emerald-700 border-emerald-200", dot: "bg-emerald-500" },
   Playing: { label: "Đang chơi", color: "bg-blue-100 text-blue-700 border-blue-200", dot: "bg-blue-500" },
   Cancelled: { label: "Đã hủy", color: "bg-red-100 text-red-700 border-red-200", dot: "bg-red-500" },
@@ -17,7 +16,6 @@ const STATUS_CONFIG = {
 const TABS = [
   { key: "all", label: "Tất cả" },
   { key: "Pending", label: "Chờ thanh toán" },
-  { key: "Payment Pending", label: "Chờ xác nhận" },
   { key: "Booked", label: "Đã đặt" },
   { key: "Cancelled", label: "Đã hủy" },
   { key: "Completed", label: "Hoàn thành" },
@@ -107,6 +105,30 @@ export const BookingHistoryPage = () => {
       setSelectedBooking(booking);
     }
   };
+
+  // Khi quay lại từ PayOS (returnUrl có orderCode) -> verify và chuyển Booked
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const orderCode = params.get("orderCode");
+    if (!orderCode) return;
+
+    const verify = async () => {
+      try {
+        const res = await verifyBookingPayOSPayment(orderCode);
+        if (res.success) {
+          toast.success("Thanh toán tiền cọc thành công!");
+          fetchBookings();
+          setActiveTab("Booked");
+        } else {
+          toast.error(res.message || "Xác thực thanh toán thất bại");
+        }
+      } catch {
+        toast.error("Xác thực thanh toán thất bại");
+      }
+    };
+
+    verify();
+  }, []);
 
   if (loading) {
     return (
@@ -205,6 +227,9 @@ export const BookingHistoryPage = () => {
                   <div className="text-right">
                     <p className="text-[10px] text-slate-400 uppercase font-bold">Tổng tiền</p>
                     <p className="text-lg font-black text-emerald-600">{(booking.total_bill || 0).toLocaleString()}đ</p>
+                    <p className="text-[11px] text-amber-600 font-semibold">
+                      Cọc: {(booking.deposit || 0).toLocaleString()}đ
+                    </p>
                   </div>
                   {booking.status === "Pending" && booking.held_until && (
                     <HoldCountdown heldUntil={booking.held_until} />
