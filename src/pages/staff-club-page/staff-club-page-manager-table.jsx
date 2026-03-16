@@ -25,13 +25,31 @@ import { Card, CardContent } from "@/components/ui/card";
 // ─────────────────────────────────────────────
 /**
  * Returns a "display status" derived from billiard_table.status and the activeBooking.status.
- * Priority: Maintenance > Playing > Booked > Holding/Pending > Available
+ * Priority: Maintenance > Playing > (Booked/Pending that are happening now) > Holding > Available.
+ * Upcoming bookings in the future will NOT block the table; the table is treated as available until the start time.
  */
 const getDisplayStatus = (table) => {
+  const booking = table.activeBooking;
+
+  // Helper: parse booking times to Date
+  const parseBookingRange = (bk) => {
+    if (!bk?.play_date || !bk?.start_time || !bk?.end_time) return {};
+    const start = new Date(`${bk.play_date}T${bk.start_time}`);
+    const end = new Date(`${bk.play_date}T${bk.end_time}`);
+    return { start, end };
+  };
+
+  const now = new Date();
+  const { start, end } = parseBookingRange(booking);
+  const isOngoing = start && end && now >= start && now <= end;
+
   if (table.status === "Maintenance") return "maintenance";
-  if (table.activeBooking?.status === "Playing") return "playing";
-  if (table.activeBooking?.status === "Booked") return "booked";
-  if (table.activeBooking?.status === "Pending" || table.status === "Holding") return "holding";
+  // Only treat booking as blocking if it is ongoing
+  if (isOngoing && booking?.status === "Playing") return "playing";
+  if (isOngoing && booking?.status === "Booked") return "booked";
+  if (isOngoing && (booking?.status === "Pending" || table.status === "Holding")) return "holding";
+  // Holding status on table itself
+  if (table.status === "Holding") return "holding";
   return "available";
 };
 

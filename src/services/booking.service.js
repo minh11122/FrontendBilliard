@@ -77,6 +77,17 @@ export const confirmPayment = async (bookingId) => {
   }
 };
 
+// Nhân viên tạo đặt bàn trực tiếp (walk-in) cho khách đến quán
+export const createWalkInBooking = async (data) => {
+  try {
+    const response = await api.post("/bookings/walk-in", data);
+    return response.data;
+  } catch (error) {
+    console.error("Error in createWalkInBooking:", error);
+    throw error;
+  }
+};
+
 export const bookingService = {
   createBooking,
   cancelHold,
@@ -84,7 +95,8 @@ export const bookingService = {
   checkInBooking,
   getClubBookings,
   markPaymentPending,
-  confirmPayment
+  confirmPayment,
+  createWalkInBooking
 };
 
 export default bookingService;
