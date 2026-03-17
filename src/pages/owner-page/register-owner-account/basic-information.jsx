@@ -7,11 +7,13 @@ import { registerClub } from "@/services/club.service";
 import { getProvinces, getDistrictsByProvince, matchAdministrativeUnit } from "@/services/location.service";
 import { useState, useEffect } from "react";
 import { MapAddressPicker } from "@/components/common/MapAddressPicker";
+import { uploadImages } from "@/utils/cloudinary";
 
 export function RegisterOwnerAccount() {
   const navigate = useNavigate();
   const [provinces, setProvinces] = useState([]);
   const [districts, setDistricts] = useState([]);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   useEffect(() => {
     const fetchProvinces = async () => {
@@ -123,12 +125,22 @@ export function RegisterOwnerAccount() {
   };
 
   // upload ảnh
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
 
-    const urls = files.map((file) => URL.createObjectURL(file));
+    if (files.length === 0) return;
 
-    formik.setFieldValue("legalDocuments", urls);
+    try {
+      const urls = await uploadImages(files, setIsUploadingImage);
+      if (urls.length > 0) {
+        formik.setFieldValue("legalDocuments", urls);
+        toast.success("Tải ảnh thành công!");
+      } else {
+        toast.error("Tải ảnh thất bại! Vui lòng thử lại.");
+      }
+    } catch (error) {
+      toast.error("Có lỗi xảy ra khi tải ảnh lên.");
+    }
   };
 
   return (
@@ -299,21 +311,34 @@ export function RegisterOwnerAccount() {
                 Ảnh giấy phép kinh doanh
               </label>
 
-              <div className="mt-2 border-2 border-dashed rounded-xl p-6 text-center">
+              <div className={`mt-2 border-2 border-dashed rounded-xl p-6 text-center transition-colors ${isUploadingImage ? "bg-gray-50 border-gray-300" : "hover:border-green-500 bg-white"}`}>
                 <Image className="mx-auto mb-2 text-gray-400"/>
-                <input
-                  type="file"
-                  multiple
-                  onChange={handleImageUpload}
-                />
+                {isUploadingImage ? (
+                  <p className="text-sm text-gray-500 font-medium">Đang tải ảnh lên hệ thống...</p>
+                ) : (
+                  <>
+                    <input
+                      type="file"
+                      multiple
+                      onChange={handleImageUpload}
+                      disabled={isUploadingImage}
+                      className="text-sm text-gray-500 w-full"
+                    />
+                    {formik.values.legalDocuments.length > 0 && (
+                      <p className="text-xs text-green-600 mt-3 font-medium">
+                        Đã tải lên {formik.values.legalDocuments.length} ảnh hợp lệ
+                      </p>
+                    )}
+                  </>
+                )}
               </div>
             </div>
 
             {/* Submit */}
             <button
               type="submit"
-              disabled={formik.isSubmitting}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl"
+              disabled={formik.isSubmitting || isUploadingImage}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {formik.isSubmitting ? "Đang gửi..." : "Đăng ký CLB"}
             </button>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Building2, CheckCircle2, XCircle, Eye, Lock, LockOpen,
   RefreshCw, Loader2, AlertCircle, X, Search
@@ -51,7 +52,7 @@ const ClubDetailModal = ({ club, onClose }) => {
   if (!club) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-gray-900 text-lg">{club.name}</h3>
@@ -77,6 +78,14 @@ const ClubDetailModal = ({ club, onClose }) => {
             </div>
           ))}
         </div>
+
+        {club.legal_document_image && (
+          <div className="mt-4">
+            <span className="text-gray-500 block mb-2 font-medium break-all">Giấy phép kinh doanh:</span>
+            <img src={club.legal_document_image} alt="Giấy phép kinh doanh" className="w-full h-auto rounded-lg border border-gray-200" />
+          </div>
+        )}
+
         <button onClick={onClose}
           className="mt-5 w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-medium">
           Đóng
@@ -96,6 +105,7 @@ const FILTERS = [
 
 // ─── Main Component ────────────────────────────────────────────────────────
 export const SystemStaff1 = () => {
+  const navigate = useNavigate();
   const [clubs, setClubs] = useState([]);
   const [counts, setCounts] = useState({ Pending: 0, Approved: 0, Rejected: 0, Locked: 0 });
   const [loading, setLoading] = useState(true);
@@ -314,7 +324,13 @@ export const SystemStaff1 = () => {
                         <div className="flex items-center gap-2">
                           {/* Xem chi tiết */}
                           <button
-                            onClick={() => setSelected(club)}
+                            onClick={() => {
+                              if (club.status === "Approved") {
+                                navigate(`/booking/${club._id}`);
+                              } else {
+                                setSelected(club);
+                              }
+                            }}
                             className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700"
                             title="Xem chi tiết"
                           >
