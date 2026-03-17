@@ -93,7 +93,7 @@ export function SettingPage() {
 
       setSubscriptions(subs);
       setCurrentSubscription(current);
-      setProvinces(provinceRes.data || []);
+      setProvinces(provinceRes || []);
 
       if (clubRes?.data) {
         const club = clubRes.data;
@@ -119,7 +119,7 @@ export function SettingPage() {
 
         if (club.province_code) {
           getDistrictsByProvince(club.province_code).then(res => {
-            setDistricts(res.data || []);
+            setDistricts(res || []);
           });
         }
       }
@@ -169,7 +169,7 @@ export function SettingPage() {
     if (code) {
       try {
         const res = await getDistrictsByProvince(code);
-        setDistricts(res.data || []);
+        setDistricts(res || []);
       } catch {
         toast.error("Không tải được danh sách quận huyện");
       }
@@ -193,7 +193,7 @@ export function SettingPage() {
 
     if (matchedProvince) {
       getDistrictsByProvince(matchedProvince.code).then(res => {
-        const dList = res.data || [];
+        const dList = res || [];
         setDistricts(dList);
         const matchedDistrict = matchAdministrativeUnit(districtName, dList);
         
@@ -459,7 +459,7 @@ export function SettingPage() {
                         disabled={!isEditing}
                         className="w-4 h-4 text-orange-500 rounded border-gray-300 focus:ring-orange-500 disabled:opacity-50"
                       />
-                      Quán mở cửa 24/24 (Tất cả các ngày)
+                      Quán mở cửa 24/24 
                     </label>
                   </div>
                   <div className="space-y-2">
@@ -632,7 +632,8 @@ export function SettingPage() {
 
                   {isEditing ? (
                     <div className="space-y-6">
-                      <div className="space-y-2">
+                    {/* Tỉnh/Thành phố và Quận/Huyện ở trong setting*/}
+                      {/* <div className="space-y-2">
                         <label className="text-sm font-semibold text-gray-700">Tỉnh/Thành phố</label>
                         <select
                           value={clubData.province_code ? String(clubData.province_code) : ""}
@@ -655,7 +656,7 @@ export function SettingPage() {
                           <option value="">Chọn Quận/Huyện...</option>
                           {districts.map(d => <option key={d.code} value={String(d.code)}>{d.name_with_type || d.name}</option>)}
                         </select>
-                      </div>
+                      </div> */}
 
                       <div className="space-y-2">
                         <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">

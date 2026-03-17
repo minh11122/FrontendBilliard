@@ -16,3 +16,4 @@ export { default as OwnerCreateEmployeePage } from "./owner-create-employee-page
 export { default as OwnerUpdateEmployeePage } from "./owner-update-employee-page";
 export * from './register-owner-account/basic-information'
 export * from './setting-page'
+export { default as AmenitiesPage } from "./amenities-page";

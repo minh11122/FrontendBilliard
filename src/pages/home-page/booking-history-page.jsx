@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { MapPin, Clock, Calendar, ChevronRight, X, Star, AlertCircle, CheckCircle2, Loader2, CalendarClock } from "lucide-react";
-import { getMyBookings, verifyBookingPayOSPayment } from "@/services/booking.service";
+import { getMyBookings, verifyBookingPayOSPayment, cancelHold } from "@/services/booking.service";
 import { AuthContext } from "@/context/AuthContext";
 import toast from "react-hot-toast";
 
@@ -112,6 +112,9 @@ export const BookingHistoryPage = () => {
     const orderCode = params.get("orderCode");
     if (!orderCode) return;
 
+    // Xóa orderCode khỏi URL ngay để tránh lặp lại thông báo khi F5 hoặc quay lại trang
+    navigate(location.pathname, { replace: true });
+
     const verify = async () => {
       try {
         const res = await verifyBookingPayOSPayment(orderCode);
@@ -128,7 +131,7 @@ export const BookingHistoryPage = () => {
     };
 
     verify();
-  }, []);
+  }, [location.pathname, navigate]);
 
   if (loading) {
     return (
@@ -253,7 +256,11 @@ export const BookingHistoryPage = () => {
 
       {/* Detail Modal */}
       {selectedBooking && (
-        <BookingDetailModal booking={selectedBooking} onClose={() => setSelectedBooking(null)} />
+        <BookingDetailModal 
+          booking={selectedBooking} 
+          onClose={() => setSelectedBooking(null)} 
+          onRefresh={fetchBookings}
+        />
       )}
     </div>
   );
@@ -300,8 +307,31 @@ const HoldCountdown = ({ heldUntil }) => {
 };
 
 // ===== DETAIL MODAL =====
-const BookingDetailModal = ({ booking, onClose }) => {
+const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
   const sc = STATUS_CONFIG[booking.status] || STATUS_CONFIG.Pending;
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleCancelBooking = async () => {
+    if (!window.confirm("Bạn có chắc chắn muốn hủy đơn đặt bàn này không? Bàn sẽ được giải phóng ngay lập tức.")) {
+      return;
+    }
+
+    try {
+      setCancelling(true);
+      const res = await cancelHold(booking._id);
+      if (res.success) {
+        toast.success("Đã hủy đơn thành công");
+        onRefresh && onRefresh();
+        onClose();
+      } else {
+        toast.error(res.message || "Không thể hủy đơn");
+      }
+    } catch (error) {
+      toast.error("Lỗi khi kết nối máy chủ");
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -416,6 +446,23 @@ const BookingDetailModal = ({ booking, onClose }) => {
               <span className="text-xl text-emerald-600">{(booking.total_bill || 0).toLocaleString()}đ</span>
             </div>
           </div>
+
+          {/* Actions */}
+          {(booking.status === "Pending" || booking.status === "Booked") && (
+            <div className="pt-4">
+              <button
+                onClick={handleCancelBooking}
+                disabled={cancelling}
+                className="w-full py-4 bg-white border-2 border-rose-100 text-rose-500 font-bold rounded-2xl hover:bg-rose-50 hover:border-rose-200 transition-all flex items-center justify-center gap-2"
+              >
+                {cancelling ? (
+                  <div className="w-5 h-5 border-2 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <>Hủy đơn đặt bàn này</>
+                )}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -52,6 +52,7 @@ import {
   OwnerListEmployeePage,
   OwnerCreateEmployeePage,
   OwnerUpdateEmployeePage,
+  AmenitiesPage,
 } from "@/pages";
 
 export const router = createBrowserRouter([
@@ -119,6 +120,7 @@ export const router = createBrowserRouter([
           { path: "list-employee", element: <OwnerListEmployeePage /> },
           { path: "employees/create", element: <OwnerCreateEmployeePage /> },
           { path: "employees/edit/:id", element: <OwnerUpdateEmployeePage /> },
+          { path: "amenities", element: <AmenitiesPage /> },
         ],
       },
       {
