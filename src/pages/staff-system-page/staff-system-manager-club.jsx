@@ -1,13 +1,14 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Building2, CheckCircle2, XCircle, Eye, Lock, LockOpen,
-  RefreshCw, Loader2, AlertCircle, X, Search
+  RefreshCw, Loader2, AlertCircle, X, Search, Bell
 } from "lucide-react";
 import {
   getClubs, getDashboardData,
   approveClub, rejectClub, lockClub, unlockClub
 } from "../../services/staffDashboard.service";
+import { getClubById } from "../../services/club.service";
 
 // ─── Toast ─────────────────────────────────────────────────────────────────
 const Toast = ({ message, type, onClose }) => (
@@ -47,12 +48,40 @@ const SkeletonRow = () => (
   </tr>
 );
 
+// ─── Notification Modal ────────────────────────────────────────────────────
+const NotificationModal = ({ club, onClose }) => {
+  if (!club) return null;
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 text-center transform scale-100 animate-in zoom-in-95 duration-200">
+        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 relative">
+          <Bell className="w-8 h-8 text-blue-600 animate-bounce" />
+          <span className="absolute top-0 right-0 flex h-4 w-4">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500"></span>
+          </span>
+        </div>
+        <h3 className="text-xl font-bold text-gray-900 mb-2">CLB mới chờ duyệt!</h3>
+        <p className="text-gray-500 text-sm mb-6">
+          Câu lạc bộ <span className="font-semibold text-gray-900">{club.name}</span> vừa đăng ký và đang chờ bạn phê duyệt.
+        </p>
+        <button
+          onClick={onClose}
+          className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-lg shadow-blue-200"
+        >
+          Xem ngay
+        </button>
+      </div>
+    </div>
+  );
+};
+
 // ─── Detail Modal ──────────────────────────────────────────────────────────
 const ClubDetailModal = ({ club, onClose }) => {
   if (!club) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-gray-900 text-lg">{club.name}</h3>
@@ -62,32 +91,66 @@ const ClubDetailModal = ({ club, onClose }) => {
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
-        <div className="space-y-3 text-sm">
-          {[
-            ["Địa chỉ", club.address],
-            ["Số điện thoại", club.phone],
-            ["Mã số thuế", club.tax_code],
-            ["Email chủ CLB", club.account_id?.email || "—"],
-            ["Họ tên chủ CLB", club.account_id?.fullname || "—"],
-            ["Mô tả", club.description || "Không có"],
-            ["Ngày đăng ký", club.created_at ? new Date(club.created_at).toLocaleString("vi-VN") : "—"],
-          ].map(([label, value]) => (
-            <div key={label} className="flex gap-2">
-              <span className="text-gray-500 w-36 flex-shrink-0">{label}:</span>
-              <span className="text-gray-900 font-medium break-all">{value}</span>
-            </div>
-          ))}
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-3 text-sm">
+            {[
+              ["Địa chỉ", club.address],
+              ["Số điện thoại", club.phone],
+              ["Mã số thuế", club.tax_code],
+              ["Mô tả", club.description || "Không có"],
+              ["Giờ hoạt động", `${club.opening_time || "08:00"} - ${club.closing_time || "23:30"}`],
+              ["Số lượng bàn", club.tables ? `${club.tables.length} bàn` : "Đang tải..."],
+            ].map(([label, value]) => (
+              <div key={label} className="flex gap-2">
+                <span className="text-gray-500 w-28 flex-shrink-0">{label}:</span>
+                <span className="text-gray-900 font-medium break-all">{value}</span>
+              </div>
+            ))}
+          </div>
+          
+          <div className="space-y-3 text-sm">
+            {[
+              ["Email chủ CLB", club.account_id?.email || "—"],
+              ["Họ tên chủ CLB", club.account_id?.fullname || "—"],
+              ["Ngày đăng ký", club.created_at ? new Date(club.created_at).toLocaleString("vi-VN") : "—"],
+            ].map(([label, value]) => (
+              <div key={label} className="flex gap-2">
+                <span className="text-gray-500 w-28 flex-shrink-0">{label}:</span>
+                <span className="text-gray-900 font-medium break-all">{value}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {club.legal_document_image && (
-          <div className="mt-4">
-            <span className="text-gray-500 block mb-2 font-medium break-all">Giấy phép kinh doanh:</span>
-            <img src={club.legal_document_image} alt="Giấy phép kinh doanh" className="w-full h-auto rounded-lg border border-gray-200" />
+        {club.images && club.images.length > 0 ? (
+          <div className="mt-6 border-t pt-4">
+            <span className="text-gray-800 font-semibold block mb-3">Tài liệu & Hình ảnh:</span>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {club.images.map((img, idx) => (
+                <div key={idx} className="relative group rounded-lg overflow-hidden border border-gray-200 aspect-video">
+                  <img src={img.image_url} alt={`Hình ảnh ${img.image_type}`} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <span className="text-white text-xs font-medium px-2 py-1 bg-black/60 rounded max-w-[90%] truncate text-center">
+                      {img.image_type}
+                    </span>
+                  </div>
+                  <div className="absolute top-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded md:hidden truncate max-w-[90%]">
+                    {img.image_type}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        )}
+        ) : club.legal_document_image ? (
+          <div className="mt-6 border-t pt-4">
+            <span className="text-gray-800 font-semibold block mb-3">Tài liệu kinh doanh:</span>
+            <img src={club.legal_document_image} alt="Giấy phép kinh doanh" className="w-full md:w-1/2 h-auto rounded-lg border border-gray-200" />
+          </div>
+        ) : null}
 
         <button onClick={onClose}
-          className="mt-5 w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-medium">
+          className="mt-6 w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-colors">
           Đóng
         </button>
       </div>
@@ -113,8 +176,16 @@ export const SystemStaff1 = () => {
   const [actionLoading, setActionLoading] = useState({});
   const [toast, setToast] = useState(null);
   const [selected, setSelected] = useState(null);
+  const [newClubNotification, setNewClubNotification] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [filterStatus, setFilterStatus] = useState("Pending");
   const [search, setSearch] = useState("");
+  const [unreadNewClubs, setUnreadNewClubs] = useState([]);
+  const [showNotificationPopup, setShowNotificationPopup] = useState(false);
+  
+  const knownPendingIds = useRef(new Set());
+  const isFirstLoad = useRef(true);
+  const popupRef = useRef(null);
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
@@ -127,7 +198,32 @@ export const SystemStaff1 = () => {
       const res = await getDashboardData();
       if (res?.success) {
         const s = res.data.stats || {};
+        const pendingList = res.data.pendingClubs || [];
         setCounts(prev => ({ ...prev, Pending: s.pendingClubs || 0 }));
+        
+        if (isFirstLoad.current) {
+          pendingList.forEach(c => knownPendingIds.current.add(c._id));
+          isFirstLoad.current = false;
+        } else {
+          // Check for new clubs that weren't in our known set
+          const newClubs = pendingList.filter(c => !knownPendingIds.current.has(c._id));
+          if (newClubs.length > 0) {
+            
+            // Show modal for the newest one
+            setNewClubNotification(newClubs[0]);
+            
+            // Add to unread bell list
+            setUnreadNewClubs(prev => {
+                const combined = [...newClubs, ...prev];
+                // Keep unique by ID
+                const unique = Array.from(new Map(combined.map(item => [item["_id"], item])).values());
+                return unique;
+            });
+
+            // Add to known set directly
+            newClubs.forEach(c => knownPendingIds.current.add(c._id));
+          }
+        }
       }
     } catch { /* silent */ }
   }, []);
@@ -148,15 +244,79 @@ export const SystemStaff1 = () => {
 
   useEffect(() => {
     fetchCounts();
+    // Poll every 10 seconds for new pending clubs
+    const interval = setInterval(() => {
+      fetchCounts();
+    }, 10000);
+    return () => clearInterval(interval);
   }, [fetchCounts]);
+
+  // Handle click outside to close unread popup
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (popupRef.current && !popupRef.current.contains(event.target)) {
+        setShowNotificationPopup(false);
+      }
+    };
+    if (showNotificationPopup) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showNotificationPopup]);
 
   useEffect(() => {
     fetchClubs(filterStatus);
   }, [filterStatus, fetchClubs]);
 
+  const handleCloseNotification = () => {
+    setNewClubNotification(null);
+    if (filterStatus !== "Pending") {
+      setFilterStatus("Pending");
+    } else {
+      fetchClubs("Pending");
+    }
+  };
+
+  const handleReadNotification = (clubId) => {
+    setUnreadNewClubs(prev => prev.filter(c => c._id !== clubId));
+    if (filterStatus !== "Pending") {
+      setFilterStatus("Pending");
+    } else {
+      fetchClubs("Pending");
+    }
+    setShowNotificationPopup(false);
+  };
+  
+  const handleReadAll = () => {
+      setUnreadNewClubs([]);
+      setShowNotificationPopup(false);
+      if (filterStatus !== "Pending") {
+          setFilterStatus("Pending");
+      }
+  };
+
   const handleTabChange = (key) => {
     setFilterStatus(key);
     setSearch("");
+  };
+
+  const handleViewDetail = async (club) => {
+    try {
+      setDetailLoading(true);
+      setSelected(club); // Hiển thị khung sườn ngay lập tức
+      const res = await getClubById(club._id);
+      if (res?.success) {
+        setSelected({ ...res.data, account_id: club.account_id, status: club.status });
+      } else {
+        showToast("Không thể tải chi tiết CLB", "error");
+      }
+    } catch (e) {
+      showToast("Lỗi tải chi tiết CLB", "error");
+    } finally {
+      setDetailLoading(false);
+    }
   };
 
   const withAction = async (id, action, successMsg, errorMsg, fn) => {
@@ -209,6 +369,7 @@ export const SystemStaff1 = () => {
     <div className="min-h-screen bg-gray-50">
       {toast && <Toast {...toast} onClose={() => setToast(null)} />}
       {selected && <ClubDetailModal club={selected} onClose={() => setSelected(null)} />}
+      {newClubNotification && <NotificationModal club={newClubNotification} onClose={handleCloseNotification} />}
 
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
@@ -219,14 +380,70 @@ export const SystemStaff1 = () => {
             <p className="text-xs text-gray-500">Phê duyệt và quản lý câu lạc bộ</p>
           </div>
         </div>
-        <button
-          onClick={() => fetchClubs(filterStatus)}
-          disabled={loading}
-          className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-blue-500" : ""}`} />
-          Làm mới
-        </button>
+        <div className="flex items-center gap-4">
+          {/* Nút Chuông Thông Báo */}
+          <div className="relative" ref={popupRef}>
+            <button
+              onClick={() => setShowNotificationPopup(!showNotificationPopup)}
+              className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors flex items-center justify-center"
+              title="Thông báo mới"
+            >
+              <Bell className="w-5 h-5" />
+              {unreadNewClubs.length > 0 && (
+                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+              )}
+            </button>
+            
+            {showNotificationPopup && (
+              <div className="absolute top-full right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden transform origin-top-right animate-in zoom-in-95 duration-200">
+                <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+                  <h3 className="font-semibold text-sm text-gray-800">Thông báo mới</h3>
+                  {unreadNewClubs.length > 0 && (
+                      <button 
+                        onClick={handleReadAll}
+                        className="text-xs text-blue-600 hover:text-blue-700 font-medium">
+                          Đánh dấu đã đọc
+                      </button>
+                  )}
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {unreadNewClubs.length === 0 ? (
+                    <div className="px-4 py-8 text-center text-gray-500 text-sm">
+                      Không có thông báo mới nào
+                    </div>
+                  ) : (
+                    unreadNewClubs.map(club => (
+                      <div 
+                        key={club._id} 
+                        onClick={() => handleReadNotification(club._id)}
+                        className="px-4 py-3 border-b border-gray-50 hover:bg-blue-50 cursor-pointer transition-colors flex gap-3 items-start"
+                      >
+                        <div className="flex-shrink-0 mt-1">
+                          <div className="w-2 h-2 rounded-full bg-blue-500 mt-1"></div>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 line-clamp-1">{club.name}</p>
+                          <p className="text-xs text-gray-500 line-clamp-1 truncate mt-0.5">Vừa đăng ký chờ hệ thống duyệt</p>
+                          <p className="text-[10px] text-gray-400 mt-1">Vừa xong</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Nút Làm Mới */}
+          <button
+            onClick={() => fetchClubs(filterStatus)}
+            disabled={loading}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200 shadow-sm bg-white"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-blue-500" : ""}`} />
+            Làm mới
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -324,13 +541,7 @@ export const SystemStaff1 = () => {
                         <div className="flex items-center gap-2">
                           {/* Xem chi tiết */}
                           <button
-                            onClick={() => {
-                              if (club.status === "Approved") {
-                                navigate(`/booking/${club._id}`);
-                              } else {
-                                setSelected(club);
-                              }
-                            }}
+                            onClick={() => handleViewDetail(club)}
                             className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700"
                             title="Xem chi tiết"
                           >
