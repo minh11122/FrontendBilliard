@@ -53,6 +53,7 @@ import {
   OwnerCreateEmployeePage,
   OwnerUpdateEmployeePage,
   AmenitiesPage,
+  OwnerResubmitClubPage
 } from "@/pages";
 
 export const router = createBrowserRouter([
@@ -88,6 +89,10 @@ export const router = createBrowserRouter([
       {
         path: "owner/select-club",
         element: <OwnerSelectClubPage />
+      },
+      {
+        path: "owner/resubmit-club/:id",
+        element: <OwnerResubmitClubPage />
       },
       {
         path: "admin",

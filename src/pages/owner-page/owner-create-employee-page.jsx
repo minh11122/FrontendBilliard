@@ -42,7 +42,7 @@ export default function OwnerCreateEmployeePage() {
     return (
         <div className="p-6 max-w-2xl mx-auto">
             <div className="flex items-center gap-4 mb-6">
-                <Link to="/owner/employees" className="text-gray-500 hover:text-gray-800 transition">
+                <Link to="/owner/list-employee" className="text-gray-500 hover:text-gray-800 transition">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                     </svg>
@@ -110,7 +110,7 @@ export default function OwnerCreateEmployeePage() {
 
                 <div className="pt-6 flex justify-end gap-3 border-t">
                     <Link
-                        to="/owner/employees"
+                        to="/owner/list-employee"
                         className="px-5 py-2 border border-gray-300 rounded-md text-gray-700 font-medium hover:bg-gray-50 transition"
                     >
                         Hủy
