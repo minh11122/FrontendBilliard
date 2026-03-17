@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { MapPin, Star, Clock, Wifi, Coffee, CigaretteOff, ChevronLeft, ChevronRight, Info, MessageSquare } from "lucide-react";
+import { MapPin, Star, Clock, Wifi, Coffee, CigaretteOff, ChevronLeft, ChevronRight, Info, MessageSquare, Car, Sparkles } from "lucide-react";
 import { getClubById } from "@/services/club.service";
 import { createBooking } from "@/services/booking.service";
 import { AuthContext } from "@/context/AuthContext";
@@ -20,6 +20,9 @@ export const ClubDetailPage = () => {
   const [selectedStartTime, setSelectedStartTime] = useState("");
   const [selectedDuration, setSelectedDuration] = useState(2); // hours
   const [selectedTable, setSelectedTable] = useState(null);
+  const [tableDetail, setTableDetail] = useState(null); // Table for detail modal
+  const [tablePage, setTablePage] = useState(0);
+  const TABLES_PER_PAGE = 6;
 
   const getTodayStr = () => {
     const d = new Date();
@@ -72,9 +75,10 @@ export const ClubDetailPage = () => {
     }
   };
 
-  // Reset selected table if table type changes
+  // Reset selected table and pagination if table type changes
   useEffect(() => {
     setSelectedTable(null);
+    setTablePage(0);
   }, [selectedTableType]);
 
   // Hook logic needs to be before early returns
@@ -377,18 +381,32 @@ export const ClubDetailPage = () => {
             <div className="pt-6 border-t mt-auto">
               <h3 className="font-bold text-slate-900 mb-3 text-sm">Tiện ích</h3>
               <div className="flex flex-wrap gap-2">
-                <span className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-700 text-xs font-medium rounded-lg border">
-                  <Wifi className="w-3.5 h-3.5 text-emerald-500" /> Wifi miễn phí
-                </span>
-                <span className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-700 text-xs font-medium rounded-lg border">
-                  <Coffee className="w-3.5 h-3.5 text-emerald-500" /> Máy lạnh
-                </span>
-                <span className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-700 text-xs font-medium rounded-lg border">
-                  <svg className="w-3.5 h-3.5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg> Bãi xe ô tô
-                </span>
-                <span className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-lg border border-emerald-100">
-                  <CigaretteOff className="w-3.5 h-3.5" /> Không hút thuốc
-                </span>
+                {club.amenities && club.amenities.length > 0 ? (
+                  club.amenities.map((amenity) => {
+                    let Icon = Sparkles;
+                    let colorClass = "text-emerald-500";
+                    let bgClass = "bg-slate-50";
+                    let borderClass = "border-slate-200";
+
+                    if (amenity === "Wifi miễn phí") Icon = Wifi;
+                    else if (amenity === "Máy lạnh") Icon = Coffee;
+                    else if (amenity === "Bãi xe ô tô") Icon = Car;
+                    else if (amenity === "Không hút thuốc") {
+                      Icon = CigaretteOff;
+                      colorClass = "text-emerald-700";
+                      bgClass = "bg-emerald-50";
+                      borderClass = "border-emerald-100";
+                    }
+
+                    return (
+                      <span key={amenity} className={`flex items-center gap-1.5 px-3 py-1.5 ${bgClass} text-slate-700 text-xs font-medium rounded-lg border ${borderClass}`}>
+                        <Icon className={`w-3.5 h-3.5 ${colorClass}`} /> {amenity}
+                      </span>
+                    );
+                  })
+                ) : (
+                  <span className="text-xs text-slate-400 italic">Chưa có thông tin tiện ích</span>
+                )}
               </div>
             </div>
           </div>
@@ -518,52 +536,139 @@ export const ClubDetailPage = () => {
                       <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
                       Danh sách bàn
                     </h3>
-                    <div className="flex gap-4 text-xs font-medium text-slate-500 bg-white px-3 py-1.5 rounded-lg border shadow-sm">
+                    <div className="flex gap-4 text-xs font-medium text-slate-500 bg-white px-3 py-1.5 rounded-lg border shadow-sm items-center">
                       <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded box-border border bg-white"></span> Trống</span>
-                      <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-amber-200 border border-amber-400"></span> Đang giữ chỗ</span>
-                      <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded box-border border bg-slate-200 ring-2 ring-inset ring-slate-300"></span> Bảo trì</span>
-                      <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded border border-emerald-500 bg-emerald-100"></span> Đang chọn</span>
+                      <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded bg-amber-500 ring-2 ring-amber-100 ring-offset-1"></span> Đang chờ</span>
+                      <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded bg-slate-500 ring-2 ring-slate-100 ring-offset-1"></span> Bảo trì</span>
+                      <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded bg-emerald-500 ring-2 ring-emerald-100 ring-offset-1"></span> Đang chọn</span>
                     </div>
                   </div>
 
-                  {/* Table Grid Map */}
-                  <div className="flex flex-wrap gap-8 justify-center max-w-lg mt-12 w-full">
-                    {availableTables.length > 0 ? availableTables.map(t => (
-                      <div
-                        key={t._id}
-                        onClick={() => {
-                          if (t.status === "Maintenance") return;
-                          if (t.status === "Holding") {
-                            toast("Bàn này đang được giữ chỗ", { icon: "⏳" });
-                            return;
-                          }
-                          setSelectedTable(t);
-                        }}
-                        className={`w-[140px] h-[80px] rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all relative select-none ${selectedTable?._id === t._id
-                          ? "bg-emerald-50 border-2 border-emerald-500 shadow-md text-emerald-700"
-                          : t.status === "Holding"
-                            ? "bg-amber-50 border-2 border-amber-400 text-amber-700 cursor-not-allowed"
-                            : t.status === "Maintenance"
-                              ? "bg-slate-100 border-2 border-slate-200 text-slate-400 cursor-not-allowed opacity-80"
-                              : "bg-white border-2 border-slate-100 text-slate-700 shadow-sm hover:border-emerald-300 hover:shadow-md hover:-translate-y-0.5"
-                          }`}
-                      >
-                        {selectedTable?._id === t._id && (
-                          <div className="absolute -top-2 -right-2 w-6 h-6 bg-emerald-500 rounded-full text-white flex items-center justify-center shadow-md">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                          </div>
-                        )}
-                        {t.status === "Holding" && (
-                          <div className="absolute -top-2 -right-2 w-6 h-6 bg-amber-500 rounded-full text-white flex items-center justify-center shadow-md text-xs">⏳</div>
-                        )}
-                        <span className="font-bold text-lg">{t.table_number}</span>
-                        <span className="text-[10px] mt-1 text-slate-400 font-bold tracking-wide uppercase">
-                          {t.status === "Holding" ? "Đang giữ chỗ" : t.status === "Maintenance" ? "Bảo trì" : `Bàn ${selectedTableType}`}
-                        </span>
-                      </div>
-                    )) : (
-                      <div className="text-slate-400 w-full text-center py-10">Không có bàn nào thuộc loại này</div>
+                  {/* Table Grid Map with Pagination */}
+                  <div className="w-full max-w-2xl mt-12 relative px-10">
+                    {/* Navigation Arrows */}
+                    {availableTables.length > TABLES_PER_PAGE && (
+                      <>
+                        <button
+                          onClick={() => setTablePage(p => Math.max(0, p - 1))}
+                          disabled={tablePage === 0}
+                          className="absolute left-0 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white border shadow-md flex items-center justify-center hover:bg-slate-50 transition-all z-10 disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => setTablePage(p => Math.min(Math.ceil(availableTables.length / TABLES_PER_PAGE) - 1, p + 1))}
+                          disabled={tablePage >= Math.ceil(availableTables.length / TABLES_PER_PAGE) - 1}
+                          className="absolute right-0 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white border shadow-md flex items-center justify-center hover:bg-slate-50 transition-all z-10 disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <ChevronRight className="w-5 h-5" />
+                        </button>
+                      </>
                     )}
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 justify-items-center">
+                      {availableTables.slice(tablePage * TABLES_PER_PAGE, (tablePage + 1) * TABLES_PER_PAGE).map(t => (
+                        <div
+                          key={t._id}
+                          onClick={() => {
+                            if (t.status === "Maintenance") return;
+                            if (t.status === "Holding") {
+                              toast("Bàn này đang được giữ chỗ", { icon: "⏳" });
+                              return;
+                            }
+                            setSelectedTable(t);
+                          }}
+                          className={`w-[160px] h-[110px] rounded-[24px] flex flex-col items-center justify-center cursor-pointer transition-all relative select-none overflow-hidden group ${selectedTable?._id === t._id
+                            ? "ring-[4px] ring-emerald-500 shadow-xl scale-[1.05]"
+                            : t.status === "Holding"
+                              ? "opacity-90 grayscale-[0.3] cursor-not-allowed border-2 border-amber-400/50"
+                              : t.status === "Maintenance"
+                                ? "opacity-60 grayscale cursor-not-allowed border-2 border-slate-300"
+                                : "hover:shadow-xl hover:-translate-y-1.5 shadow-md border-2 border-transparent"
+                            }`}
+                        >
+                          {/* Table Image Background */}
+                          {t.image_url ? (
+                            <img
+                              src={t.image_url}
+                              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                              alt=""
+                            />
+                          ) : (
+                            <div className="absolute inset-0 bg-slate-200 flex items-center justify-center">
+                              <Sparkles className="w-10 h-10 text-slate-300 opacity-20" />
+                            </div>
+                          )}
+
+                          {/* Dynamic Overlay & Glow based on status/selection */}
+                          <div className={`absolute inset-0 transition-all duration-300 ${selectedTable?._id === t._id
+                              ? "bg-emerald-900/40 backdrop-blur-[1px]"
+                              : "bg-black/40 group-hover:bg-black/20"
+                            }`} />
+
+                          <div className={`absolute inset-0 bg-gradient-to-t transition-opacity duration-300 ${selectedTable?._id === t._id
+                              ? "from-emerald-950/9 worst-emerald-900/10 to-transparent opacity-100"
+                              : "from-black/90 via-black/20 to-transparent opacity-90 group-hover:opacity-100"
+                            }`} />
+
+                          {/* Selection Checkmark */}
+                          {selectedTable?._id === t._id && (
+                            <div className="absolute top-2 right-2 w-7 h-7 bg-emerald-500 rounded-xl text-white flex items-center justify-center shadow-lg z-20 animate-in zoom-in spin-in-12 duration-300">
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                            </div>
+                          )}
+
+                          {/* UPRIGHT STATUS BADGE - MORE PROMINENT */}
+                          <div className="absolute top-0 left-0 right-0 p-2 flex justify-start z-20">
+                            {t.status === "Holding" ? (
+                              <div className="px-3 py-1.5 bg-amber-500 text-white text-[10px] font-black rounded-br-2xl shadow-lg flex items-center gap-1.5 uppercase tracking-tighter animate-in slide-in-from-left duration-300">
+                                <Clock className="w-3.5 h-3.5 fill-white/20" /> ĐANG CHỜ
+                              </div>
+                            ) : t.status === "Maintenance" ? (
+                              <div className="px-3 py-1.5 bg-slate-600 text-white text-[10px] font-black rounded-br-2xl shadow-lg uppercase tracking-tighter">
+                                BẢO TRÌ
+                              </div>
+                            ) : (
+                              <div className="px-3 py-1.5 bg-white/90 backdrop-blur-md text-emerald-600 text-[10px] font-black rounded-br-2xl shadow-sm uppercase tracking-tighter border-b border-r border-emerald-100/20">
+                                TRỐNG
+                              </div>
+                            )}
+                          </div>
+
+                          {/* CONTENT - JUST TABLE NUMBER */}
+                          <div className="relative z-10 flex flex-col items-center pt-4">
+                            <span className={`block font-black text-4xl leading-none drop-shadow-2xl transition-all duration-300 ${selectedTable?._id === t._id ? "text-emerald-300 scale-110" : "text-white"
+                              }`}>
+                              {t.table_number}
+                            </span>
+                          </div>
+
+                          {/* Info Button - Sleeker */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setTableDetail(t);
+                            }}
+                            className="absolute bottom-2 right-2 p-2 bg-white/20 hover:bg-white/40 backdrop-blur-xl rounded-2xl transition-all text-white border border-white/20 group-hover:scale-110 z-20"
+                          >
+                            <Info className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Simple Pagination Dots */}
+                    {availableTables.length > TABLES_PER_PAGE && (
+                      <div className="flex justify-center gap-1.5 mt-8">
+                        {Array.from({ length: Math.ceil(availableTables.length / TABLES_PER_PAGE) }).map((_, i) => (
+                          <div
+                            key={i}
+                            className={`h-1.5 rounded-full transition-all duration-300 ${tablePage === i ? "w-6 bg-emerald-500" : "w-1.5 bg-slate-300"}`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
                     {/* Cửa lối vào (Mô phỏng như ảnh) */}
                     <div className="w-full flex justify-center mt-12 mb-6">
@@ -572,9 +677,7 @@ export const ClubDetailPage = () => {
                       </div>
                     </div>
                   </div>
-
                 </div>
-              </div>
             )}
 
             {activeTab === 'info' && (
@@ -640,10 +743,19 @@ export const ClubDetailPage = () => {
                 <div className="font-bold text-slate-900 text-sm sm:text-base">{selectedTableType} • {selectedDate.split('-').reverse().slice(0, 2).join('/')} • {selectedStartTime} - {endTime}</div>
               </div>
               <div className="hidden sm:block w-px h-10 bg-slate-100"></div>
-              <div>
-                <div className="text-[10px] sm:text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">Bàn đã chọn</div>
-                <div className={`font-bold text-sm sm:text-base ${selectedTable ? "text-emerald-600" : "text-slate-400"}`}>
-                  {selectedTable ? `Bàn ${selectedTable.table_number}` : "Chưa chọn"}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-slate-100 border overflow-hidden flex-shrink-0">
+                  {selectedTable?.image_url ? (
+                    <img src={selectedTable.image_url} className="w-full h-full object-cover" alt="" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-400 font-bold uppercase">No img</div>
+                  )}
+                </div>
+                <div>
+                  <div className="text-[10px] sm:text-xs text-slate-500 uppercase font-bold tracking-wider mb-0.5">Bàn đã chọn</div>
+                  <div className={`font-bold text-sm sm:text-base ${selectedTable ? "text-emerald-600" : "text-slate-400"}`}>
+                    {selectedTable ? `Bàn ${selectedTable.table_number}` : "Chưa chọn"}
+                  </div>
                 </div>
               </div>
             </div>
@@ -665,6 +777,93 @@ export const ClubDetailPage = () => {
         </div>
       )}
 
+      {/* Table Detail Modal */}
+      {tableDetail && (
+        <TableDetailModal 
+          table={tableDetail} 
+          onClose={() => setTableDetail(null)} 
+          selectedTableType={selectedTableType}
+        />
+      )}
     </div>
   );
 };
+
+// ===== TABLE DETAIL MODAL =====
+const TableDetailModal = ({ table, onClose, selectedTableType }) => {
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={onClose}>
+      <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+        
+        {/* Header with Table Icon/Number */}
+        <div className="p-6 border-b flex justify-between items-center bg-slate-50/50">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-200">
+              <span className="font-black text-xl">{table.table_number}</span>
+            </div>
+            <div>
+              <h3 className="font-black text-slate-900 text-lg">Chi tiết Bàn Bida</h3>
+              <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest mt-0.5">Bàn {selectedTableType}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-white rounded-full transition-colors border shadow-sm">
+            <X className="w-5 h-5 text-slate-400" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* Main Image */}
+          <div className="aspect-video bg-slate-100 rounded-2xl border overflow-hidden relative shadow-inner">
+            {table.image_url ? (
+              <img src={table.image_url} className="w-full h-full object-cover" alt={`Bàn ${table.table_number}`} />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-2">
+                <Sparkles className="w-12 h-12 opacity-20" />
+                <p className="text-sm font-bold uppercase tracking-widest opacity-40">Chưa có ảnh bàn</p>
+              </div>
+            )}
+            {/* Price Badge */}
+            <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md px-4 py-2 rounded-xl shadow-lg border border-white/20">
+               <p className="text-[10px] font-black text-slate-400 uppercase leading-none mb-1">Đơn giá / Giờ</p>
+               <p className="text-lg font-black text-emerald-600">{table.price?.toLocaleString()}đ</p>
+            </div>
+          </div>
+
+          {/* Description Section */}
+          <div className="space-y-3">
+            <h4 className="font-bold text-slate-900 flex items-center gap-2">
+              <Info className="w-4 h-4 text-emerald-500" /> Mô tả chi tiết
+            </h4>
+            <div className="bg-slate-50 rounded-2xl p-4 border border-dashed border-slate-200 min-h-[100px]">
+              <p className="text-sm text-slate-600 leading-relaxed italic">
+                {table.description || "Quán chưa cập nhật mô tả cụ thể cho chiếc bàn này. Tuy nhiên, tất cả bàn tại đây đều được đảm bảo về tiêu chuẩn chất lượng và vệ sinh hàng ngày."}
+              </p>
+            </div>
+          </div>
+
+          {/* Status info */}
+          <div className="flex items-center justify-between p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100">
+            <div className="flex items-center gap-3">
+               <div className={`w-3 h-3 rounded-full ${table.status === 'Available' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></div>
+               <span className="text-sm font-bold text-slate-700">Trạng thái hiện tại</span>
+            </div>
+            <span className={`text-xs font-black px-3 py-1 rounded-full border ${table.status === 'Available' ? 'bg-white text-emerald-600 border-emerald-200' : 'bg-slate-100 text-slate-400'}`}>
+              {table.status === 'Available' ? 'ĐANG TRỐNG' : table.status === 'Holding' ? 'ĐANG GIỮ CHỖ' : 'BẢO TRÌ'}
+            </span>
+          </div>
+        </div>
+
+        <div className="p-6 bg-slate-50/50 border-t flex gap-3">
+          <button 
+            onClick={onClose}
+            className="flex-1 py-3 bg-white border font-black text-slate-500 rounded-2xl hover:bg-slate-100 transition-all active:scale-[0.98]"
+          >
+            ĐÓNG
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+import { X } from "lucide-react";

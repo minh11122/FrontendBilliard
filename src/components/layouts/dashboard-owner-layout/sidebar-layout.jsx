@@ -21,7 +21,8 @@ import {
   User,
   ConciergeBell,
   Trophy,
-  ArrowLeftCircle
+  ArrowLeftCircle,
+  Sparkles
 } from "lucide-react";
 
 export const SidebarOwner = () => {
@@ -59,7 +60,11 @@ export const SidebarOwner = () => {
       href: "/owner/tournaments",
       icon: Trophy,
     },
-
+    {
+      name: "Quản lý tiện ích",
+      href: "/owner/amenities",
+      icon: Sparkles,
+    },
   ];
 
   const handleBackToSelection = () => {

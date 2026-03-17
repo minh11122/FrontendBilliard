@@ -131,9 +131,9 @@ export const BookingPage = () => {
     const matchSearch = (club.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
       (club.address?.toLowerCase() || "").includes(searchTerm.toLowerCase());
 
-    const matchProvince = selectedProvinceCode === "all" || club.province_code === selectedProvinceCode;
+    const matchProvince = selectedProvinceCode === "all" || String(club.province_code) === String(selectedProvinceCode);
     
-    const matchDistrict = selectedDistrictCode === "all" || club.district_code === selectedDistrictCode;
+    const matchDistrict = selectedDistrictCode === "all" || String(club.district_code) === String(selectedDistrictCode);
 
     const matchRating = filterRating ? club.rating >= 4.0 : true;
 
@@ -154,7 +154,7 @@ export const BookingPage = () => {
       const dist = calculateDistance(userLocation.lat, userLocation.lng, club.lat, club.lng);
       return { ...club, distanceValue: dist, distance: formatDistance(dist) };
     }
-    return { ...club, distance: club.distance || "N/A" };
+    return { ...club, distance: club.distance };
   });
 
   if (sortByLocation && userLocation) {
@@ -263,7 +263,7 @@ export const BookingPage = () => {
                   disabled={selectedProvinceCode === "all"}
                 >
                   <option value="all">
-                    {selectedProvinceCode === "all" ? "Chọn Tỉnh/Thành trước" : "Tất cả Quận/Huyện"}
+                    {selectedProvinceCode === "all" ? "Chọn Tỉnh/Thành trước" : "Tất cả"}
                   </option>
                   {districts.map(d => (
                     <option key={d.code} value={d.code}>{d.name_with_type || d.name}</option>
@@ -378,11 +378,13 @@ export const BookingPage = () => {
                   </div>
 
                   <div className="p-4 flex flex-col flex-grow">
-                    <h3 className="text-lg font-bold text-slate-900 group-hover:text-emerald-600 transition-colors line-clamp-1">{club.name}</h3>
-                    <p className="text-slate-500 text-sm mt-1 flex items-start gap-1 line-clamp-2">
-                      <MapPin className="w-4 h-4 shrink-0 mt-0.5 text-slate-400" />
-                      {club.address}
-                    </p>
+                    <div className="min-h-[72px]">
+                      <h3 className="text-lg font-bold text-slate-900 group-hover:text-emerald-600 transition-colors line-clamp-1">{club.name}</h3>
+                      <p className="text-slate-500 text-sm mt-1 flex items-start gap-1 line-clamp-2">
+                        <MapPin className="w-4 h-4 shrink-0 mt-0.5 text-slate-400" />
+                        {club.address}
+                      </p>
+                    </div>
 
                     <div className="mt-4 flex items-center justify-between text-sm">
                       <div className="text-slate-500">{club.distance}</div>

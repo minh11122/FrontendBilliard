@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, useNavigate, useBlocker } from "react-router-dom";
-import { ChevronLeft, QrCode, Shield, Clock, MapPin, Star, Lock } from "lucide-react";
+import { ChevronLeft, QrCode, Shield, Clock, MapPin, Star, Lock, AlertCircle } from "lucide-react";
 import toast from "react-hot-toast";
-import { createPayOSBookingPayment } from "@/services/booking.service";
+import { createPayOSBookingPayment, cancelHold } from "@/services/booking.service";
 
 export const PaymentPage = () => {
   const location = useLocation();
@@ -12,8 +12,10 @@ export const PaymentPage = () => {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
+  const [cancelling, setCancelling] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const allowNavRef = useRef(false);
-  const [, setCreatingPayOS] = useState(false);
+  const [creatingPayOS, setCreatingPayOS] = useState(false);
 
   // Chặn mọi điều hướng trong React Router (back, navbar, link...)
   const blocker = useBlocker(({ currentLocation, nextLocation }) => {
@@ -31,13 +33,14 @@ export const PaymentPage = () => {
   // Tính thời gian giữ chỗ còn lại
   useEffect(() => {
     if (!bookingData?.heldUntil) return;
-    const holdMinutes = 5;
-    // const heldUntil = new Date(bookingData.heldUntil).getTime();
-    const heldUntil = new Date(Date.now() + holdMinutes * 60 * 1000);
+    
+    const heldUntil = new Date(bookingData.heldUntil).getTime();
+    
     const updateTimer = () => {
       const now = Date.now();
       const remaining = Math.max(0, Math.floor((heldUntil - now) / 1000));
       setTimeLeft(remaining);
+      
       if (remaining <= 0) {
         toast.error("Hết thời gian giữ chỗ. Bàn đã được trả về.");
         allowNavRef.current = true;
@@ -94,12 +97,40 @@ export const PaymentPage = () => {
   const timerDisplay = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
   const isTimerWarning = timeLeft <= 120;
 
-  const handleConfirmPayment = () => {
-    if (!agreedToTerms) {
-      toast.error("Vui lòng đồng ý với điều khoản đặt bàn");
+  const handleCancelBooking = async () => {
+    if (!booking?._id) return;
+    
+    if (!window.confirm("Bạn có chắc chắn muốn hủy đơn đặt bàn này không? Bàn sẽ được giải phóng ngay lập tức.")) {
       return;
     }
 
+    try {
+      setCancelling(true);
+      const res = await cancelHold(booking._id);
+      if (res.success) {
+        toast.success("Đã hủy đơn đặt bàn thành công");
+        allowNavRef.current = true;
+        navigate("/booking");
+      } else {
+        toast.error(res.message || "Không thể hủy đơn");
+      }
+    } catch (error) {
+      toast.error("Lỗi khi hủy đơn");
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const handleConfirmPayment = () => {
+    if (!agreedToTerms) {
+      toast.error("Vui lòng tích chọn đồng ý với điều khoản đặt bàn");
+      return;
+    }
+    setShowTermsModal(true);
+  };
+
+  const confirmAndPay = async () => {
+    setShowTermsModal(false);
     handleCreatePayOSCode(true);
   };
 
@@ -217,13 +248,32 @@ export const PaymentPage = () => {
             {/* Confirm Button */}
             <button
               onClick={handleConfirmPayment}
-              disabled={!agreedToTerms}
-              className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold text-lg rounded-xl shadow-[0_4px_16px_rgba(16,185,129,0.3)] disabled:shadow-none transition-all active:scale-[0.99] flex items-center justify-center gap-3"
+              disabled={!agreedToTerms || creatingPayOS || cancelling}
+              className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold text-lg rounded-xl shadow-[0_4px_16px_rgba(16,185,129,0.3)] disabled:shadow-none transition-all active:scale-[0.99] flex items-center justify-center gap-3 mb-4"
             >
-              <Lock className="w-5 h-5" />
-              Xác nhận thanh toán
+              {creatingPayOS ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <>
+                  <Lock className="w-5 h-5" />
+                  Xác nhận thanh toán
+                </>
+              )}
             </button>
-            <p className="text-center text-xs text-slate-400 flex items-center justify-center gap-1">
+
+            <button
+              onClick={handleCancelBooking}
+              disabled={creatingPayOS || cancelling}
+              className="w-full py-3 bg-white hover:bg-rose-50 text-rose-500 font-bold rounded-xl border border-rose-100 transition-all flex items-center justify-center gap-2"
+            >
+              {cancelling ? (
+                <div className="w-5 h-5 border-2 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <>Hủy đơn đặt bàn này</>
+              )}
+            </button>
+
+            <p className="text-center text-xs text-slate-400 mt-4 flex items-center justify-center gap-1">
               <Shield className="w-3.5 h-3.5" /> Thanh toán an toàn & bảo mật
             </p>
           </div>
@@ -312,7 +362,7 @@ export const PaymentPage = () => {
       <div className="border-t mt-16 py-6 text-center text-xs text-slate-400">
         © 2026 BilliardMaster System. All rights reserved.
       </div>
-      {/* Modal hiển thị QR tự xây nếu sau này cần – tạm ẩn để chuyển thẳng sang trang PayOS */}
+
       {/* Leave Dialog */}
       {showLeaveDialog && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -341,6 +391,51 @@ export const PaymentPage = () => {
                 className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-colors shadow-md"
               >
                 Xác nhận dừng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Terms Confirmation Modal */}
+      {showTermsModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-2 bg-amber-500"></div>
+            
+            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <AlertCircle className="w-8 h-8 text-amber-600" />
+            </div>
+            
+            <h2 className="text-2xl font-bold text-center text-slate-900 mb-4">Xác nhận điều khoản</h2>
+            
+            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 mb-8">
+              <p className="text-slate-700 leading-relaxed font-medium text-sm">
+                Bằng việc xác nhận thanh toán, bạn đồng ý với điều khoản: 
+                <span className="text-rose-600 font-bold ml-1 italic">
+                  "Nếu quá giờ đặt bàn mà bạn không đến, tiền cọc sẽ bị mất hoàn toàn để giữ quyền lợi cho quán."
+                </span>
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={() => setShowTermsModal(false)}
+                className="py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl transition-colors"
+                disabled={creatingPayOS}
+              >
+                Quay lại
+              </button>
+              <button
+                onClick={confirmAndPay}
+                className="py-3 px-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-200/50 transition-all active:scale-[0.98]"
+                disabled={creatingPayOS}
+              >
+                {creatingPayOS ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
+                ) : (
+                  "Đồng ý & Thanh toán"
+                )}
               </button>
             </div>
           </div>
