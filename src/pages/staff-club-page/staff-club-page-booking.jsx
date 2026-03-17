@@ -3,7 +3,7 @@ import toast from "react-hot-toast";
 import {
   Search, Calendar as CalendarIcon, MoreVertical, TrendingUp, Loader2,
   LogIn, List, User, Clock, CreditCard, MapPin, Hash, Phone, ArrowRight,
-  CheckCircle, XCircle, PlusCircle, RefreshCw
+  CheckCircle, XCircle, PlusCircle, RefreshCw, ChevronLeft, ChevronRight
 } from "lucide-react";
 
 import { checkInBooking, getClubBookings, confirmPayment, createWalkInBooking } from "@/services/booking.service";
@@ -34,6 +34,31 @@ const formatDate = (dateStr) => {
   if (!dateStr) return "–";
   const d = new Date(dateStr);
   return `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getFullYear()}`;
+};
+
+const getWeekNumber = (d) => {
+  let date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+};
+
+const getWeekRange = (date) => {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const start = new Date(d.setDate(diff));
+  start.setHours(0,0,0,0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  end.setHours(23,59,59,999);
+  return { start, end };
+};
+
+const getMonthRange = (date) => {
+  const start = new Date(date.getFullYear(), date.getMonth(), 1);
+  const end = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+  return { start, end };
 };
 
 // Helper format số bàn
@@ -511,8 +536,23 @@ const BookingListSection = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebounce(searchQuery, 500);
-  const [dateFilter, setDateFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  // Bộ lọc Ngày/Tuần/Tháng
+  const [dateMode, setDateMode] = useState("day"); // 'day', 'week', 'month'
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  const handleDateChange = (dir) => {
+    const newDate = new Date(currentDate);
+    if (dateMode === 'day') {
+      newDate.setDate(newDate.getDate() + (dir === 'next' ? 1 : -1));
+    } else if (dateMode === 'week') {
+      newDate.setDate(newDate.getDate() + (dir === 'next' ? 7 : -7));
+    } else if (dateMode === 'month') {
+      newDate.setMonth(newDate.getMonth() + (dir === 'next' ? 1 : -1));
+    }
+    setCurrentDate(newDate);
+  };
 
   const fetchBookings = useCallback(async () => {
     setLoading(true);
@@ -520,8 +560,22 @@ const BookingListSection = () => {
       const params = {};
       const effectiveStatus = activeTab !== "all" ? activeTab : (statusFilter !== "all" ? statusFilter : "");
       if (effectiveStatus) params.status = effectiveStatus;
-      if (dateFilter) params.date = dateFilter;
       if (debouncedSearch) params.search = debouncedSearch;
+
+      if (dateMode === 'day') {
+         const yyyy = currentDate.getFullYear();
+         const mm = String(currentDate.getMonth() + 1).padStart(2, '0');
+         const dd = String(currentDate.getDate()).padStart(2, '0');
+         params.date = `${yyyy}-${mm}-${dd}`;
+      } else if (dateMode === 'week') {
+         const { start, end } = getWeekRange(currentDate);
+         params.startDate = start.toISOString();
+         params.endDate = end.toISOString();
+      } else if (dateMode === 'month') {
+         const { start, end } = getMonthRange(currentDate);
+         params.startDate = start.toISOString();
+         params.endDate = end.toISOString();
+      }
 
       const res = await getClubBookings(params);
       if (res.success) {
@@ -533,7 +587,7 @@ const BookingListSection = () => {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, statusFilter, dateFilter, debouncedSearch]);
+  }, [activeTab, statusFilter, dateMode, currentDate, debouncedSearch]);
 
   useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
@@ -567,7 +621,6 @@ const BookingListSection = () => {
 
   const tabs = [
     { key: "all", label: "Tất cả đơn", count: statusCounts.total },
-    { key: "Pending", label: "Chờ thanh toán", count: statusCounts.Pending },
     { key: "Booked", label: "Đã đặt", count: statusCounts.Booked },
     { key: "Playing", label: "Đang chơi", count: statusCounts.Playing },
     { key: "Completed", label: "Hoàn thành", count: statusCounts.Completed },
@@ -580,41 +633,62 @@ const BookingListSection = () => {
         {/* Controls Row */}
         <div className="p-4 md:p-6 flex flex-col lg:flex-row gap-6 border-b border-gray-100 bg-white">
           <div className="flex-1">
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-              <div className="md:col-span-6 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <Input
-                  placeholder="Tìm tên khách, SĐT, mã đơn..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 h-11 border-gray-200 bg-white focus-visible:ring-1 focus-visible:ring-[#4caf50] w-full"
-                />
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col md:flex-row gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    <Input
+                      placeholder="Tìm tên khách, SĐT, mã đơn..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 h-11 border-gray-200 bg-white focus-visible:ring-1 focus-visible:ring-[#4caf50] w-full"
+                    />
+                  </div>
+                  <div className="w-full md:w-56 shrink-0">
+                    <Select value={statusFilter} onValueChange={(val) => { setStatusFilter(val); setActiveTab("all"); }}>
+                      <SelectTrigger className="w-full h-11 border-gray-200 bg-white">
+                        <SelectValue placeholder="Tất cả trạng thái" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tất cả trạng thái</SelectItem>
+                        <SelectItem value="Booked">Đã đặt</SelectItem>
+                        <SelectItem value="Playing">Đang chơi</SelectItem>
+                        <SelectItem value="Completed">Hoàn thành</SelectItem>
+                        <SelectItem value="Cancelled">Đã hủy</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
               </div>
-              <div className="md:col-span-3">
-                <div className="flex items-center border border-gray-200 rounded-md h-11 px-3 bg-white">
-                  <CalendarIcon className="text-gray-400 mr-2 shrink-0" size={18} />
-                  <input
-                    type="date"
-                    className="w-full bg-transparent border-none text-sm text-gray-600 focus:outline-none focus:ring-0 h-10 p-0"
-                    value={dateFilter}
-                    onChange={(e) => setDateFilter(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="md:col-span-3">
-                <Select value={statusFilter} onValueChange={(val) => { setStatusFilter(val); setActiveTab("all"); }}>
-                  <SelectTrigger className="w-full h-11 border-gray-200 bg-white">
-                    <SelectValue placeholder="Tất cả trạng thái" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tất cả trạng thái</SelectItem>
-                    <SelectItem value="Pending">Chờ thanh toán</SelectItem>
-                    <SelectItem value="Booked">Đã đặt</SelectItem>
-                    <SelectItem value="Playing">Đang chơi</SelectItem>
-                    <SelectItem value="Completed">Hoàn thành</SelectItem>
-                    <SelectItem value="Cancelled">Đã hủy</SelectItem>
-                  </SelectContent>
-                </Select>
+
+              {/* Advanced Date Row */}
+              <div className="flex flex-col md:flex-row gap-4">
+                  {/* Date Mode Select */}
+                  <div className="flex bg-gray-100 p-1 rounded-lg shrink-0 w-full md:w-auto h-11">
+                    {['day', 'week', 'month'].map(mode => (
+                       <button
+                         key={mode}
+                         onClick={() => setDateMode(mode)}
+                         className={`flex-1 md:px-5 py-1.5 text-sm font-semibold rounded-md transition-all ${
+                           dateMode === mode
+                           ? "bg-white text-gray-900 shadow-sm"
+                           : "text-gray-500 hover:text-gray-700"
+                         }`}
+                       >
+                         {mode === 'day' ? 'Ngày' : mode === 'week' ? 'Tuần' : 'Tháng'}
+                       </button>
+                    ))}
+                  </div>
+
+                  {/* Date Selector */}
+                  <div className="flex items-center justify-between gap-1 sm:gap-3 bg-white border border-gray-200 rounded-lg p-1 h-11 w-full md:w-fit shadow-sm">
+                    <button onClick={() => handleDateChange('prev')} className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"><ChevronLeft size={16}/></button>
+                    <div className="font-extrabold text-sm min-w-[150px] text-center text-gray-800">
+                       {dateMode === 'day' && `Thứ ${currentDate.getDay() === 0 ? 'CN' : currentDate.getDay() + 1}, ${currentDate.getDate()} Thg ${currentDate.getMonth()+1}, ${currentDate.getFullYear()}`}
+                       {dateMode === 'week' && `Tuần ${getWeekNumber(currentDate)}, ${currentDate.getFullYear()}`}
+                       {dateMode === 'month' && `Tháng ${currentDate.getMonth()+1}, ${currentDate.getFullYear()}`}
+                    </div>
+                    <button onClick={() => handleDateChange('next')} className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"><ChevronRight size={16}/></button>
+                  </div>
               </div>
             </div>
           </div>
@@ -659,8 +733,6 @@ const BookingListSection = () => {
                 <TableHead className="px-6 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Bàn</TableHead>
                 <TableHead className="px-6 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Thời gian</TableHead>
                 <TableHead className="px-6 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Trạng thái</TableHead>
-                <TableHead className="px-6 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider text-right">Tiền cọc</TableHead>
-                <TableHead className="px-6 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider text-center">Hành động</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -728,14 +800,6 @@ const BookingListSection = () => {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="px-6 py-4 text-right font-medium text-gray-900">
-                      {booking.deposit > 0 ? `${booking.deposit.toLocaleString("vi-VN")}đ` : "0đ"}
-                    </TableCell>
-                    <TableCell className="px-6 py-4 text-center">
-                      <button className="text-gray-400 hover:text-gray-600 p-1.5 rounded-md hover:bg-gray-100 transition-colors">
-                        <MoreVertical size={16} />
-                      </button>
-                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -751,8 +815,7 @@ const BookingListSection = () => {
             </div>
             <div className="text-sm text-gray-600">
               <span className="mr-4">⏱️ Đang chơi: <span className="font-semibold text-green-600">{statusCounts.Playing}</span></span>
-              <span className="mr-4">📅 Đã đặt: <span className="font-semibold text-blue-600">{statusCounts.Booked}</span></span>
-              <span>💰 Chờ TT: <span className="font-semibold text-amber-600">{statusCounts.Pending}</span></span>
+              <span>📅 Đã đặt: <span className="font-semibold text-blue-600">{statusCounts.Booked}</span></span>
             </div>
           </div>
         )}

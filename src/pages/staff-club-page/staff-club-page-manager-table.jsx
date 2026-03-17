@@ -1,323 +1,319 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import toast from "react-hot-toast";
 import {
-  Search, LayoutGrid, Circle, Edit2, PowerOff, X,
+  Search, LayoutGrid, Circle, Edit2, X,
   CheckCircle2, Clock, AlertCircle, User, CalendarDays,
-  PhoneCall, Hash, BadgeCheck, Wrench, RefreshCw, Info
+  PhoneCall, Hash, BadgeCheck, Wrench, RefreshCw, Info,
+  ChevronLeft, ChevronRight
 } from "lucide-react";
 
 import useDebounce from "@/hooks/useDebounce";
-import { getTables, updateTable, getTableTypes } from "@/services/billiardTable.service";
+import { getTables, getTableTypes, updateTable } from "@/services/billiardTable.service";
+import bookingService from "@/services/booking.service";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
 
 // ─────────────────────────────────────────────
-//  Helpers: resolve combined status from table + booking
+//  Constants
 // ─────────────────────────────────────────────
-/**
- * Returns a "display status" derived from billiard_table.status and the activeBooking.status.
- * Priority: Maintenance > Playing > (Booked/Pending that are happening now) > Holding > Available.
- * Upcoming bookings in the future will NOT block the table; the table is treated as available until the start time.
- */
-const getDisplayStatus = (table) => {
-  const booking = table.activeBooking;
+const TIMELINE_START = 0; // 00:00
+const TIMELINE_HOURS = 24; // 24 hours total
+const HOUR_WIDTH = 140; // px per hour
 
-  // Helper: parse booking times to Date
-  const parseBookingRange = (bk) => {
-    if (!bk?.play_date || !bk?.start_time || !bk?.end_time) return {};
-    const start = new Date(`${bk.play_date}T${bk.start_time}`);
-    const end = new Date(`${bk.play_date}T${bk.end_time}`);
-    return { start, end };
-  };
-
-  const now = new Date();
-  const { start, end } = parseBookingRange(booking);
-  const isOngoing = start && end && now >= start && now <= end;
-
-  if (table.status === "Maintenance") return "maintenance";
-  // Only treat booking as blocking if it is ongoing
-  if (isOngoing && booking?.status === "Playing") return "playing";
-  if (isOngoing && booking?.status === "Booked") return "booked";
-  if (isOngoing && (booking?.status === "Pending" || table.status === "Holding")) return "holding";
-  // Holding status on table itself
-  if (table.status === "Holding") return "holding";
-  return "available";
-};
+const HOURS = Array.from({ length: TIMELINE_HOURS }, (_, i) => {
+  const h = TIMELINE_START + i;
+  return `${h.toString().padStart(2, "0")}:00`;
+});
 
 const STATUS_META = {
-  playing: { label: "Đang chơi", color: "text-green-600", bg: "bg-green-50", border: "border-green-500 border-l-4", dot: "bg-green-500" },
-  booked: { label: "Đã đặt", color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-400 border-l-4", dot: "bg-blue-500" },
-  holding: { label: "Giữ chỗ", color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-400 border-l-4", dot: "bg-amber-500" },
-  available: { label: "Bàn trống", color: "text-gray-500", bg: "bg-gray-100", border: "border-gray-200 border-l-4 border-l-gray-300", dot: "bg-gray-400" },
-  maintenance: { label: "Bảo trì", color: "text-gray-400", bg: "bg-gray-100", border: "border-gray-300 opacity-75", dot: "bg-gray-400" },
+  playing: { label: "Đang chơi", color: "text-green-600", dot: "bg-green-500", blockClass: "bg-green-50 border-green-200 text-green-700 shadow-sm" },
+  booked: { label: "Khách đặt", color: "text-blue-600", dot: "bg-blue-500", blockClass: "bg-blue-50 border-blue-200 text-blue-700 shadow-sm" },
+  holding: { label: "Giữ chỗ", color: "text-amber-600", dot: "bg-amber-500", blockClass: "bg-amber-50 border-amber-200 text-amber-700 border-dashed" },
+  available: { label: "Đang hoạt động", color: "text-gray-500", dot: "bg-gray-300" },
+  maintenance: { label: "Bảo trì", color: "text-red-500", dot: "bg-red-400" },
+  completed: { label: "Hoàn thành", color: "text-gray-400", blockClass: "bg-gray-50 border-gray-200 text-gray-400 opacity-60 shadow-none" },
+  cancelled: { label: "Đã hủy", color: "text-red-400", blockClass: "bg-red-50 border-red-100 text-red-400 opacity-50 shadow-none line-through" },
 };
 
 const formatTime = (str) => str?.slice(0, 5) || "–";
-const formatDate = (dateStr) => {
-  if (!dateStr) return "–";
-  const d = new Date(dateStr);
+const formatDate = (date) => {
+  if (!date) return "–";
+  const d = new Date(date);
   return `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getFullYear()}`;
 };
 
+// Returns position and width of a booking block on the timeline
+const getBlockStyle = (start, end) => {
+  if (!start) return { left: 0, width: 0, display: 'none' };
+  const [sh, sm] = start.split(':').map(Number);
+  let startMinutes = sh * 60 + sm;
+  
+  let endMinutes;
+  if (end) {
+    const [eh, em] = end.split(':').map(Number);
+    endMinutes = eh * 60 + em;
+    if (endMinutes <= startMinutes) endMinutes += 24 * 60; // Next day
+  } else {
+    endMinutes = startMinutes + 60;
+  }
+
+  // Clip
+  if (startMinutes >= 24 * 60) return { left: 0, width: 0, display: 'none' };
+  if (endMinutes > 24 * 60) endMinutes = 24 * 60;
+
+  const left = (startMinutes / 60) * HOUR_WIDTH;
+  const width = ((endMinutes - startMinutes) / 60) * HOUR_WIDTH;
+
+  return { left: `${left}px`, width: `${width}px` };
+};
+
+// Derived status for Table (Y-axis label) based on current time
+const getTableDerivedStatus = (table, dateFilter, bookingsForTable) => {
+   if (table.status === "Maintenance") return "maintenance";
+
+   const now = new Date();
+   const isToday = dateFilter.getDate() === now.getDate() && dateFilter.getMonth() === now.getMonth() && dateFilter.getFullYear() === now.getFullYear();
+   
+   if (!isToday) {
+       return table.status === "Holding" ? "holding" : "available";
+   }
+
+   const currentMinutes = now.getHours() * 60 + now.getMinutes();
+   
+   // Check if any booking overlaps exactly NOW
+   const activeBooking = bookingsForTable.find(b => {
+      if (b.status === "Cancelled" || b.status === "Completed") return false;
+      if (!b.start_time || !b.end_time) return false;
+      const [sh, sm] = b.start_time.split(':').map(Number);
+      let [eh, em] = b.end_time.split(':').map(Number);
+      const startMin = sh * 60 + sm;
+      let endMin = eh * 60 + em;
+      if (endMin <= startMin) endMin += 24 * 60;
+      
+      return currentMinutes >= startMin && currentMinutes <= endMin;
+   });
+
+   if (activeBooking) {
+       if (activeBooking.status === "Playing") return "playing";
+       if (activeBooking.status === "Booked") return "booked";
+       if (activeBooking.status === "Pending") return "holding";
+   }
+
+   return table.status === "Holding" ? "holding" : "available";
+};
+
 // ─────────────────────────────────────────────
-//  Table Detail Modal
+//  Modal
 // ─────────────────────────────────────────────
-const TableDetailModal = ({ table, onClose, onStatusChange }) => {
+const TableDetailModal = ({ table, booking, isBookingActive, onClose, onStatusChange, onCheckout }) => {
   if (!table) return null;
 
-  const displayStatus = getDisplayStatus(table);
-  const meta = STATUS_META[displayStatus];
-  const booking = table.activeBooking;
-  const [loadingStatus, setLoadingStatus] = useState(false);
-
-  // Kiểm tra xem bàn có đang trống không (không có booking và status là Available)
-  const isTableAvailable = !table.activeBooking && table.status === "Available";
+  // Use the table's pure DB status unless it's overridden implicitly
+  const isTableAvailable = !booking && table.status === "Available";
+  const [loading, setLoading] = useState(false);
 
   const handleStatusChange = async (newStatus) => {
-    setLoadingStatus(true);
+    setLoading(true);
     await onStatusChange(table._id, newStatus);
-    setLoadingStatus(false);
+    setLoading(false);
+    onClose();
+  };
+
+  const handleCheckoutClick = async () => {
+    if (!booking) return;
+    setLoading(true);
+    await onCheckout(booking._id);
+    setLoading(false);
     onClose();
   };
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: "rgba(0,0,0,0.45)" }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.5)" }}
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Modal Header */}
-        <div className={`px-6 py-4 flex items-center justify-between border-b border-gray-100`}>
+        <div className="px-6 py-4 flex items-center justify-between border-b border-gray-100 bg-gray-50/50">
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg ${meta.bg} ${meta.color}`}>
-              {table.table_number?.replace(/\D/g, "") || table.table_number?.slice(0, 2) || "?"}
-            </div>
-            <div>
-              <h2 className="font-bold text-gray-900 text-lg leading-tight">{table.table_number}</h2>
-              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${meta.bg} ${meta.color}`}>
-                {meta.label}
-              </span>
-            </div>
+            <h2 className="font-extrabold text-gray-900 text-xl leading-tight">Chi tiết bàn {table.table_number}</h2>
           </div>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-200 transition-colors">
             <X size={20} className="text-gray-500" />
           </button>
         </div>
 
-        <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
-          {/* === Thông tin bàn === */}
-          <section>
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-              <Info size={13} /> Thông tin bàn
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
-              <InfoRow icon={<LayoutGrid size={14} />} label="Loại bàn" value={table.table_type_id?.name || "–"} />
-              <InfoRow icon={<BadgeCheck size={14} />} label="Trạng thái bàn" value={
-                <span className={`font-semibold ${table.status === "Available" ? "text-gray-600" :
-                  table.status === "Maintenance" ? "text-red-500" :
-                    "text-amber-600"
-                  }`}>
-                  {table.status === "Available" ? "Trống" :
-                    table.status === "Maintenance" ? "Bảo trì" : "Giữ chỗ"}
-                </span>
-              } />
-              <InfoRow icon={<Circle size={14} />} label="Đơn giá" value={`${table.price?.toLocaleString("vi-VN")}đ/h`} />
-              {table.description && (
-                <InfoRow icon={<Info size={14} />} label="Mô tả" value={table.description} />
-              )}
-            </div>
-          </section>
-
-          {/* === Thông tin đặt bàn === */}
+        <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+          {/* Thông tin đặt bàn (nếu có block) */}
           {booking ? (
             <section>
               <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                <CalendarDays size={13} /> Thông tin đặt bàn
+                <CalendarDays size={14} /> Thông tin đặt bàn
               </h3>
-              <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500">Trạng thái booking</span>
-                  <BookingStatusBadge status={booking.status} />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <InfoRow icon={<Hash size={14} />} label="Mã đặt bàn" value={
-                    <span className="font-mono font-bold text-gray-800">{booking.code_number}</span>
+              <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-4 space-y-4">
+                
+                {booking.account_id && (
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                      <User size={18} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-gray-800">{booking.account_id.fullname || booking.guest_name || "Khách"}</h4>
+                      <div className="flex items-center text-xs text-gray-500 gap-2">
+                        <span>{booking.account_id.phone || "–"}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-100">
+                  <InfoRow icon={<Clock size={14} />} label="Thời gian" value={`${formatTime(booking.start_time)} – ${formatTime(booking.end_time)}`} />
+                  <InfoRow icon={<Hash size={14} />} label="Mã booking" value={<span className="font-mono text-gray-700">{booking.code_number}</span>} />
+                  <InfoRow icon={<Circle size={14} />} label="Trạng thái đơn" value={
+                    <span className="font-semibold text-gray-800">{booking.status}</span>
                   } />
-                  <InfoRow icon={<CalendarDays size={14} />} label="Ngày chơi" value={formatDate(booking.play_date)} />
-                  <InfoRow icon={<Clock size={14} />} label="Khung giờ" value={`${formatTime(booking.start_time)} – ${formatTime(booking.end_time)}`} />
-                  <InfoRow icon={<Circle size={14} />} label="Giá/giờ" value={`${booking.hour_price?.toLocaleString("vi-VN")}đ`} />
-                  <InfoRow icon={<Circle size={14} />} label="Tiền cọc" value={
-                    <span className="font-semibold text-orange-600">{booking.deposit?.toLocaleString("vi-VN")}đ</span>
-                  } />
-                  {booking.total_bill && (
-                    <InfoRow icon={<Circle size={14} />} label="Tổng bill" value={
-                      <span className="font-semibold text-gray-800">{booking.total_bill?.toLocaleString("vi-VN")}đ</span>
+                  {booking.total_bill > 0 && (
+                    <InfoRow icon={<Circle size={14} />} label="Tổng tiền" value={
+                      <span className="font-semibold text-green-600">{booking.total_bill?.toLocaleString("vi-VN")}đ</span>
                     } />
                   )}
                 </div>
 
-                {/* Khách hàng */}
-                {booking.account_id && (
-                  <div className="pt-3 border-t border-gray-100">
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1"><User size={12} /> Khách hàng</p>
-                    <div className="grid grid-cols-1 gap-2">
-                      <InfoRow icon={<User size={14} />} label="Họ tên" value={booking.account_id.fullname || "–"} />
-                      <InfoRow icon={<PhoneCall size={14} />} label="SĐT" value={booking.account_id.phone || "–"} />
-                    </div>
-                  </div>
-                )}
-
                 {booking.note && (
                   <div className="pt-2 border-t border-gray-100">
-                    <p className="text-xs text-gray-500">Ghi chú: <span className="text-gray-700 font-medium">{booking.note}</span></p>
+                    <p className="text-xs text-gray-500">Ghi chú: <span className="text-gray-700 font-medium bg-yellow-50 px-2 py-0.5 rounded">{booking.note}</span></p>
                   </div>
                 )}
               </div>
+
+              {/* Action Buttons for Booking */}
+              {booking.status === "Playing" && (
+                <div className="mt-4 flex gap-3">
+                  <Button 
+                    variant="default" 
+                    className="w-full bg-green-600 hover:bg-green-700 text-white font-bold h-11"
+                    onClick={handleCheckoutClick}
+                    disabled={loading}
+                  >
+                    <CheckCircle2 size={18} className="mr-2" /> Thanh toán / Kết thúc
+                  </Button>
+                </div>
+              )}
             </section>
           ) : (
-            <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-5 text-center text-sm text-gray-400">
-              Không có đặt bàn nào đang hoạt động
+            <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-400">
+              Nhấn vào thời gian trống để tạo đơn mới nhanh (Walk-in)
             </div>
           )}
 
-          {/* === Thay đổi trạng thái bàn - CHỈ HIỂN THỊ KHI BÀN TRỐNG === */}
-          {/* === Thay đổi trạng thái bàn - CHỈ HIỂN THỊ KHI BÀN TRỐNG HOẶC ĐANG BẢO TRÌ === */}
-          {(isTableAvailable || table.status === "Maintenance") && (
-            <section>
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                <Edit2 size={13} /> Cập nhật trạng thái bàn
+          {/* Thay đổi trạng thái bàn */}
+          <section>
+             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <Wrench size={13} /> Quản lý trạng thái bàn trực tiếp
               </h3>
-              <div className="flex gap-2 flex-wrap">
-                {/* Nếu bàn đang trống -> chỉ hiển thị nút chuyển sang bảo trì */}
-                {isTableAvailable && (
+              <div className="flex gap-2">
+                 {isTableAvailable && (
                   <Button
                     variant="outline"
-                    size="sm"
-                    className="border-orange-200 text-orange-700 hover:bg-orange-50"
-                    disabled={loadingStatus}
+                    className="border-orange-200 text-orange-700 hover:bg-orange-50 bg-white"
+                    disabled={loading}
                     onClick={() => handleStatusChange("Maintenance")}
                   >
                     <Wrench size={14} className="mr-1.5" /> Chuyển sang Bảo trì
                   </Button>
                 )}
-
-                {/* Nếu bàn đang bảo trì -> hiển thị nút chuyển về trống */}
                 {table.status === "Maintenance" && (
                   <Button
                     variant="outline"
-                    size="sm"
-                    className="border-green-200 text-green-700 hover:bg-green-50"
-                    disabled={loadingStatus}
+                    className="border-green-200 text-green-700 hover:bg-green-50 bg-white"
+                    disabled={loading}
                     onClick={() => handleStatusChange("Available")}
                   >
-                    <CheckCircle2 size={14} className="mr-1.5" /> Chuyển về Bàn trống
+                    <CheckCircle2 size={14} className="mr-1.5" /> Chuyển về Đang hoạt động
                   </Button>
                 )}
+                {!isTableAvailable && table.status !== "Maintenance" && (
+                  <p className="text-xs text-gray-500 bg-gray-50 p-2 rounded-lg w-full text-center">
+                    (Không thể đổi trạng thái khi bàn đang phục vụ)
+                  </p>
+                )}
               </div>
-              <p className="text-xs text-gray-400 mt-2">
-                {isTableAvailable
-                  ? "Chuyển bàn sang trạng thái bảo trì khi cần sửa chữa"
-                  : "Bàn đã sửa xong, chuyển về trạng thái sẵn sàng phục vụ"}
-              </p>
-            </section>
-          )}
-          {/* Thông báo khi bàn không thể thay đổi trạng thái */}
-          {!isTableAvailable && table.status === "Maintenance" && (
-            <div className="rounded-xl bg-gray-50 p-4 text-center">
-              <p className="text-sm text-gray-500">
-                Bàn đang trong trạng thái <span className="font-semibold text-red-500">Bảo trì</span>
-              </p>
-            </div>
-          )}
+          </section>
 
-          {!isTableAvailable && booking && (
-            <div className="rounded-xl bg-blue-50 p-4 text-center">
-              <p className="text-sm text-blue-600">
-                <span className="font-semibold">⚠️ Không thể thay đổi trạng thái</span>
-                <br />
-                <span className="text-xs">Bàn đang có đặt bàn hoặc đang được sử dụng</span>
-              </p>
-            </div>
-          )}
         </div>
       </div>
     </div>
   );
 };
 
-// Sub-components
 const InfoRow = ({ icon, label, value }) => (
   <div className="flex flex-col gap-0.5">
-    <span className="text-[11px] text-gray-400 flex items-center gap-1">{icon}{label}</span>
-    <span className="text-sm font-medium text-gray-800">{value}</span>
+    <span className="text-[11px] text-gray-400 font-medium flex items-center gap-1.5">{icon}{label}</span>
+    <span className="text-sm text-gray-900">{value}</span>
   </div>
 );
 
-const BookingStatusBadge = ({ status }) => {
-  const cfg = {
-    Playing: { label: "Đang chơi", cls: "bg-green-100 text-green-700" },
-    Booked: { label: "Đã đặt", cls: "bg-blue-100 text-blue-700" },
-    Pending: { label: "Chờ thanh toán", cls: "bg-amber-100 text-amber-700" },
-    Cancelled: { label: "Đã huỷ", cls: "bg-red-100 text-red-600" },
-    Completed: { label: "Hoàn thành", cls: "bg-gray-100 text-gray-600" },
-  };
-  const c = cfg[status] || { label: status, cls: "bg-gray-100 text-gray-600" };
-  return (
-    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${c.cls}`}>{c.label}</span>
-  );
-};
 
 // ─────────────────────────────────────────────
-//  Main Page
+//  Main Page Component
 // ─────────────────────────────────────────────
 export const StaffClubPageManagerTable = () => {
   const [tables, setTables] = useState([]);
   const [tableTypes, setTableTypes] = useState([]);
-  const [statusCounts, setStatusCounts] = useState({
-    total: 0, available: 0, inUse: 0, booked: 0, holding: 0, maintenance: 0,
-  });
+  const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // Filters
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 500);
-  const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all"); // Filter table current derived status
 
-  const [selectedTable, setSelectedTable] = useState(null);
+  // Date state
+  const [dateMode, setDateMode] = useState("day"); // 'day', 'week', 'month' step for navigation
+  const [currentDate, setCurrentDate] = useState(new Date());
 
-  // ── Fetch tables ──────────────────────────
+  // Modal target
+  const [modalTarget, setModalTarget] = useState(null); // { table, booking, isBookingActive }
+  const timelineScrollRef = useRef(null);
+
+  // Fetch tables
   const fetchTables = async () => {
-    setLoading(true);
     try {
-      const params = {
-        page: 1,
-        limit: 100,
-        search: debouncedSearch,
-        status: statusFilter === "all" ? "" : statusFilter,
-        table_type_id: typeFilter === "all" ? "" : typeFilter,
-      };
-      const res = await getTables(params);
+      // Fetch all tables ignoring status/search to maintain timeline integrity, 
+      // we'll filter them client-side based on derived status
+      const res = await getTables({ page: 1, limit: 200 }); 
       if (res.data.success) {
-        setTables(res.data.data);
-        setStatusCounts(res.data.statusCounts);
+        let fetchedTables = res.data.data;
+        setTables(fetchedTables);
       }
     } catch {
       toast.error("Không thể tải danh sách bàn");
-    } finally {
-      setLoading(false);
+    }
+  };
+
+  // Fetch bookings for the current date
+  const fetchBookingsForDate = async (selectedDate) => {
+    try {
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+
+      const res = await bookingService.getClubBookings({ status: "all", date: dateStr });
+      if (res.success) {
+        setBookings(res.data || []);
+      }
+    } catch (e) {
+      toast.error("Không thể tải lịch đặt bàn");
+      setBookings([]);
     }
   };
 
@@ -328,86 +324,172 @@ export const StaffClubPageManagerTable = () => {
     } catch { }
   };
 
-  useEffect(() => { fetchTables(); }, [debouncedSearch, statusFilter, typeFilter]);
-  useEffect(() => { fetchTableTypes(); }, []);
+  const loadData = async () => {
+    setLoading(true);
+    await Promise.all([
+      fetchTables(),
+      fetchBookingsForDate(currentDate)
+    ]);
+    setLoading(false);
+  };
 
-  // ── Status change from modal ──────────────
-  const handleStatusChange = async (id, newStatus) => {
+  useEffect(() => { fetchTableTypes(); }, []);
+  useEffect(() => { loadData(); }, [currentDate]);
+
+  // Handle Date Navigation
+  const handleDateChange = (direction) => {
+    const newDate = new Date(currentDate);
+    if (dateMode === "day") {
+      newDate.setDate(newDate.getDate() + direction);
+    } else if (dateMode === "week") {
+      newDate.setDate(newDate.getDate() + direction * 7);
+    } else {
+      newDate.setMonth(newDate.getMonth() + direction);
+    }
+    setCurrentDate(newDate);
+  };
+
+  const formatCurrentDateLabel = () => {
+    const days = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
+    return `${days[currentDate.getDay()]}, ${currentDate.getDate()} Tháng ${currentDate.getMonth() + 1}, ${currentDate.getFullYear()}`;
+  };
+
+  // Scroll to 08:00 AM on initial load
+  useEffect(() => {
+    if (timelineScrollRef.current) {
+        // scroll to ~ 8 AM (8 * HOUR_WIDTH)
+        timelineScrollRef.current.scrollLeft = 8 * HOUR_WIDTH - 100; // offset a bit
+    }
+  }, []);
+
+  // Filter tables matching client-side search/type/status
+  const filteredTables = useMemo(() => {
+    let result = tables;
+    
+    if (typeFilter !== "all") {
+       result = result.filter(t => t.table_type_id?._id === typeFilter || t.table_type_id === typeFilter);
+    }
+    
+    if (debouncedSearch) {
+       const lower = debouncedSearch.toLowerCase();
+       result = result.filter(t => t.table_number?.toLowerCase().includes(lower));
+    }
+
+    if (statusFilter !== "all") {
+       result = result.filter(t => {
+           const bookingsOfTable = bookings.filter(b => b.table_id?._id === t._id);
+           const ds = getTableDerivedStatus(t, currentDate, bookingsOfTable);
+           return ds === statusFilter;
+       });
+    }
+
+    return result;
+  }, [tables, bookings, currentDate, typeFilter, statusFilter, debouncedSearch]);
+
+  // Actions
+  const handleStatusChange = async (tableId, newStatus) => {
     try {
-      const currentTable = tables.find(t => t._id === id);
+      const currentTable = tables.find(t => t._id === tableId);
       if (!currentTable) return;
-      const res = await updateTable(id, {
-        table_type_id: currentTable.table_type_id?._id || currentTable.table_type_id,
-        table_number: currentTable.table_number,
-        price: currentTable.price,
-        status: newStatus,
+      const res = await updateTable(tableId, { 
+         status: newStatus,
+         table_type_id: currentTable.table_type_id?._id || currentTable.table_type_id,
+         table_number: currentTable.table_number,
+         price: currentTable.price
       });
       if (res.data.success) {
         toast.success("Cập nhật trạng thái thành công");
-        fetchTables();
+        fetchTables(); // Refresh
       }
     } catch (error) {
       toast.error(error.response?.data?.message || "Lỗi cập nhật trạng thái");
     }
   };
 
-  // ── Filter tabs (client-side by displayStatus) ──
-  const filteredTables = tables.filter(t => {
-    if (statusFilter === "all") return true;
-    const ds = getDisplayStatus(t);
-    if (statusFilter === "playing") return ds === "playing";
-    if (statusFilter === "booked") return ds === "booked";
-    if (statusFilter === "holding") return ds === "holding";
-    if (statusFilter === "Available") return ds === "available";
-    if (statusFilter === "Maintenance") return ds === "maintenance";
-    return true;
+  const handleCheckout = async (bookingId) => {
+    try {
+       const res = await bookingService.checkOutBooking(bookingId);
+       if (res.success) {
+           toast.success("Thanh toán thành công. Bàn đã chuyển về Đang hoạt động.");
+           await loadData(); // Reload both tables and bookings
+       }
+    } catch(err) {
+       toast.error("Thanh toán thất bại");
+    }
+  };
+
+  const counts = {
+    all: tables.length,
+    playing: 0,
+    booked: 0,
+    holding: 0,
+    available: 0,
+    maintenance: 0
+  };
+
+  // Compute counts efficiently
+  tables.forEach(t => {
+     const bts = bookings.filter(b => b.table_id?._id === t._id);
+     const ds = getTableDerivedStatus(t, currentDate, bts);
+     if (counts[ds] !== undefined) counts[ds]++;
   });
 
-  // ── Stat cards ──
-  const statCards = [
-    { label: "Tổng số bàn", value: statusCounts.total, cls: "text-gray-900" },
-    { label: "Đang chơi", value: statusCounts.inUse, cls: "text-green-600" },
-    { label: "Đã đặt", value: statusCounts.booked || 0, cls: "text-blue-600" },
-    { label: "Đang giữ chỗ", value: statusCounts.holding || 0, cls: "text-amber-600" },
-    { label: "Bàn trống", value: statusCounts.available, cls: "text-gray-500" },
-    { label: "Bảo trì", value: statusCounts.maintenance, cls: "text-red-400" },
-  ];
-
   return (
-    <div className="p-4 md:p-6 w-full max-w-[1440px] mx-auto bg-gray-50/50 min-h-[calc(100vh-80px)]">
-      {/* Modal */}
-      {selectedTable && (
+    <div className="p-4 md:p-6 w-full max-w-[1440px] mx-auto min-h-[calc(100vh-80px)] flex flex-col h-full bg-white">
+      {/* Modal Target */}
+      {modalTarget && (
         <TableDetailModal
-          table={selectedTable}
-          onClose={() => setSelectedTable(null)}
+          table={modalTarget.table}
+          booking={modalTarget.booking}
+          isBookingActive={modalTarget.isBookingActive}
+          onClose={() => setModalTarget(null)}
           onStatusChange={handleStatusChange}
+          onCheckout={handleCheckout}
         />
       )}
 
-      {/* Page Header */}
-      <div className="flex flex-col gap-1 mb-7">
-        <h1 className="text-3xl font-black text-gray-900 tracking-tight">Sơ đồ bàn bi-a</h1>
-        <p className="text-gray-500 text-sm">Xem trạng thái và quản lý bàn theo thời gian thực.</p>
+      {/* Top Header Controls */}
+      <div className="flex flex-col xl:flex-row items-center justify-between gap-4 mb-6">
+        
+        {/* Date Mode Toggle */}
+        <div className="flex items-center bg-gray-100 p-1 rounded-lg">
+          {['day', 'week', 'month'].map(mode => (
+             <button 
+               key={mode} 
+               onClick={() => setDateMode(mode)}
+               className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-all ${dateMode === mode ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+             >
+               {mode === 'day' ? 'Hôm nay' : mode === 'week' ? 'Tuần' : 'Tháng'}
+             </button>
+          ))}
+        </div>
+
+        {/* Date Navigator */}
+        <div className="flex items-center gap-3 bg-white px-2 py-1 rounded-lg border border-gray-200 shadow-sm">
+           <button onClick={() => handleDateChange(-1)} className="p-2 hover:bg-gray-50 rounded-md transition-colors"><ChevronLeft size={18} className="text-gray-500"/></button>
+           <span className="font-extrabold text-gray-900 min-w-[180px] text-center">{formatCurrentDateLabel()}</span>
+           <button onClick={() => handleDateChange(1)} className="p-2 hover:bg-gray-50 rounded-md transition-colors"><ChevronRight size={18} className="text-gray-500"/></button>
+        </div>
+
+        {/* Legend */}
+        <div className="flex items-center gap-4 flex-wrap text-sm">
+           {[['available', 'Đang hoạt động'], ['playing', 'Đang chơi'], ['booked', 'Khách đặt'], ['maintenance', 'Bảo trì']].map(([key, label]) => {
+              const meta = STATUS_META[key];
+              return (
+                 <div key={key} className="flex items-center gap-1.5 font-medium text-gray-600">
+                    <span className={`w-3 h-3 rounded-full ${meta.dot} border border-black/10`} /> {label}
+                 </div>
+              )
+           })}
+        </div>
       </div>
 
-      {/* Overview Statistics */}
-      <div className="grid grid-cols-3 lg:grid-cols-6 gap-3 mb-7">
-        {statCards.map((s) => (
-          <Card key={s.label} className="bg-white border-none shadow-sm hover:shadow-md transition-all">
-            <CardContent className="p-4 flex flex-col items-center justify-center">
-              <span className={`text-2xl font-black mb-0.5 ${s.cls}`}>{s.value ?? 0}</span>
-              <span className="text-[11px] text-gray-400 font-medium text-center leading-tight">{s.label}</span>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-5">
-        <div className="relative w-full sm:w-72">
+      {/* Filters Row */}
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <div className="relative w-full sm:w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={17} />
           <Input
-            className="w-full pl-10 h-10 rounded-lg border-gray-200 bg-white text-sm shadow-sm"
+            className="w-full pl-10 h-10 rounded-lg border-gray-200 shadow-sm text-sm"
             placeholder="Tìm kiếm số bàn..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -427,131 +509,131 @@ export const StaffClubPageManagerTable = () => {
             ))}
           </SelectContent>
         </Select>
+
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full sm:w-44 h-10 rounded-lg border-gray-200 bg-white text-sm shadow-sm">
+            <div className="flex items-center gap-2">
+              <Circle size={15} className="text-gray-400" />
+              <SelectValue placeholder="Trạng thái" />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tất cả trạng thái ({counts.all})</SelectItem>
+            <SelectItem value="available">Đang hoạt động ({counts.available})</SelectItem>
+            <SelectItem value="playing">Đang chơi ({counts.playing})</SelectItem>
+            <SelectItem value="booked">Đã đặt ({counts.booked})</SelectItem>
+            <SelectItem value="maintenance">Bảo trì ({counts.maintenance})</SelectItem>
+          </SelectContent>
+        </Select>
+
         <Button
           variant="ghost"
           size="sm"
-          className="h-10 text-gray-500 hover:text-gray-700"
-          onClick={fetchTables}
+          className="h-10 text-gray-500 hover:text-gray-700 hover:bg-gray-100 ml-auto"
+          onClick={loadData}
+          disabled={loading}
         >
-          <RefreshCw size={15} className="mr-1.5" /> Làm mới
+          <RefreshCw size={15} className={`mr-1.5 ${loading ? 'animate-spin' : ''}`} /> Làm mới
         </Button>
       </div>
 
-      {/* Status Tabs */}
-      <div className="flex gap-6 overflow-x-auto no-scrollbar mb-5 border-b border-gray-200 pb-2">
-        {[
-          { key: "all", label: `Tất cả (${statusCounts.total || 0})` },
-          { key: "playing", label: `Đang chơi (${statusCounts.inUse || 0})` },
-          { key: "booked", label: `Đã đặt (${statusCounts.booked || 0})` },
-          { key: "holding", label: `Giữ chỗ (${statusCounts.holding || 0})` },
-          { key: "Available", label: `Bàn trống (${statusCounts.available || 0})` },
-          { key: "Maintenance", label: `Bảo trì (${statusCounts.maintenance || 0})` },
-        ].map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setStatusFilter(tab.key)}
-            className={`pb-2 font-medium text-sm whitespace-nowrap transition-colors border-b-2 -mb-[9px]
-              ${statusFilter === tab.key
-                ? "text-green-600 border-green-500"
-                : "text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300"}`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Tables Grid */}
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="rounded-xl bg-white border border-gray-100 h-48 animate-pulse" />
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5">
-          {filteredTables.map((table) => {
-            const ds = getDisplayStatus(table);
-            const meta = STATUS_META[ds];
-            const booking = table.activeBooking;
-
-            return (
-              <div
-                key={table._id}
-                className={`rounded-xl border ${meta.border} overflow-hidden bg-white shadow-sm flex flex-col h-full transition-all hover:shadow-md cursor-pointer group`}
-                onClick={() => setSelectedTable(table)}
-              >
-                {/* Card Header */}
-                <div className="p-4 flex gap-3 border-b border-gray-100">
-                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl font-black shrink-0 ${meta.bg} ${meta.color}`}>
-                    {table.table_number?.replace(/\D/g, "") || table.table_number?.slice(0, 2) || "?"}
-                  </div>
-                  <div className="flex-1 flex flex-col justify-center overflow-hidden">
-                    <div className="flex items-center justify-between gap-2 mb-0.5">
-                      <span className="font-bold text-gray-900 text-sm truncate">{table.table_number}</span>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${meta.bg} ${meta.color}`}>
-                        {table.table_type_id?.name?.toUpperCase() || "BÀN"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className={`inline-block w-1.5 h-1.5 rounded-full ${meta.dot}`} />
-                      <span className={`text-xs font-semibold ${meta.color}`}>{meta.label}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Card Body */}
-                <div className="p-4 flex-1 flex flex-col gap-3">
-                  {/* Booking info snippet */}
-                  {booking ? (
-                    <div className={`rounded-lg px-3 py-2 ${meta.bg} space-y-1`}>
-                      {booking.account_id?.fullname && (
-                        <div className="flex items-center gap-1.5 text-xs text-gray-700">
-                          <User size={11} className="shrink-0" />
-                          <span className="truncate font-medium">{booking.account_id.fullname}</span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-1.5 text-xs text-gray-600">
-                        <Clock size={11} className="shrink-0" />
-                        <span>{formatTime(booking.start_time)} – {formatTime(booking.end_time)}</span>
-                        <span className="ml-auto font-mono text-[10px] text-gray-400">{booking.code_number}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <BookingStatusBadge status={booking.status} />
-                        <span className="text-[11px] text-gray-400">{formatDate(booking.play_date)}</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex-1 flex items-center justify-center">
-                      <span className="text-xs text-gray-400 italic">Không có đặt bàn</span>
-                    </div>
-                  )}
-
-                  {/* Price row */}
-                  <div className="flex justify-between items-center text-xs mt-auto pt-2 border-t border-gray-50">
-                    <span className="text-gray-400">Đơn giá</span>
-                    <span className="font-semibold text-gray-700">{table.price?.toLocaleString("vi-VN")}đ/h</span>
-                  </div>
-
-                  {/* View detail hint */}
-                  <div className="text-center">
-                    <span className="text-[11px] text-gray-300 group-hover:text-gray-400 transition-colors">
-                      Nhấn để xem chi tiết & quản lý
-                    </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-
-          {filteredTables.length === 0 && (
-            <div className="col-span-full py-20 text-center text-gray-500 bg-white rounded-xl border border-dashed border-gray-200 flex flex-col items-center justify-center gap-3">
-              <AlertCircle className="w-12 h-12 text-gray-300" />
-              <span className="text-base font-semibold text-gray-700">Không tìm thấy bàn</span>
-              <span className="text-sm text-gray-400">Thử thay đổi bộ lọc hoặc từ khoá tìm kiếm.</span>
+      {/* Timeline Calendar View */}
+      <div className="flex-1 min-h-0 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden relative">
+         
+         {loading && (
+            <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-50 flex items-center justify-center">
+               <RefreshCw className="animate-spin text-gray-400 w-8 h-8"/>
             </div>
-          )}
-        </div>
-      )}
+         )}
+
+         {/* Header and Body Container */}
+         <div className="flex-1 overflow-auto w-full h-full relative no-scrollbar z-0" ref={timelineScrollRef}>
+            {/* Header Row (Sticky Top) */}
+            <div className="flex sticky top-0 z-30 bg-gray-50/95 backdrop-blur-sm border-b border-gray-200 w-fit min-w-full">
+               {/* Y-Axis Label */}
+               <div className="w-44 lg:w-48 sticky left-0 z-40 bg-gray-50/95 border-r border-gray-200 shrink-0 flex items-center justify-center py-3 font-bold text-xs text-gray-500 uppercase tracking-widest backdrop-blur-md shadow-[2px_0_5px_rgba(0,0,0,0.02)] isolate">
+                  Bàn
+               </div>
+               
+               {/* Timeline Hours */}
+               <div className="flex-1 flex">
+                  {HOURS.map(h => (
+                     <div key={h} className="shrink-0 flex items-center justify-center font-bold text-sm text-gray-600 border-r border-gray-200 h-11" style={{ width: HOUR_WIDTH }}>
+                        {h}
+                     </div>
+                  ))}
+               </div>
+            </div>
+
+            {/* Body */}
+            <div className="flex w-fit min-w-full">
+               {/* Y-Axis Tables */}
+               <div className="w-44 lg:w-48 sticky left-0 z-20 bg-white border-r border-gray-200 shrink-0 flex flex-col shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
+                  {filteredTables.map(table => {
+                     const ds = getTableDerivedStatus(table, currentDate, bookings.filter(b => b.table_id?._id === table._id));
+                     const meta = STATUS_META[ds] || STATUS_META.available;
+                     return (
+                        <div key={table._id} className="h-[90px] border-b border-gray-100 flex items-center p-3 hover:bg-gray-50 transition-colors cursor-pointer bg-white" onClick={() => setModalTarget({ table })}>
+                           <div className="flex items-center gap-3 w-full">
+                              <div className={`shrink-0 w-2 h-10 rounded-full ${meta.dot}`} />
+                              <div className="overflow-hidden flex-1">
+                                 <h3 className="font-extrabold text-gray-900 text-base lg:text-lg">{table.table_number}</h3>
+                                 <p className="text-[11px] text-gray-400 font-medium truncate">{table.table_type_id?.name || "Bàn"}</p>
+                              </div>
+                           </div>
+                        </div>
+                     );
+                  })}
+               </div>
+
+               {/* Grid & Blocks Area */}
+               <div className="flex-1 flex flex-col relative z-0">
+                  {/* Background Grid Lines (Absolute to stretch full height) */}
+                  <div className="absolute inset-0 flex pointer-events-none">
+                     {HOURS.map(h => (
+                        <div key={`bg-${h}`} className="shrink-0 border-r border-gray-100/60 h-full" style={{ width: HOUR_WIDTH }} />
+                     ))}
+                  </div>
+
+                  {filteredTables.map(table => {
+                      const tableBookings = bookings.filter(b => b.table_id?._id === table._id);
+                      return (
+                        <div key={`grid-${table._id}`} className="h-[90px] border-b border-gray-100 flex items-center relative hover:bg-gray-50/20 transition-colors w-full">
+                           
+                           {/* Booking blocks */}
+                           {tableBookings.map(booking => {
+                              if (booking.status === "Cancelled") return null;
+                              const { left, width, display } = getBlockStyle(booking.start_time, booking.end_time);
+                              if (display === 'none') return null;
+                              
+                              const bMeta = STATUS_META[booking.status.toLowerCase()] || STATUS_META.completed;
+                              
+                              return (
+                                <div 
+                                  key={booking._id}
+                                  className={`absolute top-2 bottom-2 rounded-lg p-2 border overflow-hidden cursor-pointer transition-transform hover:scale-[1.01] hover:shadow-md z-10 flex flex-col justify-center ${bMeta.blockClass}`}
+                                  style={{ left, width }}
+                                  onClick={() => setModalTarget({ table, booking, isBookingActive: true })}
+                                >
+                                   <div className="flex items-center justify-between gap-2 max-w-full">
+                                       <span className="font-bold text-[13px] truncate">
+                                         {booking.account_id?.fullname || booking.guest_name || "Khách"}
+                                       </span>
+                                   </div>
+                                   <span className="text-[11px] opacity-80 mt-[2px] truncate font-semibold">
+                                      {formatTime(booking.start_time)} - {formatTime(booking.end_time)}
+                                   </span>
+                                </div>
+                              );
+                           })}
+                        </div>
+                      );
+                  })}
+               </div>
+            </div>
+         </div>
+      </div>
     </div>
   );
 };
+

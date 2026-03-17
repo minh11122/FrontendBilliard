@@ -90,6 +90,17 @@ export const confirmPayment = async (bookingId) => {
   }
 };
 
+// Thanh toán kết thúc lượt chơi (Dành cho STAFF / OWNER)
+export const checkOutBooking = async (bookingId) => {
+  try {
+    const response = await api.post(`/bookings/${bookingId}/checkout`);
+    return response.data;
+  } catch (error) {
+    console.error("Error in checkOutBooking:", error);
+    throw error;
+  }
+};
+
 // Nhân viên tạo đặt bàn trực tiếp (walk-in) cho khách đến quán
 export const createWalkInBooking = async (data) => {
   try {
@@ -111,6 +122,7 @@ export const bookingService = {
   confirmPayment,
   createPayOSBookingPayment,
   verifyBookingPayOSPayment,
+  checkOutBooking,
 };
 
 export default bookingService;

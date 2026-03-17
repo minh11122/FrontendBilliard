@@ -74,13 +74,30 @@ export const saveClubBank = async (clubId, data) => {
   }
 };
 
+// Lấy thống kê cho Staff Club
+export const getStaffClubStatistics = async (month, year) => {
+  try {
+    const params = {};
+    if (month && year) {
+       params.month = month;
+       params.year = year;
+    }
+    const response = await api.get("/clubs/staff/statistics", { params });
+    return response.data;
+  } catch (error) {
+    console.error("Error in getStaffClubStatistics:", error);
+    throw error;
+  }
+};
+
 export const clubService = {
   getAllClubs,
   getClubById,
   registerClub,
   updateClub,
   getClubBank,
-  saveClubBank
+  saveClubBank,
+  getStaffClubStatistics
 };
 
 
