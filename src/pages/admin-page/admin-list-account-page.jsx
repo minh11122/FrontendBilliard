@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Search,
   Filter,
@@ -6,42 +6,43 @@ import {
   ShieldCheck,
   MoreVertical,
 } from "lucide-react";
+import { getAccounts } from "@/services/admin.service";
 
 export const AccountManagement = () => {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
 
-  const accounts = [
-    {
-      id: 1,
-      fullname: "Nguyễn Văn A",
-      email: "admin@gmail.com",
-      role: "ADMIN",
-      status: "ACTIVE",
-      createdAt: "01/03/2026",
-    },
-    {
-      id: 2,
-      fullname: "Trần Văn B",
-      email: "staff@gmail.com",
-      role: "STAFF_SYSTEM",
-      status: "ACTIVE",
-      createdAt: "02/03/2026",
-    },
-    {
-      id: 3,
-      fullname: "Lê Văn C",
-      email: "user@gmail.com",
-      role: "USER",
-      status: "BLOCKED",
-      createdAt: "05/03/2026",
-    },
-  ];
+  const [accounts, setAccounts] = useState([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    totalPages: 1,
+    total: 0,
+  });
+
+  const fetchAccounts = async (page = 1) => {
+    try {
+      const res = await getAccounts({
+        page,
+        limit: 10,
+        search,
+        role: roleFilter,
+      });
+
+      setAccounts(res.data.data);
+      setPagination(res.data.pagination);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchAccounts(1);
+  }, []);
 
   return (
     <div className="p-6 space-y-6">
 
-      {/* Page title */}
+      {/* Title */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900">
           Quản lý tài khoản
@@ -62,44 +63,49 @@ export const AccountManagement = () => {
             placeholder="Tìm kiếm email hoặc tên..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+            className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2 text-sm"
           />
         </div>
 
-        {/* Filter role */}
+        {/* Role filter */}
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-slate-400" />
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="border border-slate-200 rounded-lg px-3 py-2 text-sm"
+            className="border rounded-lg px-3 py-2 text-sm"
           >
             <option value="ALL">Tất cả</option>
-            <option value="ADMIN">Admin</option>
-            <option value="STAFF_SYSTEM">System Staff</option>
-            <option value="USER">User</option>
+            <option value="CUSTOMER">Customer</option>
+            <option value="STAFF_CLUB">Staff</option>
+            <option value="OWNER">Owner</option>
           </select>
+
+          <button
+            onClick={() => fetchAccounts(1)}
+            className="bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm"
+          >
+            Lọc
+          </button>
         </div>
       </div>
 
       {/* Table */}
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-
         <table className="w-full text-sm">
           <thead className="bg-slate-50 text-slate-500">
             <tr>
-              <th className="text-left px-4 py-3 font-medium">Tài khoản</th>
-              <th className="text-left px-4 py-3 font-medium">Role</th>
-              <th className="text-left px-4 py-3 font-medium">Trạng thái</th>
-              <th className="text-left px-4 py-3 font-medium">Ngày tạo</th>
-              <th className="text-right px-4 py-3 font-medium">Hành động</th>
+              <th className="text-left px-4 py-3">Tài khoản</th>
+              <th className="text-left px-4 py-3">Role</th>
+              <th className="text-left px-4 py-3">Trạng thái</th>
+              <th className="text-left px-4 py-3">Ngày tạo</th>
+              <th className="text-right px-4 py-3">Hành động</th>
             </tr>
           </thead>
 
           <tbody className="divide-y">
-
             {accounts.map((acc) => (
-              <tr key={acc.id} className="hover:bg-slate-50">
+              <tr key={acc._id} className="hover:bg-slate-50">
 
                 {/* User */}
                 <td className="px-4 py-3 flex items-center gap-3">
@@ -108,39 +114,35 @@ export const AccountManagement = () => {
                   </div>
 
                   <div>
-                    <p className="font-medium text-slate-900">
-                      {acc.fullname}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {acc.email}
-                    </p>
+                    <p className="font-medium">{acc.fullname}</p>
+                    <p className="text-xs text-slate-500">{acc.email}</p>
                   </div>
                 </td>
 
                 {/* Role */}
                 <td className="px-4 py-3">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-600">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs text-emerald-600">
                     <ShieldCheck className="h-3 w-3" />
-                    {acc.role}
+                    {acc.role_id?.name}
                   </span>
                 </td>
 
                 {/* Status */}
                 <td className="px-4 py-3">
-                  {acc.status === "ACTIVE" ? (
-                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                      Active
-                    </span>
-                  ) : (
-                    <span className="text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded-full">
-                      Blocked
-                    </span>
-                  )}
+                  <span
+                    className={`text-xs px-2 py-1 rounded-full ${
+                      acc.status === "ACTIVE"
+                        ? "text-green-600 bg-green-50"
+                        : "text-yellow-600 bg-yellow-50"
+                    }`}
+                  >
+                    {acc.status}
+                  </span>
                 </td>
 
                 {/* Date */}
                 <td className="px-4 py-3 text-slate-600">
-                  {acc.createdAt}
+                  {new Date(acc.created_at).toLocaleDateString()}
                 </td>
 
                 {/* Actions */}
@@ -152,26 +154,44 @@ export const AccountManagement = () => {
 
               </tr>
             ))}
-
           </tbody>
         </table>
       </div>
 
       {/* Pagination */}
       <div className="flex justify-between items-center text-sm text-slate-500">
-        <p>Hiển thị 1 - 10 / 50 tài khoản</p>
+        <p>
+          Trang {pagination.page} / {pagination.totalPages} — {pagination.total} tài khoản
+        </p>
 
         <div className="flex gap-2">
-          <button className="px-3 py-1 border rounded-lg hover:bg-slate-50">
+          <button
+            disabled={pagination.page === 1}
+            onClick={() => fetchAccounts(pagination.page - 1)}
+            className="px-3 py-1 border rounded-lg"
+          >
             Trước
           </button>
-          <button className="px-3 py-1 border rounded-lg bg-emerald-50 text-emerald-600">
-            1
-          </button>
-          <button className="px-3 py-1 border rounded-lg hover:bg-slate-50">
-            2
-          </button>
-          <button className="px-3 py-1 border rounded-lg hover:bg-slate-50">
+
+          {[...Array(pagination.totalPages || 1)].map((_, i) => (
+            <button
+              key={i}
+              onClick={() => fetchAccounts(i + 1)}
+              className={`px-3 py-1 border rounded-lg ${
+                pagination.page === i + 1
+                  ? "bg-emerald-50 text-emerald-600"
+                  : ""
+              }`}
+            >
+              {i + 1}
+            </button>
+          ))}
+
+          <button
+            disabled={pagination.page === pagination.totalPages}
+            onClick={() => fetchAccounts(pagination.page + 1)}
+            className="px-3 py-1 border rounded-lg"
+          >
             Sau
           </button>
         </div>
