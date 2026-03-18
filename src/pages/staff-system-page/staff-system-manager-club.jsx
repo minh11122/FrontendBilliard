@@ -6,7 +6,8 @@ import {
 } from "lucide-react";
 import {
   getClubs, getDashboardData,
-  approveClub, rejectClub, lockClub, unlockClub
+  approveClub, rejectClub, lockClub, unlockClub,
+  getStaffNotifications, markStaffNotificationRead, markAllStaffNotificationsRead
 } from "../../services/staffDashboard.service";
 import { getClubById } from "../../services/club.service";
 
@@ -47,34 +48,6 @@ const SkeletonRow = () => (
     ))}
   </tr>
 );
-
-// ─── Notification Modal ────────────────────────────────────────────────────
-const NotificationModal = ({ club, onClose }) => {
-  if (!club) return null;
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 text-center transform scale-100 animate-in zoom-in-95 duration-200">
-        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 relative">
-          <Bell className="w-8 h-8 text-blue-600 animate-bounce" />
-          <span className="absolute top-0 right-0 flex h-4 w-4">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500"></span>
-          </span>
-        </div>
-        <h3 className="text-xl font-bold text-gray-900 mb-2">CLB mới chờ duyệt!</h3>
-        <p className="text-gray-500 text-sm mb-6">
-          Câu lạc bộ <span className="font-semibold text-gray-900">{club.name}</span> vừa đăng ký và đang chờ bạn phê duyệt.
-        </p>
-        <button
-          onClick={onClose}
-          className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-lg shadow-blue-200"
-        >
-          Xem ngay
-        </button>
-      </div>
-    </div>
-  );
-};
 
 // ─── Detail Modal ──────────────────────────────────────────────────────────
 const ClubDetailModal = ({ club, onClose }) => {
@@ -176,21 +149,30 @@ export const SystemStaff1 = () => {
   const [actionLoading, setActionLoading] = useState({});
   const [toast, setToast] = useState(null);
   const [selected, setSelected] = useState(null);
-  const [newClubNotification, setNewClubNotification] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [filterStatus, setFilterStatus] = useState("Pending");
   const [search, setSearch] = useState("");
-  const [unreadNewClubs, setUnreadNewClubs] = useState([]);
+  const [notifications, setNotifications] = useState([]);
   const [showNotificationPopup, setShowNotificationPopup] = useState(false);
   
-  const knownPendingIds = useRef(new Set());
-  const isFirstLoad = useRef(true);
   const popupRef = useRef(null);
+
+  const unreadCount = notifications.filter(n => !n.is_read).length;
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
   };
+
+  // Fetch notifications
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const res = await getStaffNotifications();
+      if (res?.success) {
+        setNotifications(res.data || []);
+      }
+    } catch { /* silent */ }
+  }, []);
 
   // Fetch count badges from dashboard (non-blocking)
   const fetchCounts = useCallback(async () => {
@@ -198,35 +180,11 @@ export const SystemStaff1 = () => {
       const res = await getDashboardData();
       if (res?.success) {
         const s = res.data.stats || {};
-        const pendingList = res.data.pendingClubs || [];
         setCounts(prev => ({ ...prev, Pending: s.pendingClubs || 0 }));
-        
-        if (isFirstLoad.current) {
-          pendingList.forEach(c => knownPendingIds.current.add(c._id));
-          isFirstLoad.current = false;
-        } else {
-          // Check for new clubs that weren't in our known set
-          const newClubs = pendingList.filter(c => !knownPendingIds.current.has(c._id));
-          if (newClubs.length > 0) {
-            
-            // Show modal for the newest one
-            setNewClubNotification(newClubs[0]);
-            
-            // Add to unread bell list
-            setUnreadNewClubs(prev => {
-                const combined = [...newClubs, ...prev];
-                // Keep unique by ID
-                const unique = Array.from(new Map(combined.map(item => [item["_id"], item])).values());
-                return unique;
-            });
-
-            // Add to known set directly
-            newClubs.forEach(c => knownPendingIds.current.add(c._id));
-          }
-        }
       }
     } catch { /* silent */ }
   }, []);
+
 
   // Fetch clubs for current filter tab
   const fetchClubs = useCallback(async (status) => {
@@ -244,12 +202,14 @@ export const SystemStaff1 = () => {
 
   useEffect(() => {
     fetchCounts();
-    // Poll every 10 seconds for new pending clubs
+    fetchNotifications();
+    // Poll every 10 seconds for new counts and notifications
     const interval = setInterval(() => {
       fetchCounts();
+      fetchNotifications();
     }, 10000);
     return () => clearInterval(interval);
-  }, [fetchCounts]);
+  }, [fetchCounts, fetchNotifications]);
 
   // Handle click outside to close unread popup
   useEffect(() => {
@@ -270,31 +230,18 @@ export const SystemStaff1 = () => {
     fetchClubs(filterStatus);
   }, [filterStatus, fetchClubs]);
 
-  const handleCloseNotification = () => {
-    setNewClubNotification(null);
-    if (filterStatus !== "Pending") {
-      setFilterStatus("Pending");
-    } else {
-      fetchClubs("Pending");
-    }
-  };
-
-  const handleReadNotification = (clubId) => {
-    setUnreadNewClubs(prev => prev.filter(c => c._id !== clubId));
-    if (filterStatus !== "Pending") {
-      setFilterStatus("Pending");
-    } else {
-      fetchClubs("Pending");
-    }
-    setShowNotificationPopup(false);
+  const handleReadNotification = async (notifId) => {
+    try {
+        await markStaffNotificationRead(notifId);
+        fetchNotifications();
+    } catch (e) { console.error(e); }
   };
   
-  const handleReadAll = () => {
-      setUnreadNewClubs([]);
-      setShowNotificationPopup(false);
-      if (filterStatus !== "Pending") {
-          setFilterStatus("Pending");
-      }
+  const handleReadAll = async () => {
+      try {
+          await markAllStaffNotificationsRead();
+          fetchNotifications();
+      } catch (e) { console.error(e); }
   };
 
   const handleTabChange = (key) => {
@@ -369,7 +316,6 @@ export const SystemStaff1 = () => {
     <div className="min-h-screen bg-gray-50">
       {toast && <Toast {...toast} onClose={() => setToast(null)} />}
       {selected && <ClubDetailModal club={selected} onClose={() => setSelected(null)} />}
-      {newClubNotification && <NotificationModal club={newClubNotification} onClose={handleCloseNotification} />}
 
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
@@ -389,7 +335,7 @@ export const SystemStaff1 = () => {
               title="Thông báo mới"
             >
               <Bell className="w-5 h-5" />
-              {unreadNewClubs.length > 0 && (
+              {unreadCount > 0 && (
                 <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
               )}
             </button>
@@ -398,7 +344,7 @@ export const SystemStaff1 = () => {
               <div className="absolute top-full right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden transform origin-top-right animate-in zoom-in-95 duration-200">
                 <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between bg-gray-50">
                   <h3 className="font-semibold text-sm text-gray-800">Thông báo mới</h3>
-                  {unreadNewClubs.length > 0 && (
+                  {unreadCount > 0 && (
                       <button 
                         onClick={handleReadAll}
                         className="text-xs text-blue-600 hover:text-blue-700 font-medium">
@@ -407,24 +353,28 @@ export const SystemStaff1 = () => {
                   )}
                 </div>
                 <div className="max-h-80 overflow-y-auto">
-                  {unreadNewClubs.length === 0 ? (
+                  {notifications.length === 0 ? (
                     <div className="px-4 py-8 text-center text-gray-500 text-sm">
                       Không có thông báo mới nào
                     </div>
                   ) : (
-                    unreadNewClubs.map(club => (
+                    notifications.map(notif => (
                       <div 
-                        key={club._id} 
-                        onClick={() => handleReadNotification(club._id)}
-                        className="px-4 py-3 border-b border-gray-50 hover:bg-blue-50 cursor-pointer transition-colors flex gap-3 items-start"
+                        key={notif._id} 
+                        onClick={() => handleReadNotification(notif._id)}
+                        className={`px-4 py-3 border-b border-gray-50 hover:bg-blue-50 cursor-pointer transition-colors flex gap-3 items-start ${!notif.is_read ? 'bg-blue-50/50' : ''}`}
                       >
                         <div className="flex-shrink-0 mt-1">
-                          <div className="w-2 h-2 rounded-full bg-blue-500 mt-1"></div>
+                          {!notif.is_read && <div className="w-2 h-2 rounded-full bg-blue-500 mt-1"></div>}
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-900 line-clamp-1">{club.name}</p>
-                          <p className="text-xs text-gray-500 line-clamp-1 truncate mt-0.5">Vừa đăng ký chờ hệ thống duyệt</p>
-                          <p className="text-[10px] text-gray-400 mt-1">Vừa xong</p>
+                          <p className={`text-sm text-gray-900 line-clamp-1 ${!notif.is_read ? 'font-medium' : ''}`}>{notif.title}</p>
+                          <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{notif.message}</p>
+                          <p className="text-[10px] text-gray-400 mt-1">
+                            {new Date(notif.created_at).toLocaleString("vi-VN", {
+                                hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric'
+                            })}
+                          </p>
                         </div>
                       </div>
                     ))

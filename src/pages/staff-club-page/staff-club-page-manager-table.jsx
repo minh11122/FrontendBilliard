@@ -21,12 +21,14 @@ import {
 //  Constants
 // ─────────────────────────────────────────────
 const TIMELINE_START = 0; // 00:00
-const TIMELINE_HOURS = 24; // 24 hours total
+const TIMELINE_HOURS = 24; // 24 hours total (one full day)
 const HOUR_WIDTH = 140; // px per hour
 
 const HOURS = Array.from({ length: TIMELINE_HOURS }, (_, i) => {
-  const h = TIMELINE_START + i;
-  return `${h.toString().padStart(2, "0")}:00`;
+  const trueHour = TIMELINE_START + i;
+  const h = trueHour % 24;
+  const nextDay = trueHour >= 24;
+  return nextDay ? `${h.toString().padStart(2, "0")}:00 (+1)` : `${h.toString().padStart(2, "0")}:00`;
 });
 
 const STATUS_META = {
@@ -47,23 +49,45 @@ const formatDate = (date) => {
 };
 
 // Returns position and width of a booking block on the timeline
-const getBlockStyle = (start, end) => {
-  if (!start) return { left: 0, width: 0, display: 'none' };
-  const [sh, sm] = start.split(':').map(Number);
+const getBlockStyle = (booking, currentDate) => {
+  if (!booking || !booking.start_time) return { left: 0, width: 0, display: 'none' };
+  
+  const bDate = new Date(booking.play_date);
+  bDate.setHours(0, 0, 0, 0);
+  const currDate = new Date(currentDate);
+  currDate.setHours(0, 0, 0, 0);
+
+  const [sh, sm] = booking.start_time.split(':').map(Number);
   let startMinutes = sh * 60 + sm;
   
   let endMinutes;
-  if (end) {
-    const [eh, em] = end.split(':').map(Number);
+  if (booking.end_time) {
+    const [eh, em] = booking.end_time.split(':').map(Number);
     endMinutes = eh * 60 + em;
     if (endMinutes <= startMinutes) endMinutes += 24 * 60; // Next day
   } else {
     endMinutes = startMinutes + 60;
   }
 
-  // Clip
-  if (startMinutes >= 24 * 60) return { left: 0, width: 0, display: 'none' };
-  if (endMinutes > 24 * 60) endMinutes = 24 * 60;
+  // Adjust for date difference if the booking is from yesterday
+  const diffDays = Math.round((currDate - bDate) / (1000 * 60 * 60 * 24));
+  
+  if (diffDays > 0) {
+     // booking was yesterday
+     startMinutes -= diffDays * 24 * 60;
+     endMinutes -= diffDays * 24 * 60;
+  } else if (diffDays < 0) {
+     // booking is tomorrow (shouldn't happen with our fetch normally)
+     startMinutes += Math.abs(diffDays) * 24 * 60;
+     endMinutes += Math.abs(diffDays) * 24 * 60;
+  }
+
+  // Clip to timeline max bounds (0 to 30 hours)
+  if (endMinutes <= 0) return { left: 0, width: 0, display: 'none' }; // Ends before timeline starts
+  if (startMinutes >= TIMELINE_HOURS * 60) return { left: 0, width: 0, display: 'none' }; // Starts after timeline ends
+  
+  if (startMinutes < 0) startMinutes = 0;
+  if (endMinutes > TIMELINE_HOURS * 60) endMinutes = TIMELINE_HOURS * 60;
 
   const left = (startMinutes / 60) * HOUR_WIDTH;
   const width = ((endMinutes - startMinutes) / 60) * HOUR_WIDTH;
@@ -88,12 +112,23 @@ const getTableDerivedStatus = (table, dateFilter, bookingsForTable) => {
    const activeBooking = bookingsForTable.find(b => {
       if (b.status === "Cancelled" || b.status === "Completed") return false;
       if (!b.start_time || !b.end_time) return false;
+
+      const bDate = new Date(b.play_date);
+      bDate.setHours(0, 0, 0, 0);
+      const currDate = new Date(dateFilter);
+      currDate.setHours(0, 0, 0, 0);
+      const diffDays = Math.round((currDate - bDate) / (1000 * 60 * 60 * 24));
+
       const [sh, sm] = b.start_time.split(':').map(Number);
       let [eh, em] = b.end_time.split(':').map(Number);
-      const startMin = sh * 60 + sm;
+      
+      let startMin = sh * 60 + sm;
       let endMin = eh * 60 + em;
       if (endMin <= startMin) endMin += 24 * 60;
       
+      startMin -= diffDays * 24 * 60;
+      endMin -= diffDays * 24 * 60;
+
       return currentMinutes >= startMin && currentMinutes <= endMin;
    });
 
@@ -307,10 +342,41 @@ export const StaffClubPageManagerTable = () => {
       const day = String(selectedDate.getDate()).padStart(2, '0');
       const dateStr = `${year}-${month}-${day}`;
 
-      const res = await bookingService.getClubBookings({ status: "all", date: dateStr });
-      if (res.success) {
-        setBookings(res.data || []);
+      const yesterday = new Date(selectedDate);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yYear = yesterday.getFullYear();
+      const yMonth = String(yesterday.getMonth() + 1).padStart(2, '0');
+      const yDay = String(yesterday.getDate()).padStart(2, '0');
+      const yesterdayStr = `${yYear}-${yMonth}-${yDay}`;
+
+      const [resToday, resYesterday] = await Promise.all([
+         bookingService.getClubBookings({ status: "all", date: dateStr }),
+         bookingService.getClubBookings({ status: "all", date: yesterdayStr })
+      ]);
+
+      let combinedBookings = [];
+      if (resToday.success) {
+         combinedBookings = [...(resToday.data || [])];
       }
+
+      if (resYesterday.success) {
+         const overnightBookings = (resYesterday.data || []).filter(b => {
+             if (b.status === "Cancelled") return false;
+             if (!b.start_time || !b.end_time) return false;
+             const [sh, sm] = b.start_time.split(':').map(Number);
+             const [eh, em] = b.end_time.split(':').map(Number);
+             const startMin = sh * 60 + sm;
+             const endMin = eh * 60 + em;
+             // Goes overnight if endMin <= startMin. It must also extend into today (endMin > 0).
+             return endMin <= startMin && endMin > 0;
+         });
+         
+         const existingIds = new Set(combinedBookings.map(b => b._id));
+         const uniqueOvernight = overnightBookings.filter(b => !existingIds.has(b._id));
+         
+         combinedBookings = [...combinedBookings, ...uniqueOvernight];
+      }
+      setBookings(combinedBookings);
     } catch (e) {
       toast.error("Không thể tải lịch đặt bàn");
       setBookings([]);
@@ -603,7 +669,7 @@ export const StaffClubPageManagerTable = () => {
                            {/* Booking blocks */}
                            {tableBookings.map(booking => {
                               if (booking.status === "Cancelled") return null;
-                              const { left, width, display } = getBlockStyle(booking.start_time, booking.end_time);
+                              const { left, width, display } = getBlockStyle(booking, currentDate);
                               if (display === 'none') return null;
                               
                               const bMeta = STATUS_META[booking.status.toLowerCase()] || STATUS_META.completed;
