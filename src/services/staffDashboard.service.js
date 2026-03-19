@@ -64,3 +64,25 @@ export async function rejectPost(id, reason = "") {
     });
     return res.data;
 }
+
+// Notifications
+export async function getStaffNotifications() {
+    const res = await axios.get(`${BASE_URL}/notifications`, {
+        headers: authHeader()
+    });
+    return res.data;
+}
+
+export async function markStaffNotificationRead(id) {
+    const res = await axios.patch(`${BASE_URL}/notifications/${id}/read`, {}, {
+        headers: authHeader()
+    });
+    return res.data;
+}
+
+export async function markAllStaffNotificationsRead() {
+    const res = await axios.patch(`${BASE_URL}/notifications/read-all`, {}, {
+        headers: authHeader()
+    });
+    return res.data;
+}

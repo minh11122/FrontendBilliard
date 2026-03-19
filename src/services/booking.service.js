@@ -112,6 +112,42 @@ export const createWalkInBooking = async (data) => {
   }
 };
 
+// Lấy danh sách dịch vụ của một booking
+export const getBookingServices = async (bookingId) => {
+  try {
+    const response = await api.get(`/bookings/${bookingId}/services`);
+    return response.data;
+  } catch (error) {
+    console.error("Error in getBookingServices:", error);
+    throw error;
+  }
+};
+
+// Thêm dịch vụ vào booking
+export const addServiceToBooking = async (bookingId, serviceId, quantity) => {
+  try {
+    const response = await api.post(`/bookings/${bookingId}/services`, {
+      service_id: serviceId,
+      quantity,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error in addServiceToBooking:", error);
+    throw error;
+  }
+};
+
+// Gia hạn booking
+export const extendBooking = async (bookingId, minutes) => {
+  try {
+    const response = await api.post(`/bookings/${bookingId}/extend`, { minutes });
+    return response.data;
+  } catch (error) {
+    console.error("Error in extendBooking:", error);
+    throw error;
+  }
+};
+
 export const bookingService = {
   createBooking,
   cancelHold,
@@ -123,6 +159,9 @@ export const bookingService = {
   createPayOSBookingPayment,
   verifyBookingPayOSPayment,
   checkOutBooking,
+  getBookingServices,
+  addServiceToBooking,
+  extendBooking,
 };
 
 export default bookingService;
