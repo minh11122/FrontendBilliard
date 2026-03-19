@@ -462,20 +462,38 @@ export default function OwnerTableListPage() {
                                 <div className="flex flex-col md:flex-row gap-6">
                                     {/* Image Section */}
                                     <div className="w-full md:w-1/3 flex-shrink-0">
-                                        <div className="aspect-square rounded-xl bg-gray-100 overflow-hidden border border-gray-200 relative">
-                                            {selectedTableDetails.image_url ? (
-                                                <img 
-                                                    src={selectedTableDetails.image_url} 
-                                                    alt={selectedTableDetails.table_number} 
-                                                    className="w-full h-full object-cover"
-                                                />
+                                        {(() => {
+                                            const imgs = selectedTableDetails.images?.length > 0
+                                                ? selectedTableDetails.images
+                                                : selectedTableDetails.image_url
+                                                    ? [selectedTableDetails.image_url]
+                                                    : [];
+                                            return imgs.length > 0 ? (
+                                                <div className="flex flex-col gap-2">
+                                                    <div className="aspect-square rounded-xl bg-gray-100 overflow-hidden border border-gray-200">
+                                                        <img
+                                                            src={imgs[0]}
+                                                            alt={selectedTableDetails.table_number}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    </div>
+                                                    {imgs.length > 1 && (
+                                                        <div className="grid grid-cols-3 gap-1.5">
+                                                            {imgs.slice(1).map((url, idx) => (
+                                                                <a key={idx} href={url} target="_blank" rel="noreferrer">
+                                                                    <img src={url} alt={`Ảnh ${idx + 2}`} className="w-full aspect-square object-cover rounded-lg border border-gray-200 hover:opacity-80 transition-opacity" />
+                                                                </a>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             ) : (
-                                                <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
+                                                <div className="aspect-square rounded-xl bg-gray-100 border border-gray-200 flex flex-col items-center justify-center text-gray-400">
                                                     <LayoutGrid size={40} className="mb-2 opacity-50" />
                                                     <span className="text-sm">Chưa có ảnh</span>
                                                 </div>
-                                            )}
-                                        </div>
+                                            );
+                                        })()}
                                         <div className="mt-4 flex justify-center">
                                             {renderStatusUI(selectedTableDetails.status)}
                                         </div>
@@ -542,9 +560,9 @@ export default function OwnerTableListPage() {
                                         setIsViewModalOpen(false);
                                         navigate(`/owner/tables/edit/${selectedTableDetails._id}`);
                                     }}
-                                    className="bg-active hover:bg-active/90 text-white px-6 rounded-lg font-medium"
+                                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-lg font-medium"
                                 >
-                                    Chỉnh sửa ngay
+                                    Chỉnh sửa
                                 </Button>
                             )}
                         </div>

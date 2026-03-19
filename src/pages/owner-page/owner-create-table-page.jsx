@@ -4,7 +4,7 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 import toast from "react-hot-toast";
 
-import { ImagePlus, Save, Info, Trash2, Plus } from "lucide-react";
+import { ImagePlus, Save, Info, X } from "lucide-react";
 
 import { createTable, getTableTypes } from "@/services/billiardTable.service";
 import { Input } from "@/components/ui/input";
@@ -22,8 +22,8 @@ export default function OwnerCreateTablePage() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
-  const [imagePreview, setImagePreview] = useState(null);
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [imageFiles, setImageFiles] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
   const [tableTypes, setTableTypes] = useState([]);
 
   const CLUB_ID = localStorage.getItem("selected_club_id") || "";
@@ -58,7 +58,7 @@ export default function OwnerCreateTablePage() {
         .required("Đơn giá không được để trống"),
       description: Yup.string().max(500, "Mô tả tối đa 500 ký tự"),
     }),
-    onSubmit: async (values) => {
+    onSubmit: async (values, { setSubmitting }) => {
       if (!CLUB_ID) {
         toast.error("Không tìm thấy thông tin quán. Vui lòng đăng nhập lại!");
         return;
@@ -66,19 +66,15 @@ export default function OwnerCreateTablePage() {
 
       try {
         const formData = new FormData();
-        formData.append("club_id", CLUB_ID); // Gửi ID tự động lấy được
+        formData.append("club_id", CLUB_ID);
         formData.append("table_number", values.table_number);
         formData.append("table_type_id", values.table_type_id);
         formData.append("price", values.price);
         formData.append("description", values.description);
-
-        // Dữ liệu mặc định để không lỗi Backend
         formData.append("area", "Khu vực chung");
         formData.append("isActive", true);
 
-        if (selectedFile) {
-          formData.append("image", selectedFile);
-        }
+        imageFiles.forEach((file) => formData.append("images", file));
 
         const res = await createTable(formData);
 
@@ -88,23 +84,28 @@ export default function OwnerCreateTablePage() {
         }
       } catch (error) {
         toast.error(error.response?.data?.message || "Có lỗi xảy ra khi thêm bàn");
+      } finally {
+        setSubmitting(false);
       }
     },
   });
 
   const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) return toast.error("Ảnh không được vượt quá 5MB");
-      setSelectedFile(file);
-      setImagePreview(URL.createObjectURL(file));
+    const files = Array.from(e.target.files);
+    if (imageFiles.length + files.length > 5) {
+      toast.error("Tối đa 5 ảnh!");
+      return;
     }
+    const newFiles = [...imageFiles, ...files];
+    setImageFiles(newFiles);
+    setImagePreviews(newFiles.map((f) => URL.createObjectURL(f)));
+    e.target.value = "";
   };
 
-  const removeImage = () => {
-    setSelectedFile(null);
-    setImagePreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+  const removeImage = (index) => {
+    const newFiles = imageFiles.filter((_, i) => i !== index);
+    setImageFiles(newFiles);
+    setImagePreviews(newFiles.map((f) => URL.createObjectURL(f)));
   };
 
   const inputClassName = "w-full rounded-lg border-slate-200 bg-slate-50 focus:bg-white focus:border-primary focus:ring-primary/20 transition-all text-slate-900 shadow-none";
@@ -129,41 +130,60 @@ export default function OwnerCreateTablePage() {
             <button type="button" onClick={() => navigate(-1)} className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 font-medium transition-all shadow-sm">
               Hủy bỏ
             </button>
-            <button type="button" onClick={formik.handleSubmit} className="px-4 py-2 bg-primary text-slate-900 rounded-lg hover:bg-[#0fd650] font-semibold transition-all shadow-sm shadow-primary/30 flex items-center gap-2">
+            <button type="button" onClick={formik.handleSubmit} disabled={formik.isSubmitting}
+              className="px-4 py-2 bg-primary text-slate-900 rounded-lg hover:bg-[#0fd650] font-semibold transition-all shadow-sm shadow-primary/30 flex items-center gap-2 disabled:opacity-60">
               <Save size={20} />
-              Lưu bàn
+              {formik.isSubmitting ? "Đang lưu..." : "Lưu bàn"}
             </button>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-1 flex flex-col gap-6">
+          {/* Cột trái: Upload ảnh */}
+          <div className="lg:col-span-1">
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">Hình ảnh bàn</h3>
-              <div className="w-full aspect-square relative rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 transition-colors flex flex-col items-center justify-center cursor-pointer group overflow-hidden" onClick={() => !imagePreview && fileInputRef.current?.click()}>
-                {imagePreview ? (
-                  <>
-                    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center transition-all">
-                      <button type="button" onClick={(e) => { e.stopPropagation(); removeImage(); }} className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors shadow-lg">
-                        <Trash2 size={20} />
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">Hình ảnh bàn</h3>
+              <p className="text-xs text-slate-400 mb-4">Tối đa 5 ảnh, JPG/PNG. Hover vào ảnh để xóa.</p>
+
+              {imagePreviews.length > 0 && (
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  {imagePreviews.map((src, idx) => (
+                    <div key={idx} className="relative group aspect-square rounded-lg overflow-hidden border border-slate-200">
+                      <img src={src} alt={`Ảnh ${idx + 1}`} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(idx)}
+                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow"
+                      >
+                        <X size={12} />
                       </button>
                     </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="p-4 rounded-full bg-white shadow-sm border border-slate-100 group-hover:scale-110 transition-transform duration-200">
-                      <ImagePlus className="text-primary" size={28} />
-                    </div>
-                    <p className="mt-4 text-sm font-medium text-slate-700">Tải ảnh lên</p>
-                    <p className="mt-1 text-xs text-slate-500">PNG, JPG tối đa 5MB</p>
-                  </>
-                )}
-                <input type="file" ref={fileInputRef} className="hidden" accept="image/png, image/jpeg, image/jpg" onChange={handleImageChange} />
-              </div>
+                  ))}
+                </div>
+              )}
+
+              {imageFiles.length < 5 && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full h-20 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center gap-1 text-slate-400 hover:border-primary hover:text-primary transition-all cursor-pointer"
+                >
+                  <ImagePlus size={24} />
+                  <span className="text-xs font-medium">Thêm ảnh ({imageFiles.length}/5)</span>
+                </button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/jpg"
+                multiple
+                className="hidden"
+                onChange={handleImageChange}
+              />
             </div>
           </div>
 
+          {/* Cột phải: Thông tin */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 lg:p-8">
               <h3 className="text-lg font-semibold text-slate-900 mb-6 flex items-center gap-2">
