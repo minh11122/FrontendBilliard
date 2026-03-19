@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import step1 from "@/assets/guide/step1.png";
+import step2 from "@/assets/guide/step2.png";
+import step3 from "@/assets/guide/step3.png";
+import step4 from "@/assets/guide/step4.png";
+import step5 from "@/assets/guide/step5.png";
 import {
   getSubscriptions,
   getCurrentSubscription,
@@ -37,6 +42,8 @@ export function SettingPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [bgGalleryPage, setBgGalleryPage] = useState(0); // for background image page navigation
   const BG_PER_PAGE = 4;
+  const [showGuide, setShowGuide] = useState(false);
+  const [guideStep, setGuideStep] = useState(0);
 
   // Bank info states
   const [clubBank, setClubBank] = useState({
@@ -65,6 +72,28 @@ export function SettingPage() {
     avatar: "",
     backgrounds: []
   });
+  const guideSteps = [
+  {
+    title: "Bước 1: Đăng nhập PayOS",
+    image: step1
+  },
+  {
+    title: "Bước 2: Xác thực tài khoản",
+    image: step2
+  },
+  {
+    title: "Bước 3: Xác thực ngân hàng",
+    image: step3
+  },
+  {
+    title: "Bước 4: Tạo kênh thanh toán",
+    image: step4
+  },
+  {
+    title: "Bước 5: Copy API Key",
+    image: step5
+  }
+];
 
   const [provinces, setProvinces] = useState([]);
   const [mapSearch, setMapSearch] = useState("");
@@ -693,7 +722,7 @@ export function SettingPage() {
                   <div className="space-y-2">
                     <span className="bg-white/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Gói đang sử dụng</span>
                     <h3 className="text-3xl font-black">{currentSubscription.subscription_id.name}</h3>
-                    <p className="opacity-90 max-w-md">{currentSubscription.subscription_id.description}</p>
+                    <p className="opacity-90 max-w-3xl">{currentSubscription.subscription_id.description}</p>
                   </div>
 
                   <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20 space-y-3 min-w-[240px]">
@@ -906,59 +935,156 @@ export function SettingPage() {
       </div>
 
       {/* Bank info required modal */}
-      {isBankModalOpen && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl">
-            <h3 className="text-lg font-bold mb-2 text-gray-900">Thiết lập PayOS cho CLB</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Vui lòng thiết lập PayOS cho CLB. Bạn cần hoàn thành bước này trước khi sử dụng đầy đủ các chức năng quản lý quán.
-            </p>
+{isBankModalOpen && (
+  <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+    <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl">
+      
+      {/* Title */}
+      <h3 className="text-lg font-bold mb-2 text-gray-900">
+        Thiết lập PayOS cho CLB
+      </h3>
 
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-gray-700">PayOS Client ID</label>
-                <input
-                  type="text"
-                  value={clubBank.payos_client_id}
-                  onChange={(e) => setClubBank({ ...clubBank, payos_client_id: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
-                  placeholder="Nhập PayOS Client ID"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-gray-700">PayOS API Key</label>
-                <input
-                  type="password"
-                  value={clubBank.payos_api_key}
-                  onChange={(e) => setClubBank({ ...clubBank, payos_api_key: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
-                  placeholder="Nhập PayOS API Key"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-gray-700">PayOS Checksum Key</label>
-                <input
-                  type="password"
-                  value={clubBank.payos_checksum_key}
-                  onChange={(e) => setClubBank({ ...clubBank, payos_checksum_key: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
-                  placeholder="Nhập PayOS Checksum Key"
-                />
-              </div>
-            </div>
+      <p className="text-sm text-gray-600 mb-3">
+        Bạn cần nhập thông tin PayOS để hệ thống có thể nhận thanh toán.
+      </p>
 
-            <div className="flex justify-end mt-5">
-              <button
-                onClick={handleSaveBankInfo}
-                disabled={bankSaving}
-                className="px-5 py-2.5 rounded-xl bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 transition-all disabled:opacity-60"
-              >
-                {bankSaving ? "Đang lưu..." : "Lưu & tiếp tục"}
-              </button>
-            </div>
-          </div>
+      {/* LINK PAYOS */}
+      <a
+        href="https://payos.vn"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-xs text-orange-600 underline mb-2 inline-block"
+      >
+        👉 Mở PayOS để lấy key
+      </a>
+
+      {/* TOGGLE GUIDE */}
+      <button
+        onClick={() => setShowGuide(!showGuide)}
+        className="text-xs text-blue-600 underline mb-3 block"
+      >
+        📖 {showGuide ? "Ẩn hướng dẫn" : "Xem hướng dẫn"}
+      </button>
+
+      {/* GUIDE */}
+      {showGuide && (
+  <div className="mb-4 space-y-3">
+
+    {/* TITLE */}
+    <p className="text-base font-bold text-gray-900 text-center">
+      {guideSteps[guideStep].title}
+    </p>
+
+    {/* IMAGE */}
+    <img
+      src={guideSteps[guideStep].image}
+      className="w-full h-[320px] object-contain rounded-xl border bg-white"
+    />
+
+    {/* STEP DOT */}
+    <div className="flex justify-center gap-1">
+      {guideSteps.map((_, i) => (
+        <div
+          key={i}
+          className={`w-2 h-2 rounded-full ${
+            i === guideStep ? "bg-orange-500" : "bg-gray-300"
+          }`}
+        />
+      ))}
+    </div>
+
+    {/* BUTTON */}
+    <div className="flex justify-between">
+      <button
+        onClick={() => setGuideStep(prev => Math.max(0, prev - 1))}
+        disabled={guideStep === 0}
+        className="px-3 py-1 text-sm bg-gray-200 rounded disabled:opacity-40"
+      >
+        ⬅️ Trước
+      </button>
+
+      <button
+        onClick={() => setGuideStep(prev => Math.min(guideSteps.length - 1, prev + 1))}
+        disabled={guideStep === guideSteps.length - 1}
+        className="px-3 py-1 text-sm bg-orange-500 text-white rounded disabled:opacity-40"
+      >
+        Sau ➡️
+      </button>
+    </div>
+
+  </div>
+)}
+
+      {/* INPUT FORM */}
+      <div className="space-y-3">
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-gray-700">
+            PayOS Client ID
+          </label>
+          <input
+            type="text"
+            value={clubBank.payos_client_id}
+            onChange={(e) =>
+              setClubBank({
+                ...clubBank,
+                payos_client_id: e.target.value
+              })
+            }
+            className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+            placeholder="VD: 123abc..."
+          />
         </div>
-      )}
+
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-gray-700">
+            PayOS API Key
+          </label>
+          <input
+            type="password"
+            value={clubBank.payos_api_key}
+            onChange={(e) =>
+              setClubBank({
+                ...clubBank,
+                payos_api_key: e.target.value
+              })
+            }
+            className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+            placeholder="Nhập API Key"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-gray-700">
+            PayOS Checksum Key
+          </label>
+          <input
+            type="password"
+            value={clubBank.payos_checksum_key}
+            onChange={(e) =>
+              setClubBank({
+                ...clubBank,
+                payos_checksum_key: e.target.value
+              })
+            }
+            className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+            placeholder="Nhập Checksum Key"
+          />
+        </div>
+      </div>
+
+      {/* BUTTON */}
+      <div className="flex justify-end mt-5">
+        <button
+          onClick={handleSaveBankInfo}
+          disabled={bankSaving}
+          className="px-5 py-2.5 rounded-xl bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 transition-all disabled:opacity-60"
+        >
+          {bankSaving ? "Đang lưu..." : "Lưu & tiếp tục"}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }
