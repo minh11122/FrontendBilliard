@@ -10,14 +10,18 @@ export const getServiceById = (id) => {
     return api.get(`/services/${id}`);
 };
 
-// Tạo dịch vụ mới
-export const createService = (data) => {
-    return api.post("/services", data);
+// Tạo dịch vụ mới (FormData để upload ảnh)
+export const createService = (formData) => {
+    return api.post("/services", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+    });
 };
 
-// Cập nhật dịch vụ
-export const updateService = (id, data) => {
-    return api.put(`/services/${id}`, data);
+// Cập nhật dịch vụ (FormData để upload ảnh)
+export const updateService = (id, formData) => {
+    return api.put(`/services/${id}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+    });
 };
 
 // Vô hiệu hóa dịch vụ (soft delete)

@@ -132,17 +132,15 @@ export default function OwnerServiceListPage() {
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all ${
-              activeTab === tab.key
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all ${activeTab === tab.key
                 ? "border-primary text-primary"
                 : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
-            }`}
+              }`}
           >
             <tab.icon size={16} className={activeTab === tab.key ? tab.color : ""} />
             {tab.label}
-            <span className={`ml-1 text-xs px-2 py-0.5 rounded-full font-semibold ${
-              activeTab === tab.key ? "bg-primary/10 text-primary" : "bg-slate-100 text-slate-500"
-            }`}>{tab.count}</span>
+            <span className={`ml-1 text-xs px-2 py-0.5 rounded-full font-semibold ${activeTab === tab.key ? "bg-primary/10 text-primary" : "bg-slate-100 text-slate-500"
+              }`}>{tab.count}</span>
           </button>
         ))}
       </div>
@@ -198,7 +196,7 @@ export default function OwnerServiceListPage() {
                   <tr className="bg-slate-50 border-b border-slate-200">
                     <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Tên dịch vụ</th>
                     <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Giá</th>
-                    <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Giảm giá</th>
+                    <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Hình ảnh</th>
                     <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Mô tả</th>
                     <th className="text-center px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Hành động</th>
                   </tr>
@@ -213,12 +211,15 @@ export default function OwnerServiceListPage() {
                         <span className="font-semibold text-emerald-600">{formatPrice(service.price)}</span>
                       </td>
                       <td className="px-6 py-4">
-                        {service.discount_percent > 0 ? (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700">
-                            -{service.discount_percent}%
-                          </span>
+                        {service.images && service.images.length > 0 ? (
+                          <div className="flex items-center gap-1.5">
+                            <img src={service.images[0]} alt="ảnh" className="w-10 h-10 rounded-lg object-cover border border-slate-200" />
+                            {service.images.length > 1 && (
+                              <span className="text-xs text-slate-400 font-medium">+{service.images.length - 1}</span>
+                            )}
+                          </div>
                         ) : (
-                          <span className="text-slate-400 text-sm">Không giảm</span>
+                          <span className="text-slate-400 text-sm">Chưa có ảnh</span>
                         )}
                       </td>
                       <td className="px-6 py-4">
@@ -276,11 +277,10 @@ export default function OwnerServiceListPage() {
                   </button>
                   {Array.from({ length: pagination.totalPages }, (_, i) => (
                     <button key={i + 1} onClick={() => fetchServices(i + 1)}
-                      className={`w-9 h-9 rounded-lg text-sm font-medium transition-all ${
-                        pagination.currentPage === i + 1
+                      className={`w-9 h-9 rounded-lg text-sm font-medium transition-all ${pagination.currentPage === i + 1
                           ? "bg-primary text-slate-900 shadow-sm"
                           : "border border-slate-200 hover:bg-white text-slate-600"
-                      }`}>
+                        }`}>
                       {i + 1}
                     </button>
                   ))}
@@ -317,14 +317,9 @@ export default function OwnerServiceListPage() {
                 <p className="font-semibold text-emerald-600">{formatPrice(selectedService.price)}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-500 mb-1">Giảm giá</p>
-                <p className="font-semibold text-slate-900">{selectedService.discount_percent || 0}%</p>
-              </div>
-              <div>
                 <p className="text-xs text-slate-500 mb-1">Trạng thái</p>
-                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
-                  selectedService.status === "Active" ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
-                }`}>
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${selectedService.status === "Active" ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+                  }`}>
                   {selectedService.status === "Active" ? "Đang hoạt động" : "Vô hiệu hóa"}
                 </span>
               </div>
@@ -338,6 +333,18 @@ export default function OwnerServiceListPage() {
                 <p className="text-xs text-slate-500 mb-1">Mô tả</p>
                 <p className="text-sm text-slate-700">{selectedService.description || "Không có mô tả"}</p>
               </div>
+              {selectedService.images && selectedService.images.length > 0 && (
+                <div className="col-span-2">
+                  <p className="text-xs text-slate-500 mb-2">Hình ảnh</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {selectedService.images.map((url, idx) => (
+                      <a key={idx} href={url} target="_blank" rel="noreferrer">
+                        <img src={url} alt={`Ảnh ${idx + 1}`} className="w-full aspect-square object-cover rounded-lg border border-slate-200 hover:opacity-80 transition-opacity cursor-pointer" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -348,9 +355,8 @@ export default function OwnerServiceListPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowDeleteConfirm(false)}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative" onClick={(e) => e.stopPropagation()}>
             <div className="flex flex-col items-center text-center">
-              <div className={`p-3 rounded-full mb-4 ${
-                deleteType === "reactivate" ? "bg-emerald-100" : "bg-red-100"
-              }`}>
+              <div className={`p-3 rounded-full mb-4 ${deleteType === "reactivate" ? "bg-emerald-100" : "bg-red-100"
+                }`}>
                 {deleteType === "reactivate" ? (
                   <RotateCcw className="text-emerald-600" size={28} />
                 ) : (
@@ -373,11 +379,10 @@ export default function OwnerServiceListPage() {
                   Hủy
                 </button>
                 <button onClick={handleConfirmAction}
-                  className={`flex-1 px-4 py-2.5 rounded-xl font-semibold text-white transition-all ${
-                    deleteType === "reactivate" ? "bg-emerald-600 hover:bg-emerald-700" :
-                    deleteType === "permanent" ? "bg-red-600 hover:bg-red-700" :
-                    "bg-orange-500 hover:bg-orange-600"
-                  }`}>
+                  className={`flex-1 px-4 py-2.5 rounded-xl font-semibold text-white transition-all ${deleteType === "reactivate" ? "bg-emerald-600 hover:bg-emerald-700" :
+                      deleteType === "permanent" ? "bg-red-600 hover:bg-red-700" :
+                        "bg-orange-500 hover:bg-orange-600"
+                    }`}>
                   {deleteType === "deactivate" && "Vô hiệu hóa"}
                   {deleteType === "permanent" && "Xóa vĩnh viễn"}
                   {deleteType === "reactivate" && "Khôi phục"}
