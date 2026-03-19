@@ -4,12 +4,14 @@ import {
   Search, LayoutGrid, Circle, Edit2, X,
   CheckCircle2, Clock, AlertCircle, User, CalendarDays,
   PhoneCall, Hash, BadgeCheck, Wrench, RefreshCw, Info,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, ShoppingCart, RotateCcw, ArrowLeftRight,
+  Plus, Minus, Trash2
 } from "lucide-react";
 
 import useDebounce from "@/hooks/useDebounce";
 import { getTables, getTableTypes, updateTable } from "@/services/billiardTable.service";
 import bookingService from "@/services/booking.service";
+import { getServices } from "@/services/service.service";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -144,12 +146,75 @@ const getTableDerivedStatus = (table, dateFilter, bookingsForTable) => {
 // ─────────────────────────────────────────────
 //  Modal
 // ─────────────────────────────────────────────
-const TableDetailModal = ({ table, booking, isBookingActive, onClose, onStatusChange, onCheckout }) => {
+const TableDetailModal = ({ table, booking, isBookingActive, onClose, onStatusChange, onCheckout, onRefresh }) => {
   if (!table) return null;
+
+  const [loading, setLoading] = useState(false);
+  const [showOrderPanel, setShowOrderPanel] = useState(false);
+  const [allServices, setAllServices] = useState([]);
+  const [bookingServices, setBookingServices] = useState([]);
+  const [fetchingServices, setFetchingServices] = useState(false);
+  const [showExtendPanel, setShowExtendPanel] = useState(false);
+  const [extendMinutes, setExtendMinutes] = useState(30);
 
   // Use the table's pure DB status unless it's overridden implicitly
   const isTableAvailable = !booking && table.status === "Available";
-  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (booking && booking.status === "Playing") {
+      fetchBookingServices();
+      fetchAllClubServices();
+    }
+  }, [booking]);
+
+  const fetchBookingServices = async () => {
+    try {
+      const res = await bookingService.getBookingServices(booking._id);
+      if (res.success) setBookingServices(res.data || []);
+    } catch (e) {
+      console.error("Lỗi fetch booking services:", e);
+    }
+  };
+
+  const fetchAllClubServices = async () => {
+    try {
+      setFetchingServices(true);
+      const res = await getServices({ page: 1, limit: 100, status: "Active" });
+      if (res.data.success) setAllServices(res.data.data || []);
+    } catch (e) {
+      console.error("Lỗi fetch club services:", e);
+    } finally {
+      setFetchingServices(false);
+    }
+  };
+
+  const handleAddService = async (serviceId) => {
+    try {
+      setLoading(true);
+      await bookingService.addServiceToBooking(booking._id, serviceId, 1);
+      toast.success("Đã thêm dịch vụ");
+      await fetchBookingServices();
+      if (onRefresh) await onRefresh();
+    } catch (e) {
+      toast.error("Không thể thêm dịch vụ");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExtendBooking = async () => {
+    try {
+      setLoading(true);
+      await bookingService.extendBooking(booking._id, extendMinutes);
+      toast.success(`Đã gia hạn thêm ${extendMinutes} phút`);
+      setShowExtendPanel(false);
+      if (onRefresh) await onRefresh();
+    } catch (e) {
+      toast.error(e.response?.data?.message || "Không thể gia hạn");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleStatusChange = async (newStatus) => {
     setLoading(true);
@@ -185,15 +250,15 @@ const TableDetailModal = ({ table, booking, isBookingActive, onClose, onStatusCh
           </button>
         </div>
 
-        <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+        <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
           {/* Thông tin đặt bàn (nếu có block) */}
           {booking ? (
-            <section>
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+            <section className="space-y-4">
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
                 <CalendarDays size={14} /> Thông tin đặt bàn
               </h3>
+              
               <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-4 space-y-4">
-                
                 {booking.account_id && (
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
@@ -214,26 +279,120 @@ const TableDetailModal = ({ table, booking, isBookingActive, onClose, onStatusCh
                   <InfoRow icon={<Circle size={14} />} label="Trạng thái đơn" value={
                     <span className="font-semibold text-gray-800">{booking.status}</span>
                   } />
-                  {booking.total_bill > 0 && (
-                    <InfoRow icon={<Circle size={14} />} label="Tổng tiền" value={
-                      <span className="font-semibold text-green-600">{booking.total_bill?.toLocaleString("vi-VN")}đ</span>
-                    } />
-                  )}
+                  <InfoRow icon={<BadgeCheck size={14} />} label="Tổng tiền" value={
+                    <span className="font-bold text-green-600 text-lg">{(booking.total_bill || 0)?.toLocaleString("vi-VN")}đ</span>
+                  } />
                 </div>
-
-                {booking.note && (
-                  <div className="pt-2 border-t border-gray-100">
-                    <p className="text-xs text-gray-500">Ghi chú: <span className="text-gray-700 font-medium bg-yellow-50 px-2 py-0.5 rounded">{booking.note}</span></p>
-                  </div>
-                )}
               </div>
 
-              {/* Action Buttons for Booking */}
+              {/* Dịch vụ đã gọi */}
+              {booking.status === "Playing" && bookingServices.length > 0 && (
+                <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                  <h4 className="text-[11px] font-bold text-gray-400 uppercase mb-2">Dịch vụ đã gọi</h4>
+                  <div className="space-y-1.5">
+                    {bookingServices.map((bs, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600 font-medium">x{bs.quantity} {bs.service_id?.name}</span>
+                        <span className="text-gray-900 font-semibold">{(bs.unit_price * bs.quantity).toLocaleString("vi-VN")}đ</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons for Booking (ORDER, GIA HẠN, ĐỔI BÀN) */}
               {booking.status === "Playing" && (
-                <div className="mt-4 flex gap-3">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-3">
+                    <button 
+                      onClick={() => setShowOrderPanel(!showOrderPanel)}
+                      className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${showOrderPanel ? 'bg-green-600 border-green-600 text-white shadow-lg' : 'bg-white border-gray-200 text-green-600 hover:bg-green-50'}`}
+                    >
+                      <ShoppingCart size={24} />
+                      <span className="text-[11px] font-bold uppercase">ORDER</span>
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setShowExtendPanel(!showExtendPanel);
+                        setShowOrderPanel(false);
+                      }}
+                      className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${showExtendPanel ? 'bg-green-600 border-green-600 text-white shadow-lg' : 'bg-white border-gray-200 text-green-600 hover:bg-green-50'}`}
+                    >
+                      <RotateCcw size={24} />
+                      <span className="text-[11px] font-bold uppercase">GIA HẠN</span>
+                    </button>
+                    <button className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl border border-gray-200 bg-white text-green-600 hover:bg-green-50 transition-all">
+                      <ArrowLeftRight size={24} />
+                      <span className="text-[11px] font-bold uppercase">ĐỔI BÀN</span>
+                    </button>
+                  </div>
+
+                  {/* Extend Panel */}
+                  {showExtendPanel && (
+                    <div className="border border-green-100 rounded-xl p-4 bg-green-50/30 animate-in slide-in-from-top-2 duration-200 space-y-3">
+                      <h4 className="font-bold text-green-800 text-sm">Gia hạn thêm thời gian</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {[30, 60, 90, 120].map(mins => (
+                          <button
+                            key={mins}
+                            onClick={() => setExtendMinutes(mins)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${extendMinutes === mins ? 'bg-green-600 border-green-600 text-white' : 'bg-white border-gray-200 text-gray-600 hover:border-green-300'}`}
+                          >
+                            +{mins}p {mins >= 60 && `(${mins/60}h)`}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input 
+                          type="number" 
+                          min="1" 
+                          value={extendMinutes} 
+                          onChange={(e) => setExtendMinutes(parseInt(e.target.value) || 0)}
+                          className="h-9 text-sm"
+                          placeholder="Số phút..."
+                        />
+                        <Button 
+                          size="sm" 
+                          className="bg-green-600 hover:bg-green-700 h-9 px-4 font-bold"
+                          onClick={handleExtendBooking}
+                          disabled={loading || extendMinutes <= 0}
+                        >
+                          Lưu
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Order Panel (Nested UI) */}
+                  {showOrderPanel && (
+                    <div className="border border-green-100 rounded-xl p-4 bg-green-50/30 animate-in slide-in-from-top-2 duration-200">
+                      <div className="flex items-center justify-between mb-3">
+                         <h4 className="font-bold text-green-800 text-sm">Menu dịch vụ</h4>
+                         {fetchingServices && <RefreshCw size={14} className="animate-spin text-green-600"/>}
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-1">
+                        {allServices.map(s => (
+                          <div key={s._id} className="bg-white p-2 rounded-lg border border-gray-100 flex flex-col gap-1 shadow-sm">
+                            <span className="text-xs font-bold text-gray-800 truncate">{s.name}</span>
+                            <div className="flex items-center justify-between mt-1">
+                              <span className="text-[10px] text-gray-500">{s.price?.toLocaleString()}đ</span>
+                              <button 
+                                onClick={() => handleAddService(s._id)}
+                                disabled={loading}
+                                className="p-1 rounded bg-green-100 text-green-600 hover:bg-green-600 hover:text-white transition-colors"
+                              >
+                                <Plus size={14}/>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <Button 
                     variant="default" 
-                    className="w-full bg-green-600 hover:bg-green-700 text-white font-bold h-11"
+                    className="w-full bg-green-600 hover:bg-green-700 text-white font-bold h-12 shadow-lg rounded-xl mt-2"
                     onClick={handleCheckoutClick}
                     disabled={loading}
                   >
@@ -249,9 +408,9 @@ const TableDetailModal = ({ table, booking, isBookingActive, onClose, onStatusCh
           )}
 
           {/* Thay đổi trạng thái bàn */}
-          <section>
+          <section className="pt-4 border-t border-gray-100">
              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                <Wrench size={13} /> Quản lý trạng thái bàn trực tiếp
+                <Wrench size={12} /> Quản lý trạng thái bàn trực tiếp
               </h3>
               <div className="flex gap-2">
                  {isTableAvailable && (
@@ -275,7 +434,7 @@ const TableDetailModal = ({ table, booking, isBookingActive, onClose, onStatusCh
                   </Button>
                 )}
                 {!isTableAvailable && table.status !== "Maintenance" && (
-                  <p className="text-xs text-gray-500 bg-gray-50 p-2 rounded-lg w-full text-center">
+                  <p className="text-[11px] text-gray-500 bg-gray-50 p-3 rounded-lg w-full text-center font-medium border border-gray-100 italic">
                     (Không thể đổi trạng thái khi bàn đang phục vụ)
                   </p>
                 )}
@@ -511,6 +670,7 @@ export const StaffClubPageManagerTable = () => {
           onClose={() => setModalTarget(null)}
           onStatusChange={handleStatusChange}
           onCheckout={handleCheckout}
+          onRefresh={loadData}
         />
       )}
 
