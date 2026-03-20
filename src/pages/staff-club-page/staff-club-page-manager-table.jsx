@@ -49,6 +49,58 @@ const formatDate = (date) => {
   const d = new Date(date);
   return `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getFullYear()}`;
 };
+const formatDateInput = (date) => {
+  const d = new Date(date);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+};
+const timeToMinutes = (t = "00:00") => {
+  const [h, m] = t.split(":").map(Number);
+  return (h || 0) * 60 + (m || 0);
+};
+const minutesToTime = (m = 0) => {
+  const h = Math.floor(m / 60);
+  const mm = m % 60;
+  return `${String(h).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+};
+const roundMinutes = (m, step = 5) => Math.max(0, Math.floor(m / step) * step);
+const isTableBusyAt = (tableId, date, startTime, bookings, duration = 60) => {
+  const newStart = timeToMinutes(startTime);
+  const newEnd = newStart + duration;
+  const target = new Date(date);
+  target.setHours(0, 0, 0, 0);
+
+  return bookings.some(b => {
+    const bid = b.table_id?._id || b.table_id;
+    if (bid !== tableId) return false;
+
+    // Only active bookings should block new ones
+    // Ignore: Cancelled, Completed, Pending (if not relevant)
+    // The user said: "Cho dù có khách đặt bàn đó trong tương lai đang ở trạng thái booked thì mình vẫn có thể đặt được vì chưa đến thời gian khách đó đặt"
+    // This confirms we should only block IF they overlap.
+    const status = (b.status || "").toLowerCase();
+    if (["cancelled", "completed"].includes(status)) return false;
+
+    const bDate = new Date(b.play_date);
+    bDate.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((target - bDate) / (1000 * 60 * 60 * 24));
+
+    let s = timeToMinutes(b.start_time);
+    let e = b.end_time ? timeToMinutes(b.end_time) : s + 60;
+    
+    // Normalize overnight
+    if (e <= s) e += 24 * 60;
+
+    // Adjust for date difference
+    s -= diffDays * 24 * 60;
+    e -= diffDays * 24 * 60;
+
+    // Check for overlap: (newStart < e && newEnd > s)
+    return newStart < e && newEnd > s;
+  });
+};
 
 // Returns position and width of a booking block on the timeline
 const getBlockStyle = (booking, currentDate) => {
@@ -63,7 +115,23 @@ const getBlockStyle = (booking, currentDate) => {
   let startMinutes = sh * 60 + sm;
   
   let endMinutes;
-  if (booking.end_time) {
+  if (booking.status === "Playing") {
+    // For playing bookings, use current time as effective end time
+    const now = new Date();
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    
+    // Check if the booking is active on the 'currentDate' shown on timeline
+    const isShowingToday = currDate.getTime() === new Date().setHours(0,0,0,0);
+    
+    if (isShowingToday) {
+       // Minimum 1 hour visual duration for Playing
+       endMinutes = Math.max(nowMinutes, startMinutes + 60);
+    } else {
+       const [eh, em] = (booking.end_time || booking.start_time).split(':').map(Number);
+       endMinutes = eh * 60 + em;
+       if (endMinutes <= startMinutes) endMinutes += 24 * 60;
+    }
+  } else if (booking.end_time) {
     const [eh, em] = booking.end_time.split(':').map(Number);
     endMinutes = eh * 60 + em;
     if (endMinutes <= startMinutes) endMinutes += 24 * 60; // Next day
@@ -72,27 +140,25 @@ const getBlockStyle = (booking, currentDate) => {
   }
 
   // Adjust for date difference if the booking is from yesterday
-  const diffDays = Math.round((currDate - bDate) / (1000 * 60 * 60 * 24));
+  const diffDaysAdjust = Math.round((currDate - bDate) / (1000 * 60 * 60 * 24));
   
-  if (diffDays > 0) {
-     // booking was yesterday
-     startMinutes -= diffDays * 24 * 60;
-     endMinutes -= diffDays * 24 * 60;
-  } else if (diffDays < 0) {
-     // booking is tomorrow (shouldn't happen with our fetch normally)
-     startMinutes += Math.abs(diffDays) * 24 * 60;
-     endMinutes += Math.abs(diffDays) * 24 * 60;
+  if (diffDaysAdjust > 0) {
+     startMinutes -= diffDaysAdjust * 24 * 60;
+     endMinutes -= diffDaysAdjust * 24 * 60;
+  } else if (diffDaysAdjust < 0) {
+     startMinutes += Math.abs(diffDaysAdjust) * 24 * 60;
+     endMinutes += Math.abs(diffDaysAdjust) * 24 * 60;
   }
 
-  // Clip to timeline max bounds (0 to 30 hours)
-  if (endMinutes <= 0) return { left: 0, width: 0, display: 'none' }; // Ends before timeline starts
-  if (startMinutes >= TIMELINE_HOURS * 60) return { left: 0, width: 0, display: 'none' }; // Starts after timeline ends
+  // Clip to timeline max bounds (0 to 24 hours)
+  if (endMinutes <= 0) return { left: 0, width: 0, display: 'none' }; 
+  if (startMinutes >= TIMELINE_HOURS * 60) return { left: 0, width: 0, display: 'none' }; 
   
-  if (startMinutes < 0) startMinutes = 0;
-  if (endMinutes > TIMELINE_HOURS * 60) endMinutes = TIMELINE_HOURS * 60;
+  const finalStart = Math.max(0, startMinutes);
+  const finalEnd = Math.min(TIMELINE_HOURS * 60, endMinutes);
 
-  const left = (startMinutes / 60) * HOUR_WIDTH;
-  const width = ((endMinutes - startMinutes) / 60) * HOUR_WIDTH;
+  const left = (finalStart / 60) * HOUR_WIDTH;
+  const width = Math.max(2, ((finalEnd - finalStart) / 60) * HOUR_WIDTH); // Ensure min 2px
 
   return { left: `${left}px`, width: `${width}px` };
 };
@@ -156,9 +222,14 @@ const TableDetailModal = ({ table, booking, isBookingActive, onClose, onStatusCh
   const [fetchingServices, setFetchingServices] = useState(false);
   const [showExtendPanel, setShowExtendPanel] = useState(false);
   const [extendMinutes, setExtendMinutes] = useState(30);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Use the table's pure DB status unless it's overridden implicitly
   const isTableAvailable = !booking && table.status === "Available";
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (booking && booking.status === "Playing") {
@@ -284,7 +355,6 @@ const TableDetailModal = ({ table, booking, isBookingActive, onClose, onStatusCh
         </div>
 
         <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
-          {/* Thông tin đặt bàn (nếu có block) */}
           {booking ? (
             <section className="space-y-4">
               <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
@@ -292,33 +362,53 @@ const TableDetailModal = ({ table, booking, isBookingActive, onClose, onStatusCh
               </h3>
               
               <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-4 space-y-4">
-                {booking.account_id && (
+                {(booking.account_id || booking.guest_name) && (
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
                       <User size={18} />
                     </div>
                     <div>
-                      <h4 className="font-bold text-gray-800">{booking.account_id.fullname || booking.guest_name || "Khách"}</h4>
+                      <h4 className="font-bold text-gray-800">{booking.guest_name || booking.account_id?.fullname || "Khách"}</h4>
                       <div className="flex items-center text-xs text-gray-500 gap-2">
-                        <span>{booking.account_id.phone || "–"}</span>
+                        <span>{booking.guest_name ? "–" : (booking.account_id?.phone || "–")}</span>
                       </div>
                     </div>
                   </div>
                 )}
                 
                 <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-100">
-                  <InfoRow icon={<Clock size={14} />} label="Thời gian" value={`${formatTime(booking.start_time)} – ${formatTime(booking.end_time)}`} />
+                  <InfoRow 
+                    icon={<Clock size={14} />} 
+                    label="Thời gian" 
+                    value={booking.status === "Playing" ? `${formatTime(booking.start_time)} – (Đang chơi)` : `${formatTime(booking.start_time)} – ${formatTime(booking.end_time)}`} 
+                  />
                   <InfoRow icon={<Hash size={14} />} label="Mã booking" value={<span className="font-mono text-gray-700">{booking.code_number}</span>} />
                   <InfoRow icon={<Circle size={14} />} label="Trạng thái đơn" value={
                     <span className="font-semibold text-gray-800">{booking.status}</span>
                   } />
                   <InfoRow icon={<BadgeCheck size={14} />} label="Tổng tiền" value={
-                    <span className="font-bold text-green-600 text-lg">{(booking.total_bill || 0)?.toLocaleString("vi-VN")}đ</span>
+                    <span className="font-bold text-green-600 text-lg">
+                      {booking.status === "Playing" 
+                        ? (() => {
+                            const startMin = timeToMinutes(booking.start_time);
+                            let nowMin = currentTime.getHours() * 60 + currentTime.getMinutes();
+                            const bDate = new Date(booking.play_date);
+                            const now = new Date();
+                            if (now.getDate() !== bDate.getDate() && now.getTime() > bDate.getTime()) {
+                                nowMin += 24 * 60;
+                            }
+                            const dur = Math.max(0, (nowMin - startMin) / 60);
+                            const playCost = dur * (booking.hour_price || 0);
+                            const serviceTotal = bookingServices.reduce((sum, s) => sum + (s.unit_price * s.quantity), 0);
+                            return Math.round(playCost + serviceTotal).toLocaleString("vi-VN");
+                          })()
+                        : (booking.total_bill || 0)?.toLocaleString("vi-VN")
+                      }đ
+                    </span>
                   } />
                 </div>
               </div>
 
-              {/* Dịch vụ đã gọi */}
               {booking.status === "Playing" && bookingServices.length > 0 && (
                 <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
                   <h4 className="text-[11px] font-bold text-gray-400 uppercase mb-2">Dịch vụ đã gọi</h4>
@@ -331,7 +421,6 @@ const TableDetailModal = ({ table, booking, isBookingActive, onClose, onStatusCh
                         </div>
                         
                         <div className="flex items-center gap-3">
-                          {/* Quantity Controls */}
                           <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-1">
                             <button 
                               onClick={() => handleUpdateServiceQuantity(bs._id, bs.quantity, -1)}
@@ -368,7 +457,6 @@ const TableDetailModal = ({ table, booking, isBookingActive, onClose, onStatusCh
                 </div>
               )}
 
-              {/* Action Buttons for Booking (ORDER, GIA HẠN, ĐỔI BÀN) */}
               {booking.status === "Playing" && (
                 <div className="space-y-4">
                   <div className="grid grid-cols-3 gap-3">
@@ -395,7 +483,6 @@ const TableDetailModal = ({ table, booking, isBookingActive, onClose, onStatusCh
                     </button>
                   </div>
 
-                  {/* Extend Panel */}
                   {showExtendPanel && (
                     <div className="border border-green-100 rounded-xl p-4 bg-green-50/30 animate-in slide-in-from-top-2 duration-200 space-y-3">
                       <h4 className="font-bold text-green-800 text-sm">Gia hạn thêm thời gian</h4>
@@ -431,7 +518,6 @@ const TableDetailModal = ({ table, booking, isBookingActive, onClose, onStatusCh
                     </div>
                   )}
 
-                  {/* Order Panel (Nested UI) */}
                   {showOrderPanel && (
                     <div className="border border-green-100 rounded-xl p-4 bg-green-50/30 animate-in slide-in-from-top-2 duration-200">
                       <div className="flex items-center justify-between mb-3">
@@ -475,7 +561,6 @@ const TableDetailModal = ({ table, booking, isBookingActive, onClose, onStatusCh
             </div>
           )}
 
-          {/* Thay đổi trạng thái bàn */}
           <section className="pt-4 border-t border-gray-100">
              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                 <Wrench size={12} /> Quản lý trạng thái bàn trực tiếp
@@ -522,46 +607,162 @@ const InfoRow = ({ icon, label, value }) => (
   </div>
 );
 
+const QuickCreateModal = ({ open, tables, tableTypes, date, bookings, onCreate, onClose }) => {
+  const [form, setForm] = useState({
+    guest_name: "",
+    table_id: "",
+    table_type_id: "",
+    play_date: formatDateInput(date || new Date()),
+    start_time: minutesToTime(roundMinutes(new Date().getHours()*60 + new Date().getMinutes(),5))
+  });
+  const [loading, setLoading] = useState(false);
 
-// ─────────────────────────────────────────────
-//  Main Page Component
-// ─────────────────────────────────────────────
+  useEffect(() => {
+    if (open) {
+      const initialTableId = window._quickCreateTableId || "";
+      const initialStartTime = window._quickCreateStartTime || minutesToTime(roundMinutes(new Date().getHours()*60 + new Date().getMinutes(),5));
+
+      setForm(f => ({
+        ...f,
+        play_date: formatDateInput(date || new Date()),
+        start_time: initialStartTime,
+        table_id: initialTableId,
+        table_type_id: initialTableId ? (tables.find(t => t._id === initialTableId)?.table_type_id?._id || "") : ""
+      }));
+      delete window._quickCreateTableId;
+      delete window._quickCreateStartTime;
+    }
+  }, [open, date, tables]);
+
+  const availableTables = useMemo(() => {
+    if (!form.table_type_id) return tables;
+    return tables.filter(t => (t.table_type_id?._id || t.table_type_id) === form.table_type_id);
+  }, [tables, form.table_type_id]);
+
+  const handleSubmit = async () => {
+    if (!form.guest_name.trim()) return toast.error("Nhập tên khách");
+    if (!form.table_id) return toast.error("Chọn bàn");
+    if (!form.start_time) return toast.error("Chọn giờ bắt đầu");
+
+    const busy = isTableBusyAt(form.table_id, form.play_date, form.start_time, bookings);
+    if (busy) return toast.error("Bàn đã có khách trong khung giờ này");
+
+    try {
+      setLoading(true);
+      const table = tables.find(t => t._id === form.table_id);
+      await bookingService.createWalkInBooking({
+        guest_name: form.guest_name.trim(),
+        play_date: form.play_date,
+        start_time: form.start_time,
+        table_number: table?.table_number
+      });
+      toast.success("Tạo đặt bàn thành công");
+      onCreate?.();
+      onClose();
+    } catch (e) {
+      toast.error(e.response?.data?.message || "Không thể tạo đặt bàn");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h3 className="text-xl font-bold text-gray-900">Tạo đặt bàn nhanh</h3>
+          <button className="p-2 rounded-lg hover:bg-gray-100" onClick={onClose}><X size={18}/></button>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Tên khách</label>
+            <Input value={form.guest_name} onChange={(e) => setForm(f => ({...f, guest_name: e.target.value}))} placeholder="Nhập tên khách..." className="h-10"/>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Loại bàn</label>
+              <Select value={form.table_type_id || "all"} onValueChange={(v) => setForm(f => ({...f, table_type_id: v === "all" ? "" : v, table_id: ""}))}>
+                <SelectTrigger className="h-10">
+                  <SelectValue placeholder="Tất cả loại bàn" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả</SelectItem>
+                  {tableTypes.map(t => <SelectItem key={t._id} value={t._id}>{t.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Bàn</label>
+              <Select value={form.table_id || ""} onValueChange={(v) => setForm(f => ({...f, table_id: v}))}>
+                <SelectTrigger className="h-10">
+                  <SelectValue placeholder="Chọn bàn" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableTables.map(t => (
+                    <SelectItem key={t._id} value={t._id}>{t.table_number}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Ngày chơi</label>
+              <Input value={form.play_date} readOnly className="h-10 bg-gray-50"/>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Giờ bắt đầu</label>
+              <Input type="time" value={form.start_time} onChange={(e) => setForm(f => ({...f, start_time: e.target.value}))} className="h-10"/>
+            </div>
+          </div>
+        </div>
+
+        <Button className="w-full h-11 bg-green-600 hover:bg-green-700 text-white font-bold" onClick={handleSubmit} disabled={loading}>
+          {loading ? <RefreshCw size={16} className="animate-spin mr-2"/> : <Plus size={16} className="mr-2"/>}
+          Tạo đặt bàn
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 export const StaffClubPageManagerTable = () => {
   const [tables, setTables] = useState([]);
   const [tableTypes, setTableTypes] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Filters
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 500);
   const [typeFilter, setTypeFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all"); // Filter table current derived status
+  const [statusFilter, setStatusFilter] = useState("all");
 
-  // Date state
-  const [dateMode, setDateMode] = useState("day"); // 'day', 'week', 'month' step for navigation
+  const [dateMode, setDateMode] = useState("day"); 
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  // Modal target
-  const [modalTarget, setModalTarget] = useState(null); // { table, booking, isBookingActive }
+  const [modalTarget, setModalTarget] = useState(null); 
+  const [quickCreateOpen, setQuickCreateOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
   const timelineScrollRef = useRef(null);
 
-  // Fetch tables
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
   const fetchTables = async () => {
     try {
-      // Fetch all tables ignoring status/search to maintain timeline integrity, 
-      // we'll filter them client-side based on derived status
       const res = await getTables({ page: 1, limit: 200 }); 
       if (res.data.success) {
-        let fetchedTables = res.data.data;
-        setTables(fetchedTables);
+        setTables(res.data.data);
       }
     } catch {
       toast.error("Không thể tải danh sách bàn");
     }
   };
 
-  // Fetch bookings for the current date
   const fetchBookingsForDate = async (selectedDate) => {
     try {
       const year = selectedDate.getFullYear();
@@ -582,26 +783,18 @@ export const StaffClubPageManagerTable = () => {
       ]);
 
       let combinedBookings = [];
-      if (resToday.success) {
-         combinedBookings = [...(resToday.data || [])];
-      }
-
+      if (resToday.success) combinedBookings = [...(resToday.data || [])];
+      
       if (resYesterday.success) {
          const overnightBookings = (resYesterday.data || []).filter(b => {
              if (b.status === "Cancelled") return false;
              if (!b.start_time || !b.end_time) return false;
              const [sh, sm] = b.start_time.split(':').map(Number);
              const [eh, em] = b.end_time.split(':').map(Number);
-             const startMin = sh * 60 + sm;
-             const endMin = eh * 60 + em;
-             // Goes overnight if endMin <= startMin. It must also extend into today (endMin > 0).
-             return endMin <= startMin && endMin > 0;
+             return (eh * 60 + em) <= (sh * 60 + sm) && (eh * 60 + em) > 0;
          });
-         
          const existingIds = new Set(combinedBookings.map(b => b._id));
-         const uniqueOvernight = overnightBookings.filter(b => !existingIds.has(b._id));
-         
-         combinedBookings = [...combinedBookings, ...uniqueOvernight];
+         combinedBookings = [...combinedBookings, ...overnightBookings.filter(b => !existingIds.has(b._id))];
       }
       setBookings(combinedBookings);
     } catch (e) {
@@ -619,26 +812,18 @@ export const StaffClubPageManagerTable = () => {
 
   const loadData = async () => {
     setLoading(true);
-    await Promise.all([
-      fetchTables(),
-      fetchBookingsForDate(currentDate)
-    ]);
+    await Promise.all([fetchTables(), fetchBookingsForDate(currentDate)]);
     setLoading(false);
   };
 
   useEffect(() => { fetchTableTypes(); }, []);
   useEffect(() => { loadData(); }, [currentDate]);
 
-  // Handle Date Navigation
   const handleDateChange = (direction) => {
     const newDate = new Date(currentDate);
-    if (dateMode === "day") {
-      newDate.setDate(newDate.getDate() + direction);
-    } else if (dateMode === "week") {
-      newDate.setDate(newDate.getDate() + direction * 7);
-    } else {
-      newDate.setMonth(newDate.getMonth() + direction);
-    }
+    if (dateMode === "day") newDate.setDate(newDate.getDate() + direction);
+    else if (dateMode === "week") newDate.setDate(newDate.getDate() + direction * 7);
+    else newDate.setMonth(newDate.getMonth() + direction);
     setCurrentDate(newDate);
   };
 
@@ -647,39 +832,28 @@ export const StaffClubPageManagerTable = () => {
     return `${days[currentDate.getDay()]}, ${currentDate.getDate()} Tháng ${currentDate.getMonth() + 1}, ${currentDate.getFullYear()}`;
   };
 
-  // Scroll to 08:00 AM on initial load
   useEffect(() => {
     if (timelineScrollRef.current) {
-        // scroll to ~ 8 AM (8 * HOUR_WIDTH)
-        timelineScrollRef.current.scrollLeft = 8 * HOUR_WIDTH - 100; // offset a bit
+        timelineScrollRef.current.scrollLeft = 8 * HOUR_WIDTH - 100;
     }
   }, []);
 
-  // Filter tables matching client-side search/type/status
   const filteredTables = useMemo(() => {
     let result = tables;
-    
-    if (typeFilter !== "all") {
-       result = result.filter(t => t.table_type_id?._id === typeFilter || t.table_type_id === typeFilter);
-    }
-    
+    if (typeFilter !== "all") result = result.filter(t => (t.table_type_id?._id || t.table_type_id) === typeFilter);
     if (debouncedSearch) {
        const lower = debouncedSearch.toLowerCase();
        result = result.filter(t => t.table_number?.toLowerCase().includes(lower));
     }
-
     if (statusFilter !== "all") {
        result = result.filter(t => {
-           const bookingsOfTable = bookings.filter(b => b.table_id?._id === t._id);
-           const ds = getTableDerivedStatus(t, currentDate, bookingsOfTable);
-           return ds === statusFilter;
+           const bookingsOfTable = bookings.filter(b => (b.table_id?._id || b.table_id) === t._id);
+           return getTableDerivedStatus(t, currentDate, bookingsOfTable) === statusFilter;
        });
     }
-
     return result;
   }, [tables, bookings, currentDate, typeFilter, statusFilter, debouncedSearch]);
 
-  // Actions
   const handleStatusChange = async (tableId, newStatus) => {
     try {
       const currentTable = tables.find(t => t._id === tableId);
@@ -692,7 +866,7 @@ export const StaffClubPageManagerTable = () => {
       });
       if (res.data.success) {
         toast.success("Cập nhật trạng thái thành công");
-        fetchTables(); // Refresh
+        fetchTables();
       }
     } catch (error) {
       toast.error(error.response?.data?.message || "Lỗi cập nhật trạng thái");
@@ -704,32 +878,21 @@ export const StaffClubPageManagerTable = () => {
        const res = await bookingService.checkOutBooking(bookingId);
        if (res.success) {
            toast.success("Thanh toán thành công. Bàn đã chuyển về Đang hoạt động.");
-           await loadData(); // Reload both tables and bookings
+           await loadData();
        }
     } catch(err) {
        toast.error("Thanh toán thất bại");
     }
   };
 
-  const counts = {
-    all: tables.length,
-    playing: 0,
-    booked: 0,
-    holding: 0,
-    available: 0,
-    maintenance: 0
-  };
-
-  // Compute counts efficiently
+  const counts = { all: tables.length, playing: 0, booked: 0, holding: 0, available: 0, maintenance: 0 };
   tables.forEach(t => {
-     const bts = bookings.filter(b => b.table_id?._id === t._id);
-     const ds = getTableDerivedStatus(t, currentDate, bts);
+     const ds = getTableDerivedStatus(t, currentDate, bookings.filter(b => (b.table_id?._id || b.table_id) === t._id));
      if (counts[ds] !== undefined) counts[ds]++;
   });
 
   return (
     <div className="p-4 md:p-6 w-full max-w-[1440px] mx-auto min-h-[calc(100vh-80px)] flex flex-col h-full bg-white">
-      {/* Modal Target */}
       {modalTarget && (
         <TableDetailModal
           table={modalTarget.table}
@@ -741,11 +904,17 @@ export const StaffClubPageManagerTable = () => {
           onRefresh={loadData}
         />
       )}
+      <QuickCreateModal
+        open={quickCreateOpen}
+        tables={tables}
+        tableTypes={tableTypes}
+        date={currentDate}
+        bookings={bookings}
+        onCreate={loadData}
+        onClose={() => setQuickCreateOpen(false)}
+      />
 
-      {/* Top Header Controls */}
       <div className="flex flex-col xl:flex-row items-center justify-between gap-4 mb-6">
-        
-        {/* Date Mode Toggle */}
         <div className="flex items-center bg-gray-100 p-1 rounded-lg">
           {['day', 'week', 'month'].map(mode => (
              <button 
@@ -758,14 +927,12 @@ export const StaffClubPageManagerTable = () => {
           ))}
         </div>
 
-        {/* Date Navigator */}
         <div className="flex items-center gap-3 bg-white px-2 py-1 rounded-lg border border-gray-200 shadow-sm">
            <button onClick={() => handleDateChange(-1)} className="p-2 hover:bg-gray-50 rounded-md transition-colors"><ChevronLeft size={18} className="text-gray-500"/></button>
            <span className="font-extrabold text-gray-900 min-w-[180px] text-center">{formatCurrentDateLabel()}</span>
            <button onClick={() => handleDateChange(1)} className="p-2 hover:bg-gray-50 rounded-md transition-colors"><ChevronRight size={18} className="text-gray-500"/></button>
         </div>
 
-        {/* Legend */}
         <div className="flex items-center gap-4 flex-wrap text-sm">
            {[['available', 'Đang hoạt động'], ['playing', 'Đang chơi'], ['booked', 'Khách đặt'], ['maintenance', 'Bảo trì']].map(([key, label]) => {
               const meta = STATUS_META[key];
@@ -778,38 +945,24 @@ export const StaffClubPageManagerTable = () => {
         </div>
       </div>
 
-      {/* Filters Row */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <div className="relative w-full sm:w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={17} />
-          <Input
-            className="w-full pl-10 h-10 rounded-lg border-gray-200 shadow-sm text-sm"
-            placeholder="Tìm kiếm số bàn..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <Input className="w-full pl-10 h-10 rounded-lg border-gray-200 shadow-sm text-sm" placeholder="Tìm kiếm số bàn..." value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="w-full sm:w-44 h-10 rounded-lg border-gray-200 bg-white text-sm shadow-sm">
-            <div className="flex items-center gap-2">
-              <LayoutGrid size={15} className="text-gray-400" />
-              <SelectValue placeholder="Tất cả loại bàn" />
-            </div>
+            <div className="flex items-center gap-2"><LayoutGrid size={15} className="text-gray-400" /><SelectValue placeholder="Tất cả loại bàn" /></div>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tất cả loại bàn</SelectItem>
-            {tableTypes.map(type => (
-              <SelectItem key={type._id} value={type._id}>{type.name}</SelectItem>
-            ))}
+            {tableTypes.map(type => <SelectItem key={type._id} value={type._id}>{type.name}</SelectItem>)}
           </SelectContent>
         </Select>
 
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-full sm:w-44 h-10 rounded-lg border-gray-200 bg-white text-sm shadow-sm">
-            <div className="flex items-center gap-2">
-              <Circle size={15} className="text-gray-400" />
-              <SelectValue placeholder="Trạng thái" />
-            </div>
+            <div className="flex items-center gap-2"><Circle size={15} className="text-gray-400" /><SelectValue placeholder="Trạng thái" /></div>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tất cả trạng thái ({counts.all})</SelectItem>
@@ -820,103 +973,71 @@ export const StaffClubPageManagerTable = () => {
           </SelectContent>
         </Select>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-10 text-gray-500 hover:text-gray-700 hover:bg-gray-100 ml-auto"
-          onClick={loadData}
-          disabled={loading}
-        >
+        <Button className="bg-green-600 hover:bg-green-700 text-white h-10 px-4 rounded-lg shadow-sm font-bold flex items-center justify-center gap-2" onClick={() => setQuickCreateOpen(true)}>
+          <Plus size={18} /> Tạo đặt bàn
+        </Button>
+
+        <Button variant="ghost" size="sm" className="h-10 text-gray-500 hover:text-gray-700 hover:bg-gray-100 ml-auto" onClick={loadData} disabled={loading}>
           <RefreshCw size={15} className={`mr-1.5 ${loading ? 'animate-spin' : ''}`} /> Làm mới
         </Button>
       </div>
 
-      {/* Timeline Calendar View */}
       <div className="flex-1 min-h-0 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden relative">
-         
-         {loading && (
-            <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-50 flex items-center justify-center">
-               <RefreshCw className="animate-spin text-gray-400 w-8 h-8"/>
-            </div>
-         )}
-
-         {/* Header and Body Container */}
+         {loading && <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-50 flex items-center justify-center"><RefreshCw className="animate-spin text-gray-400 w-8 h-8"/></div>}
          <div className="flex-1 overflow-auto w-full h-full relative no-scrollbar z-0" ref={timelineScrollRef}>
-            {/* Header Row (Sticky Top) */}
             <div className="flex sticky top-0 z-30 bg-gray-50/95 backdrop-blur-sm border-b border-gray-200 w-fit min-w-full">
-               {/* Y-Axis Label */}
-               <div className="w-44 lg:w-48 sticky left-0 z-40 bg-gray-50/95 border-r border-gray-200 shrink-0 flex items-center justify-center py-3 font-bold text-xs text-gray-500 uppercase tracking-widest backdrop-blur-md shadow-[2px_0_5px_rgba(0,0,0,0.02)] isolate">
-                  Bàn
-               </div>
-               
-               {/* Timeline Hours */}
+               <div className="w-44 lg:w-48 sticky left-0 z-40 bg-gray-50/95 border-r border-gray-200 shrink-0 flex items-center justify-center py-3 font-bold text-xs text-gray-500 uppercase tracking-widest backdrop-blur-md shadow-[2px_0_5px_rgba(0,0,0,0.02)] isolate">Bàn</div>
                <div className="flex-1 flex">
-                  {HOURS.map(h => (
-                     <div key={h} className="shrink-0 flex items-center justify-center font-bold text-sm text-gray-600 border-r border-gray-200 h-11" style={{ width: HOUR_WIDTH }}>
-                        {h}
-                     </div>
-                  ))}
+                  {HOURS.map(h => <div key={h} className="shrink-0 flex items-center justify-center font-bold text-sm text-gray-600 border-r border-gray-200 h-11" style={{ width: HOUR_WIDTH }}>{h}</div>)}
                </div>
             </div>
 
-            {/* Body */}
             <div className="flex w-fit min-w-full">
-               {/* Y-Axis Tables */}
                <div className="w-44 lg:w-48 sticky left-0 z-20 bg-white border-r border-gray-200 shrink-0 flex flex-col shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
                   {filteredTables.map(table => {
-                     const ds = getTableDerivedStatus(table, currentDate, bookings.filter(b => b.table_id?._id === table._id));
+                     const ds = getTableDerivedStatus(table, currentDate, bookings.filter(b => (b.table_id?._id || b.table_id) === table._id));
                      const meta = STATUS_META[ds] || STATUS_META.available;
                      return (
                         <div key={table._id} className="h-[90px] border-b border-gray-100 flex items-center p-3 hover:bg-gray-50 transition-colors cursor-pointer bg-white" onClick={() => setModalTarget({ table })}>
                            <div className="flex items-center gap-3 w-full">
                               <div className={`shrink-0 w-2 h-10 rounded-full ${meta.dot}`} />
-                              <div className="overflow-hidden flex-1">
-                                 <h3 className="font-extrabold text-gray-900 text-base lg:text-lg">{table.table_number}</h3>
-                                 <p className="text-[11px] text-gray-400 font-medium truncate">{table.table_type_id?.name || "Bàn"}</p>
-                              </div>
+                              <div className="overflow-hidden flex-1"><h3 className="font-extrabold text-gray-900 text-base lg:text-lg">{table.table_number}</h3><p className="text-[11px] text-gray-400 font-medium truncate">{table.table_type_id?.name || "Bàn"}</p></div>
                            </div>
                         </div>
                      );
                   })}
                </div>
 
-               {/* Grid & Blocks Area */}
                <div className="flex-1 flex flex-col relative z-0">
-                  {/* Background Grid Lines (Absolute to stretch full height) */}
                   <div className="absolute inset-0 flex pointer-events-none">
-                     {HOURS.map(h => (
-                        <div key={`bg-${h}`} className="shrink-0 border-r border-gray-100/60 h-full" style={{ width: HOUR_WIDTH }} />
-                     ))}
+                     {HOURS.map(h => <div key={`bg-${h}`} className="shrink-0 border-r border-gray-100/60 h-full" style={{ width: HOUR_WIDTH }} />)}
                   </div>
 
                   {filteredTables.map(table => {
-                      const tableBookings = bookings.filter(b => b.table_id?._id === table._id);
+                      const tableBookings = bookings.filter(b => (b.table_id?._id || b.table_id) === table._id);
                       return (
-                        <div key={`grid-${table._id}`} className="h-[90px] border-b border-gray-100 flex items-center relative hover:bg-gray-50/20 transition-colors w-full">
-                           
-                           {/* Booking blocks */}
+                        <div 
+                          key={`grid-${table._id}`} 
+                          className="h-[90px] border-b border-gray-100 flex items-center relative hover:bg-gray-50/20 transition-colors w-full cursor-crosshair"
+                          onClick={(e) => {
+                             if (e.target !== e.currentTarget) return;
+                             const rect = e.currentTarget.getBoundingClientRect();
+                             const startTime = minutesToTime(roundMinutes((e.clientX - rect.left) / HOUR_WIDTH * 60, 15));
+                             setModalTarget(null);
+                             window._quickCreateStartTime = startTime;
+                             window._quickCreateTableId = table._id;
+                             setQuickCreateOpen(true);
+                          }}
+                        >
                            {tableBookings.map(booking => {
                               if (booking.status === "Cancelled") return null;
                               const { left, width, display } = getBlockStyle(booking, currentDate);
                               if (display === 'none') return null;
-                              
                               const bMeta = STATUS_META[booking.status.toLowerCase()] || STATUS_META.completed;
-                              
                               return (
-                                <div 
-                                  key={booking._id}
-                                  className={`absolute top-2 bottom-2 rounded-lg p-2 border overflow-hidden cursor-pointer transition-transform hover:scale-[1.01] hover:shadow-md z-10 flex flex-col justify-center ${bMeta.blockClass}`}
-                                  style={{ left, width }}
-                                  onClick={() => setModalTarget({ table, booking, isBookingActive: true })}
-                                >
-                                   <div className="flex items-center justify-between gap-2 max-w-full">
-                                       <span className="font-bold text-[13px] truncate">
-                                         {booking.account_id?.fullname || booking.guest_name || "Khách"}
-                                       </span>
-                                   </div>
-                                   <span className="text-[11px] opacity-80 mt-[2px] truncate font-semibold">
-                                      {formatTime(booking.start_time)} - {formatTime(booking.end_time)}
-                                   </span>
+                                <div key={booking._id} className={`absolute top-2 bottom-2 rounded-lg p-2 border overflow-hidden cursor-pointer transition-transform hover:scale-[1.01] hover:shadow-md z-10 flex flex-col justify-center ${bMeta.blockClass}`} style={{ left, width }} onClick={() => setModalTarget({ table, booking, isBookingActive: true })}>
+                                   <div className="flex items-center justify-between gap-2 max-w-full"><span className="font-bold text-[13px] truncate">{booking.account_id?.fullname || booking.guest_name || "Khách"}</span></div>
+                                   <span className="text-[11px] opacity-80 mt-[2px] truncate font-semibold">{formatTime(booking.start_time)} - {booking.status === "Playing" ? minutesToTime(currentTime.getHours()*60 + currentTime.getMinutes()) : formatTime(booking.end_time)}</span>
                                 </div>
                               );
                            })}
@@ -930,4 +1051,3 @@ export const StaffClubPageManagerTable = () => {
     </div>
   );
 };
-
