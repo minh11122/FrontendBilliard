@@ -90,6 +90,26 @@ export const getStaffClubStatistics = async (month, year) => {
   }
 };
 
+export const completeOnboarding = async (clubId, plan_type) => {
+  try {
+    const response = await api.patch(`/clubs/${clubId}/complete-onboarding`, { plan_type });
+    return response.data;
+  } catch (error) {
+    console.error("Error in completeOnboarding:", error);
+    throw error;
+  }
+};
+
+export const getSubscriptions = async () => {
+  try {
+    const response = await api.get("/subscriptions");
+    return response.data;
+  } catch (error) {
+    console.error("Error in getSubscriptions:", error);
+    throw error;
+  }
+};
+
 export const clubService = {
   getAllClubs,
   getClubById,
@@ -97,7 +117,9 @@ export const clubService = {
   updateClub,
   getClubBank,
   saveClubBank,
-  getStaffClubStatistics
+  getStaffClubStatistics,
+  completeOnboarding,
+  getSubscriptions
 };
 
 

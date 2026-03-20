@@ -22,8 +22,11 @@ import {
   ConciergeBell,
   Trophy,
   ArrowLeftCircle,
-  Sparkles
+  Sparkles,
+  FileText,
+  Lock
 } from "lucide-react";
+import toast from "react-hot-toast";
 
 export const SidebarOwner = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -34,36 +37,50 @@ export const SidebarOwner = () => {
   const userFullname = localStorage.getItem("user_fullname") || "Chủ quán";
   const clubName = localStorage.getItem("selected_club_name") || "Billiard Club";
 
+  const planType = localStorage.getItem("selected_club_plan") || "free";
+
   const navigation = [
     {
       name: "Tổng quan",
       href: "/owner/dashboard",
       icon: LayoutDashboard,
+      roles: ["basic", "pro"]
     },
     {
       name: "Quản lý bàn",
       href: "/owner/tables",
       icon: CircleDot,
+      roles: ["free", "basic", "pro"]
     },
     {
       name: "Quản lý nhân viên",
       href: "/owner/list-employee",
       icon: User,
+      roles: ["free", "basic", "pro"]
     },
     {
       name: "Quản lý Dịch vụ",
       href: "/owner/services",
       icon: ConciergeBell,
+      roles: ["free", "basic", "pro"]
     },
     {
       name: "Quản lý Giải đấu",
       href: "/owner/tournaments",
       icon: Trophy,
+      roles: ["pro"]
+    },
+    {
+      name: "Quản lý Bài đăng",
+      href: "#",
+      icon: FileText,
+      roles: ["pro"]
     },
     {
       name: "Quản lý tiện ích",
       href: "/owner/amenities",
       icon: Sparkles,
+      roles: ["free", "basic", "pro"]
     },
   ];
 
@@ -120,6 +137,27 @@ export const SidebarOwner = () => {
             {navigation.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.href;
+              const isAllowed = item.roles.includes(planType);
+
+              if (!isAllowed) {
+                return (
+                  <div
+                    key={item.name}
+                    onClick={() => {
+                      toast("Tính năng này cần nâng cấp gói " + (item.roles[0] === 'pro' ? 'Pro' : 'Basic'), { icon: '🔒' });
+                      setSidebarOpen(false);
+                    }}
+                    className="group flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors text-gray-400 bg-gray-50/50 cursor-not-allowed"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icon className="h-5 w-5 shrink-0" />
+                      <span className="flex-1 opacity-70">{item.name}</span>
+                    </div>
+                    <Lock className="h-4 w-4 text-orange-400" />
+                  </div>
+                );
+              }
+
               return (
                 <NavLink
                   key={item.name}

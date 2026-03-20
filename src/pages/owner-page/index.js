@@ -18,3 +18,4 @@ export * from './register-owner-account/basic-information'
 export * from './setting-page'
 export { default as AmenitiesPage } from "./amenities-page";
 export * from "./owner-resubmit-club-page";
+export { default as OwnerOnboardingPage } from "./owner-onboarding-page";

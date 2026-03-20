@@ -42,8 +42,16 @@ export function OwnerSelectClubPage() {
   const handleSelectClub = (club) => {
     localStorage.setItem("selected_club_id", club._id);
     localStorage.setItem("selected_club_name", club.name);
-    toast.success(`Đã chọn quán: ${club.name}`);
-    navigate("/owner/dashboard");
+    localStorage.setItem("selected_club_plan", club.plan_type || "free");
+    
+    // Check if onboarding is completed or not (including undefined for old data)
+    if (!club.onboarding_completed) {
+      toast.success(`Đang thiết lập quán: ${club.name}`);
+      navigate(`/owner/onboarding/${club._id}`);
+    } else {
+      toast.success(`Đã chọn quán: ${club.name}`);
+      navigate("/owner/dashboard");
+    }
   };
 
   const activeClubs = clubs.filter(c => c.status === "Approved" || c.status === "Locked");

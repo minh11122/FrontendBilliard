@@ -53,7 +53,8 @@ import {
   OwnerCreateEmployeePage,
   OwnerUpdateEmployeePage,
   AmenitiesPage,
-  OwnerResubmitClubPage
+  OwnerResubmitClubPage,
+  OwnerOnboardingPage
 } from "@/pages";
 
 export const router = createBrowserRouter([
@@ -93,6 +94,14 @@ export const router = createBrowserRouter([
       {
         path: "owner/resubmit-club/:id",
         element: <OwnerResubmitClubPage />
+      },
+      {
+        path: "owner/onboarding/:clubId",
+        element: (
+          <ProtectedRoute allowedRoles={["OWNER"]}>
+            <OwnerOnboardingPage />
+          </ProtectedRoute>
+        )
       },
       {
         path: "admin",

@@ -904,61 +904,6 @@ export function SettingPage() {
           </div>
         )}
       </div>
-
-      {/* Bank info required modal */}
-      {isBankModalOpen && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl">
-            <h3 className="text-lg font-bold mb-2 text-gray-900">Thiết lập PayOS cho CLB</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Vui lòng thiết lập PayOS cho CLB. Bạn cần hoàn thành bước này trước khi sử dụng đầy đủ các chức năng quản lý quán.
-            </p>
-
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-gray-700">PayOS Client ID</label>
-                <input
-                  type="text"
-                  value={clubBank.payos_client_id}
-                  onChange={(e) => setClubBank({ ...clubBank, payos_client_id: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
-                  placeholder="Nhập PayOS Client ID"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-gray-700">PayOS API Key</label>
-                <input
-                  type="password"
-                  value={clubBank.payos_api_key}
-                  onChange={(e) => setClubBank({ ...clubBank, payos_api_key: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
-                  placeholder="Nhập PayOS API Key"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-gray-700">PayOS Checksum Key</label>
-                <input
-                  type="password"
-                  value={clubBank.payos_checksum_key}
-                  onChange={(e) => setClubBank({ ...clubBank, payos_checksum_key: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
-                  placeholder="Nhập PayOS Checksum Key"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end mt-5">
-              <button
-                onClick={handleSaveBankInfo}
-                disabled={bankSaving}
-                className="px-5 py-2.5 rounded-xl bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 transition-all disabled:opacity-60"
-              >
-                {bankSaving ? "Đang lưu..." : "Lưu & tiếp tục"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
