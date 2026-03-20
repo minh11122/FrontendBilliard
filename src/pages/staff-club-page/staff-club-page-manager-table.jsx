@@ -202,6 +202,39 @@ const TableDetailModal = ({ table, booking, isBookingActive, onClose, onStatusCh
     }
   };
 
+  const handleUpdateServiceQuantity = async (bsId, currentQty, delta) => {
+    try {
+      const newQty = currentQty + delta;
+      if (newQty < 1) return;
+      
+      setLoading(true);
+      await bookingService.updateBookingServiceQuantity(booking._id, bsId, newQty);
+      toast.success("Đã cập nhật số lượng");
+      await fetchBookingServices();
+      if (onRefresh) await onRefresh();
+    } catch (e) {
+      toast.error("Không thể cập nhật số lượng");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteService = async (bsId) => {
+    if (!window.confirm("Bạn có chắc chắn muốn xoá dịch vụ này?")) return;
+    
+    try {
+      setLoading(true);
+      await bookingService.deleteBookingService(booking._id, bsId);
+      toast.success("Đã xoá dịch vụ");
+      await fetchBookingServices();
+      if (onRefresh) await onRefresh();
+    } catch (e) {
+      toast.error("Không thể xoá dịch vụ");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleExtendBooking = async () => {
     try {
       setLoading(true);
@@ -289,11 +322,46 @@ const TableDetailModal = ({ table, booking, isBookingActive, onClose, onStatusCh
               {booking.status === "Playing" && bookingServices.length > 0 && (
                 <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
                   <h4 className="text-[11px] font-bold text-gray-400 uppercase mb-2">Dịch vụ đã gọi</h4>
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     {bookingServices.map((bs, idx) => (
-                      <div key={idx} className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600 font-medium">x{bs.quantity} {bs.service_id?.name}</span>
-                        <span className="text-gray-900 font-semibold">{(bs.unit_price * bs.quantity).toLocaleString("vi-VN")}đ</span>
+                      <div key={idx} className="flex items-center justify-between text-sm bg-white p-2 rounded-lg border border-gray-50 shadow-sm">
+                        <div className="flex flex-col">
+                          <span className="text-gray-800 font-bold">{bs.service_id?.name}</span>
+                          <span className="text-[10px] text-gray-500">{(bs.unit_price).toLocaleString("vi-VN")}đ / đơn vị</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                          {/* Quantity Controls */}
+                          <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-1">
+                            <button 
+                              onClick={() => handleUpdateServiceQuantity(bs._id, bs.quantity, -1)}
+                              disabled={loading || bs.quantity <= 1}
+                              className="p-1 rounded-md hover:bg-white text-gray-500 disabled:opacity-30 transition-all"
+                            >
+                              <Minus size={14}/>
+                            </button>
+                            <span className="w-6 text-center font-bold text-xs">{bs.quantity}</span>
+                            <button 
+                              onClick={() => handleUpdateServiceQuantity(bs._id, bs.quantity, 1)}
+                              disabled={loading}
+                              className="p-1 rounded-md hover:bg-white text-gray-500 transition-all"
+                            >
+                              <Plus size={14}/>
+                            </button>
+                          </div>
+
+                          <div className="flex flex-col items-end min-w-[80px]">
+                            <span className="text-gray-900 font-bold">{(bs.unit_price * bs.quantity).toLocaleString("vi-VN")}đ</span>
+                            <button 
+                              onClick={() => handleDeleteService(bs._id)}
+                              disabled={loading}
+                              className="text-red-400 hover:text-red-600 p-1 transition-colors"
+                              title="Xoá dịch vụ"
+                            >
+                              <Trash2 size={14}/>
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>

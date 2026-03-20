@@ -137,6 +137,28 @@ export const addServiceToBooking = async (bookingId, serviceId, quantity) => {
   }
 };
 
+// Cập nhật số lượng dịch vụ
+export const updateBookingServiceQuantity = async (bookingId, bookingServiceId, quantity) => {
+  try {
+    const response = await api.put(`/bookings/${bookingId}/services/${bookingServiceId}`, { quantity });
+    return response.data;
+  } catch (error) {
+    console.error("Error in updateBookingServiceQuantity:", error);
+    throw error;
+  }
+};
+
+// Xoá dịch vụ khỏi booking
+export const deleteBookingService = async (bookingId, bookingServiceId) => {
+  try {
+    const response = await api.delete(`/bookings/${bookingId}/services/${bookingServiceId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error in deleteBookingService:", error);
+    throw error;
+  }
+};
+
 // Gia hạn booking
 export const extendBooking = async (bookingId, minutes) => {
   try {
@@ -161,6 +183,8 @@ export const bookingService = {
   checkOutBooking,
   getBookingServices,
   addServiceToBooking,
+  updateBookingServiceQuantity,
+  deleteBookingService,
   extendBooking,
 };
 
