@@ -501,11 +501,17 @@ export const ClubDetailPage = () => {
                               value={selectedDuration}
                               onChange={(e) => setSelectedDuration(Number(e.target.value))}
                             >
-                              <option value={1}>1 Giờ</option>
-                              <option value={2}>2 Giờ</option>
-                              <option value={3}>3 Giờ</option>
-                              <option value={4}>4 Giờ</option>
-                              <option value={5}>5 Giờ</option>
+                              {Array.from({ length: 48 }, (_, i) => {
+                                const val = (i + 1) * 0.5;
+                                const h = Math.floor(val);
+                                const m = val % 1 !== 0 ? 30 : 0;
+                                let label;
+                                if (val === 24) label = 'Cả ngày (24 Giờ)';
+                                else if (h === 0) label = '30 Phút';
+                                else if (m === 0) label = `${h} Giờ`;
+                                else label = `${h} Giờ 30`;
+                                return <option key={val} value={val}>{label}</option>;
+                              })}
                             </select>
                             <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
                               <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
@@ -588,9 +594,9 @@ export const ClubDetailPage = () => {
                             }`}
                         >
                           {/* Table Image Background */}
-                          {t.image_url ? (
+                          {t.images && t.images.length > 0 ? (
                             <img
-                              src={t.image_url}
+                              src={t.images[0]}
                               className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                               alt=""
                             />
@@ -745,8 +751,8 @@ export const ClubDetailPage = () => {
               <div className="hidden sm:block w-px h-10 bg-slate-100"></div>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-slate-100 border overflow-hidden flex-shrink-0">
-                  {selectedTable?.image_url ? (
-                    <img src={selectedTable.image_url} className="w-full h-full object-cover" alt="" />
+                  {selectedTable?.images && selectedTable.images.length > 0 ? (
+                    <img src={selectedTable.images[0]} className="w-full h-full object-cover" alt="" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-400 font-bold uppercase">No img</div>
                   )}
@@ -789,20 +795,23 @@ export const ClubDetailPage = () => {
   );
 };
 
-// ===== TABLE DETAIL MODAL =====
+// ===== TABLE DETAIL MODAL (with image gallery) =====
 const TableDetailModal = ({ table, onClose, selectedTableType }) => {
+  const images = table.images && table.images.length > 0 ? table.images : [];
+  const [activeImg, setActiveImg] = useState(0);
+
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={onClose}>
       <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
         
-        {/* Header with Table Icon/Number */}
-        <div className="p-6 border-b flex justify-between items-center bg-slate-50/50">
+        {/* Header */}
+        <div className="p-5 border-b flex justify-between items-center bg-slate-50/50">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-200">
+            <div className="w-11 h-11 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-200">
               <span className="font-black text-xl">{table.table_number}</span>
             </div>
             <div>
-              <h3 className="font-black text-slate-900 text-lg">Chi tiết Bàn Bida</h3>
+              <h3 className="font-black text-slate-900 text-base">Chi tiết Bàn Bida</h3>
               <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest mt-0.5">Bàn {selectedTableType}</p>
             </div>
           </div>
@@ -811,52 +820,100 @@ const TableDetailModal = ({ table, onClose, selectedTableType }) => {
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
-          {/* Main Image */}
-          <div className="aspect-video bg-slate-100 rounded-2xl border overflow-hidden relative shadow-inner">
-            {table.image_url ? (
-              <img src={table.image_url} className="w-full h-full object-cover" alt={`Bàn ${table.table_number}`} />
-            ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-2">
-                <Sparkles className="w-12 h-12 opacity-20" />
-                <p className="text-sm font-bold uppercase tracking-widest opacity-40">Chưa có ảnh bàn</p>
+        <div className="p-5 space-y-5 max-h-[80vh] overflow-y-auto">
+          {/* Image Gallery */}
+          <div className="space-y-2">
+            {/* Main Image Display */}
+            <div className="aspect-video bg-slate-100 rounded-2xl border overflow-hidden relative shadow-inner group">
+              {images.length > 0 ? (
+                <img 
+                  src={images[activeImg]} 
+                  className="w-full h-full object-cover transition-all duration-500" 
+                  alt={`Bàn ${table.table_number} - ảnh ${activeImg + 1}`} 
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-2">
+                  <Sparkles className="w-12 h-12 opacity-20" />
+                  <p className="text-sm font-bold uppercase tracking-widest opacity-40">Chưa có ảnh bàn</p>
+                </div>
+              )}
+              {/* Price Badge */}
+              <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl shadow-md border border-white/20">
+                <p className="text-[9px] font-black text-slate-400 uppercase leading-none mb-0.5">Đơn giá / Giờ</p>
+                <p className="text-base font-black text-emerald-600">{table.price?.toLocaleString()}đ</p>
+              </div>
+              {/* Navigation Arrows for gallery */}
+              {images.length > 1 && (
+                <>
+                  <button 
+                    onClick={() => setActiveImg(i => (i - 1 + images.length) % images.length)}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button 
+                    onClick={() => setActiveImg(i => (i + 1) % images.length)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                  {/* Image counter */}
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/50 backdrop-blur-sm text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                    {activeImg + 1} / {images.length}
+                  </div>
+                </>
+              )}
+            </div>
+            {/* Thumbnail Strip */}
+            {images.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {images.map((img, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActiveImg(i)}
+                    className={`w-16 h-12 rounded-lg overflow-hidden border-2 flex-shrink-0 transition-all ${
+                      activeImg === i ? 'border-emerald-500 scale-[1.05] shadow-md' : 'border-transparent opacity-60 hover:opacity-100'
+                    }`}
+                  >
+                    <img src={img} className="w-full h-full object-cover" alt="" />
+                  </button>
+                ))}
               </div>
             )}
-            {/* Price Badge */}
-            <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md px-4 py-2 rounded-xl shadow-lg border border-white/20">
-               <p className="text-[10px] font-black text-slate-400 uppercase leading-none mb-1">Đơn giá / Giờ</p>
-               <p className="text-lg font-black text-emerald-600">{table.price?.toLocaleString()}đ</p>
-            </div>
           </div>
 
-          {/* Description Section */}
-          <div className="space-y-3">
-            <h4 className="font-bold text-slate-900 flex items-center gap-2">
+          {/* Description */}
+          <div className="space-y-2">
+            <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
               <Info className="w-4 h-4 text-emerald-500" /> Mô tả chi tiết
             </h4>
-            <div className="bg-slate-50 rounded-2xl p-4 border border-dashed border-slate-200 min-h-[100px]">
+            <div className="bg-slate-50 rounded-2xl p-4 border border-dashed border-slate-200 min-h-[80px]">
               <p className="text-sm text-slate-600 leading-relaxed italic">
-                {table.description || "Quán chưa cập nhật mô tả cụ thể cho chiếc bàn này. Tuy nhiên, tất cả bàn tại đây đều được đảm bảo về tiêu chuẩn chất lượng và vệ sinh hàng ngày."}
+                {table.description || "Quán chưa cập nhật mô tả cho bàn này. Tất cả bàn đều được đảm bảo vệ sinh và chất lượng hàng ngày."}
               </p>
             </div>
           </div>
 
-          {/* Status info */}
+          {/* Status */}
           <div className="flex items-center justify-between p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100">
             <div className="flex items-center gap-3">
-               <div className={`w-3 h-3 rounded-full ${table.status === 'Available' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></div>
-               <span className="text-sm font-bold text-slate-700">Trạng thái hiện tại</span>
+              <div className={`w-3 h-3 rounded-full ${table.status === 'Available' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></div>
+              <span className="text-sm font-bold text-slate-700">Trạng thái hiện tại</span>
             </div>
-            <span className={`text-xs font-black px-3 py-1 rounded-full border ${table.status === 'Available' ? 'bg-white text-emerald-600 border-emerald-200' : 'bg-slate-100 text-slate-400'}`}>
+            <span className={`text-xs font-black px-3 py-1 rounded-full border ${
+              table.status === 'Available' ? 'bg-white text-emerald-600 border-emerald-200' : 
+              table.status === 'Holding' ? 'bg-amber-50 text-amber-600 border-amber-200' :
+              'bg-slate-100 text-slate-400'
+            }`}>
               {table.status === 'Available' ? 'ĐANG TRỐNG' : table.status === 'Holding' ? 'ĐANG GIỮ CHỖ' : 'BẢO TRÌ'}
             </span>
           </div>
         </div>
 
-        <div className="p-6 bg-slate-50/50 border-t flex gap-3">
+        <div className="p-5 bg-slate-50/50 border-t">
           <button 
             onClick={onClose}
-            className="flex-1 py-3 bg-white border font-black text-slate-500 rounded-2xl hover:bg-slate-100 transition-all active:scale-[0.98]"
+            className="w-full py-3 bg-white border font-black text-slate-500 rounded-2xl hover:bg-slate-100 transition-all active:scale-[0.98]"
           >
             ĐÓNG
           </button>
