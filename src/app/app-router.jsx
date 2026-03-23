@@ -54,7 +54,10 @@ import {
   OwnerUpdateEmployeePage,
   AmenitiesPage,
   OwnerResubmitClubPage,
-  OwnerOnboardingPage
+  OwnerOnboardingPage,
+  OwnerTournamentListPage,
+  OwnerCreateTournamentPage,
+  OwnerEditTournamentPage
 } from "@/pages";
 
 export const router = createBrowserRouter([
@@ -135,6 +138,9 @@ export const router = createBrowserRouter([
           { path: "employees/create", element: <OwnerCreateEmployeePage /> },
           { path: "employees/edit/:id", element: <OwnerUpdateEmployeePage /> },
           { path: "amenities", element: <AmenitiesPage /> },
+          { path: "tournaments", element: <OwnerTournamentListPage /> },
+          { path: "tournaments/create", element: <OwnerCreateTournamentPage /> },
+          { path: "tournaments/edit/:id", element: <OwnerEditTournamentPage /> },
         ],
       },
       {
