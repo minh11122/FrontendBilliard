@@ -18,6 +18,7 @@ import {
   ForgotPasswordForm,
   HomePage,
   TournamentPage,
+  TournamentDetailPage,
   BookingPage,
   ClubDetailPage,
   PaymentPage,
@@ -82,6 +83,7 @@ export const router = createBrowserRouter([
         children: [
           { path: "", element: <HomePage /> },
           { path: "/tournament", element: <TournamentPage /> },
+          { path: "/tournament/:id", element: <TournamentDetailPage /> },
           { path: "/booking", element: <BookingPage /> },
           { path: "/booking/:id", element: <ClubDetailPage /> },
           { path: "/payment/:bookingId", element: <PaymentPage /> },

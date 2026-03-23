@@ -91,21 +91,34 @@ export default function OwnerTournamentListPage() {
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex flex-wrap gap-2 mb-8">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
-              activeTab === tab.id
-                ? "bg-[#D1F2D6] text-[#008f4c]" // Green highlight for active
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* Search and Tabs */}
+      <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center mb-8">
+        <div className="flex flex-wrap gap-2">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
+                activeTab === tab.id
+                  ? "bg-[#D1F2D6] text-[#008f4c]" // Green highlight for active
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="relative w-full md:w-[300px]">
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Tìm kiếm tên giải đấu..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border text-slate-900 border-slate-200 rounded-full text-sm focus:outline-none focus:border-[#008f4c] focus:ring-1 focus:ring-[#008f4c] transition-all bg-white"
+          />
+        </div>
       </div>
 
       {/* Content */}
@@ -151,13 +164,13 @@ export default function OwnerTournamentListPage() {
               actionButtons = (
                 <div className="flex gap-3">
                   <button
-                    onClick={() => {/* Navigate to management page later */}}
+                    onClick={() => navigate(`/owner/tournaments/edit/${t._id}`)}
                     className="px-6 py-2 bg-[#00A65A] hover:bg-[#008d4c] text-white font-semibold rounded-full text-sm transition-all shadow-md shadow-green-500/20"
                   >
                     Quản lý
                   </button>
                   <button
-                    onClick={() => navigate(`/owner/tournaments/edit/${t._id}`)}
+                    onClick={() => navigate(`/owner/tournaments/${t._id}/players`)}
                     className="px-6 py-2 bg-white hover:bg-slate-50 text-[#00A65A] font-semibold rounded-full text-sm transition-all border border-[#00A65A]"
                   >
                     Chi tiết
@@ -182,7 +195,7 @@ export default function OwnerTournamentListPage() {
               <div key={t._id} className="bg-white rounded-[24px] p-4 flex flex-col sm:flex-row gap-6 shadow-sm border border-slate-100 hover: shadow-md transition-shadow">
                 {/* Left: Banner Image */}
                 <div className="w-full sm:w-[220px] aspect-square flex-shrink-0 bg-slate-100 rounded-[20px] overflow-hidden relative">
-                  {t.banner ? (
+                  {t.banner && t.banner.trim().length > 0 ? (
                       <img src={t.banner} className="w-full h-full object-cover" alt={t.name} />
                   ) : (
                       <div className="w-full h-full flex items-center justify-center bg-slate-200">

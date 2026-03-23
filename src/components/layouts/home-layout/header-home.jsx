@@ -1,6 +1,6 @@
 import { useState, useContext } from "react";
-import { ChevronDown, Moon, User, LogOut,Bell  } from "lucide-react";
-import { useNavigate, Link } from "react-router-dom";
+import { Moon, User, LogOut, Bell, ChevronDown } from "lucide-react";
+import { useNavigate, Link, NavLink } from "react-router-dom";
 import { AuthContext } from "@/context/AuthContext";
 
 export const HeaderHome = () => {
@@ -47,32 +47,14 @@ export const HeaderHome = () => {
             CLB
           </Link>
 
-          {/* Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setOpenMenu(!openMenu)}
-              className="flex items-center gap-1 text-green-500 font-semibold"
-            >
-              Giải đấu <ChevronDown size={16} />
-            </button>
-
-            {openMenu && (
-              <div className="absolute top-full mt-2 w-40 bg-white border rounded-xl shadow-lg py-2">
-                <Link
-                  to="/tournament"
-                  className="block px-4 py-2 hover:bg-green-50"
-                >
-                  Giải hiện tại
-                </Link>
-                <Link
-                  to="/tournament/history"
-                  className="block px-4 py-2 hover:bg-green-50"
-                >
-                  Đã kết thúc
-                </Link>
-              </div>
-            )}
-          </div>
+          <NavLink
+            to="/tournament"
+            className={({ isActive }) =>
+              isActive ? "text-green-500 font-semibold" : "hover:text-green-500"
+            }
+          >
+            Giải đấu
+          </NavLink>
 
           <Link to="/ranking" className="hover:text-green-500">
             Xếp hạng

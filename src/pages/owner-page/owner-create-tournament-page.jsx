@@ -101,22 +101,21 @@ export default function OwnerCreateTournamentPage() {
 
     setSubmitting(true);
     try {
-      // For now, send as JSON (banner URL can be added later via upload)
-      const payload = {
-        name: form.name.trim(),
-        description: form.description.trim(),
-        format: form.format,
-        max_players: Number(form.max_players),
-        fee: Number(form.fee) || 0,
-        prize_pool: form.prize_pool.trim(),
-        registration_open: form.registration_open || null,
-        registration_deadline: form.registration_deadline || null,
-        play_date: form.play_date || null,
-        auto_bracket: form.auto_bracket,
-        banner: bannerPreview || "", // placeholder; real upload can be added
-      };
+      const formData = new FormData();
+      formData.append("name", form.name.trim());
+      formData.append("description", form.description.trim());
+      formData.append("format", form.format);
+      formData.append("max_players", Number(form.max_players));
+      formData.append("fee", Number(form.fee) || 0);
+      formData.append("prize_pool", form.prize_pool.trim());
+      formData.append("auto_bracket", form.auto_bracket);
+      if (form.registration_open) formData.append("registration_open", form.registration_open);
+      if (form.registration_deadline) formData.append("registration_deadline", form.registration_deadline);
+      if (form.play_date) formData.append("play_date", form.play_date);
+      // Append actual file if user selected one
+      if (bannerFile) formData.append("banner", bannerFile);
 
-      const res = await createTournament(CLUB_ID, payload);
+      const res = await createTournament(CLUB_ID, formData);
       if (res.success) {
         toast.success("Tạo giải đấu thành công! 🏆");
         navigate("/owner/tournaments");

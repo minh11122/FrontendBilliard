@@ -52,7 +52,9 @@ export default function OwnerEditTournamentPage() {
             play_date: t.play_date ? t.play_date.split("T")[0] : "",
             auto_bracket: t.auto_bracket !== undefined ? t.auto_bracket : true,
           });
-          if (t.banner) setBannerPreview(t.banner);
+          // Only show valid remote URLs (not blob: from old data)
+          const isValidUrl = t.banner && !t.banner.startsWith("blob:") && t.banner.startsWith("http");
+          if (isValidUrl) setBannerPreview(t.banner);
         }
       } catch (err) {
         toast.error("Không thể tải thông tin giải đấu");
@@ -132,21 +134,21 @@ export default function OwnerEditTournamentPage() {
 
     setSubmitting(true);
     try {
-      const payload = {
-        name: form.name.trim(),
-        description: form.description.trim(),
-        format: form.format,
-        max_players: Number(form.max_players),
-        fee: Number(form.fee) || 0,
-        prize_pool: form.prize_pool,
-        registration_open: form.registration_open || null,
-        registration_deadline: form.registration_deadline || null,
-        play_date: form.play_date || null,
-        auto_bracket: form.auto_bracket,
-        banner: bannerPreview || "",
-      };
+      const formData = new FormData();
+      formData.append("name", form.name.trim());
+      formData.append("description", form.description.trim());
+      formData.append("format", form.format);
+      formData.append("max_players", Number(form.max_players));
+      formData.append("fee", Number(form.fee) || 0);
+      formData.append("prize_pool", form.prize_pool);
+      formData.append("auto_bracket", form.auto_bracket);
+      if (form.registration_open) formData.append("registration_open", form.registration_open);
+      if (form.registration_deadline) formData.append("registration_deadline", form.registration_deadline);
+      if (form.play_date) formData.append("play_date", form.play_date);
+      // Only append banner file if user selected a new one
+      if (bannerFile) formData.append("banner", bannerFile);
 
-      const res = await updateTournament(id, payload);
+      const res = await updateTournament(id, formData);
       if (res.success) {
         toast.success("Cập nhật giải đấu thành công! ✅");
         navigate("/owner/tournaments");
