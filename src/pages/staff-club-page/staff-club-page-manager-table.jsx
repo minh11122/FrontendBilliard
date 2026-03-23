@@ -61,14 +61,15 @@ const timeToMinutes = (t = "00:00") => {
   return (h || 0) * 60 + (m || 0);
 };
 const minutesToTime = (m = 0) => {
-  const h = Math.floor(m / 60);
+  const h = Math.floor(m / 60) % 24;
   const mm = m % 60;
   return `${String(h).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
 };
 const roundMinutes = (m, step = 5) => Math.max(0, Math.floor(m / step) * step);
-const isTableBusyAt = (tableId, date, startTime, bookings, duration = 60) => {
+const isTableBusyAt = (tableId, date, startTime, endTime, bookings) => {
   const newStart = timeToMinutes(startTime);
-  const newEnd = newStart + duration;
+  let newEnd = timeToMinutes(endTime);
+  if (newEnd <= newStart && newEnd !== 0) newEnd += 24 * 60; // Next day
   const target = new Date(date);
   target.setHours(0, 0, 0, 0);
 
@@ -115,26 +116,10 @@ const getBlockStyle = (booking, currentDate) => {
   let startMinutes = sh * 60 + sm;
   
   let endMinutes;
-  if (booking.status === "Playing") {
-    // For playing bookings, use current time as effective end time
-    const now = new Date();
-    const nowMinutes = now.getHours() * 60 + now.getMinutes();
-    
-    // Check if the booking is active on the 'currentDate' shown on timeline
-    const isShowingToday = currDate.getTime() === new Date().setHours(0,0,0,0);
-    
-    if (isShowingToday) {
-       // Minimum 1 hour visual duration for Playing
-       endMinutes = Math.max(nowMinutes, startMinutes + 60);
-    } else {
-       const [eh, em] = (booking.end_time || booking.start_time).split(':').map(Number);
-       endMinutes = eh * 60 + em;
-       if (endMinutes <= startMinutes) endMinutes += 24 * 60;
-    }
-  } else if (booking.end_time) {
+  if (booking.end_time) {
     const [eh, em] = booking.end_time.split(':').map(Number);
     endMinutes = eh * 60 + em;
-    if (endMinutes <= startMinutes) endMinutes += 24 * 60; // Next day
+    if (endMinutes <= startMinutes && endMinutes !== 0) endMinutes += 24 * 60; // Next day
   } else {
     endMinutes = startMinutes + 60;
   }
@@ -238,7 +223,7 @@ const TableDetailModal = ({ table, booking, isBookingActive, allTables, onClose,
       fetchBookingServices();
       fetchAllClubServices();
     }
-  }, [booking]);
+  }, [booking?._id, booking?.status]);
 
   const fetchBookingServices = async () => {
     try {
@@ -399,7 +384,7 @@ const TableDetailModal = ({ table, booking, isBookingActive, allTables, onClose,
                   <InfoRow 
                     icon={<Clock size={14} />} 
                     label="Thời gian" 
-                    value={booking.status === "Playing" ? `${formatTime(booking.start_time)} – (Đang chơi)` : `${formatTime(booking.start_time)} – ${formatTime(booking.end_time)}`} 
+                    value={`${formatTime(booking.start_time)} – ${formatTime(booking.end_time)}`} 
                   />
                   <InfoRow icon={<Hash size={14} />} label="Mã booking" value={<span className="font-mono text-gray-700">{booking.code_number}</span>} />
                   <InfoRow icon={<Circle size={14} />} label="Trạng thái đơn" value={
@@ -410,13 +395,10 @@ const TableDetailModal = ({ table, booking, isBookingActive, allTables, onClose,
                       {booking.status === "Playing" 
                         ? (() => {
                             const startMin = timeToMinutes(booking.start_time);
-                            let nowMin = currentTime.getHours() * 60 + currentTime.getMinutes();
-                            const bDate = new Date(booking.play_date);
-                            const now = new Date();
-                            if (now.getDate() !== bDate.getDate() && now.getTime() > bDate.getTime()) {
-                                nowMin += 24 * 60;
-                            }
-                            const dur = Math.max(0, (nowMin - startMin) / 60);
+                            let endMin = timeToMinutes(booking.end_time);
+                            if (endMin <= startMin && endMin !== 0) endMin += 24 * 60;
+
+                            const dur = Math.max(0, (endMin - startMin) / 60);
                             const playCost = dur * (booking.hour_price || 0);
                             const serviceTotal = bookingServices.reduce((sum, s) => sum + (s.unit_price * s.quantity), 0);
                             return Math.round(playCost + serviceTotal).toLocaleString("vi-VN");
@@ -666,13 +648,42 @@ const InfoRow = ({ icon, label, value }) => (
   </div>
 );
 
+const TimeSelect = ({ value, onChange }) => {
+  const [h, m] = value && value.includes(':') ? value.split(':') : ["00", "00"];
+  
+  return (
+    <div className="flex items-center gap-0.5 border border-gray-200 rounded-lg p-0.5 bg-white h-10 w-full focus-within:ring-1 focus-within:ring-green-500">
+      <Select value={h} onValueChange={(val) => onChange(`${val}:${m}`)}>
+        <SelectTrigger className="h-8 border-none shadow-none px-1.5 text-[13px] font-semibold w-full focus:ring-0 text-center bg-transparent"><SelectValue/></SelectTrigger>
+        <SelectContent className="min-w-[60px] max-h-[200px]">
+          {Array.from({length: 24}).map((_,i) => {
+            const hs = String(i).padStart(2, '0');
+            return <SelectItem key={hs} value={hs}>{hs}</SelectItem>
+          })}
+        </SelectContent>
+      </Select>
+      <span className="text-gray-400 font-bold">:</span>
+      <Select value={m} onValueChange={(val) => onChange(`${h}:${val}`)}>
+        <SelectTrigger className="h-8 border-none shadow-none px-1.5 text-[13px] font-semibold w-full focus:ring-0 text-center bg-transparent"><SelectValue/></SelectTrigger>
+        <SelectContent className="min-w-[60px] max-h-[200px]">
+          {Array.from({length: 12}).map((_,i) => {
+            const ms = String(i * 5).padStart(2, '0');
+            return <SelectItem key={ms} value={ms}>{ms}</SelectItem>
+          })}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+};
+
 const QuickCreateModal = ({ open, tables, tableTypes, date, bookings, onCreate, onClose }) => {
   const [form, setForm] = useState({
     guest_name: "",
     table_id: "",
     table_type_id: "",
     play_date: formatDateInput(date || new Date()),
-    start_time: minutesToTime(roundMinutes(new Date().getHours()*60 + new Date().getMinutes(),5))
+    start_time: minutesToTime(roundMinutes(new Date().getHours()*60 + new Date().getMinutes(),5)),
+    end_time: minutesToTime(roundMinutes(new Date().getHours()*60 + new Date().getMinutes() + 60,5))
   });
   const [loading, setLoading] = useState(false);
 
@@ -680,11 +691,14 @@ const QuickCreateModal = ({ open, tables, tableTypes, date, bookings, onCreate, 
     if (open) {
       const initialTableId = window._quickCreateTableId || "";
       const initialStartTime = window._quickCreateStartTime || minutesToTime(roundMinutes(new Date().getHours()*60 + new Date().getMinutes(),5));
+      const [h, m] = initialStartTime.split(":").map(Number);
+      const initialEndTime = minutesToTime(h * 60 + m + 60);
 
       setForm(f => ({
         ...f,
         play_date: formatDateInput(date || new Date()),
         start_time: initialStartTime,
+        end_time: initialEndTime,
         table_id: initialTableId,
         table_type_id: initialTableId ? (tables.find(t => t._id === initialTableId)?.table_type_id?._id || "") : ""
       }));
@@ -702,8 +716,9 @@ const QuickCreateModal = ({ open, tables, tableTypes, date, bookings, onCreate, 
     if (!form.guest_name.trim()) return toast.error("Nhập tên khách");
     if (!form.table_id) return toast.error("Chọn bàn");
     if (!form.start_time) return toast.error("Chọn giờ bắt đầu");
+    if (!form.end_time) return toast.error("Chọn giờ kết thúc");
 
-    const busy = isTableBusyAt(form.table_id, form.play_date, form.start_time, bookings);
+    const busy = isTableBusyAt(form.table_id, form.play_date, form.start_time, form.end_time, bookings);
     if (busy) return toast.error("Bàn đã có khách trong khung giờ này");
 
     try {
@@ -713,6 +728,7 @@ const QuickCreateModal = ({ open, tables, tableTypes, date, bookings, onCreate, 
         guest_name: form.guest_name.trim(),
         play_date: form.play_date,
         start_time: form.start_time,
+        end_time: form.end_time,
         table_number: table?.table_number
       });
       toast.success("Tạo đặt bàn thành công");
@@ -771,9 +787,15 @@ const QuickCreateModal = ({ open, tables, tableTypes, date, bookings, onCreate, 
               <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Ngày chơi</label>
               <Input value={form.play_date} readOnly className="h-10 bg-gray-50"/>
             </div>
-            <div>
-              <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Giờ bắt đầu</label>
-              <Input type="time" value={form.start_time} onChange={(e) => setForm(f => ({...f, start_time: e.target.value}))} className="h-10"/>
+            <div className="grid grid-cols-2 gap-2">
+               <div>
+                  <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Bắt đầu</label>
+                  <TimeSelect value={form.start_time} onChange={(val) => setForm(f => ({...f, start_time: val}))} />
+               </div>
+               <div>
+                  <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Kết thúc</label>
+                  <TimeSelect value={form.end_time} onChange={(val) => setForm(f => ({...f, end_time: val}))} />
+               </div>
             </div>
           </div>
         </div>
@@ -957,7 +979,7 @@ export const StaffClubPageManagerTable = () => {
       {modalTarget && (
         <TableDetailModal
           table={modalTarget.table}
-          booking={modalTarget.booking}
+          booking={modalTarget.booking ? (bookings.find(b => b._id === modalTarget.booking._id) || modalTarget.booking) : modalTarget.booking}
           isBookingActive={modalTarget.isBookingActive}
           allTables={availableTables}
           onClose={() => setModalTarget(null)}
@@ -1100,9 +1122,7 @@ export const StaffClubPageManagerTable = () => {
                                 <div key={booking._id} className={`absolute top-2 bottom-2 rounded-lg p-2 border overflow-hidden cursor-pointer transition-transform hover:scale-[1.01] hover:shadow-md z-10 flex flex-col justify-center ${bMeta.blockClass}`} style={{ left, width }} onClick={() => setModalTarget({ table, booking, isBookingActive: true })}>
                                    <div className="flex items-center justify-between gap-2 max-w-full"><span className="font-bold text-[13px] truncate">{booking.guest_name || booking.account_id?.fullname || "Khách"}</span></div>
                                    <span className="text-[11px] opacity-80 mt-[2px] truncate font-semibold">
-                                      {booking.status === "Playing" && booking.guest_name
-                                         ? `${formatTime(booking.start_time)} - Đang chơi`
-                                         : `${formatTime(booking.start_time)} - ${formatTime(booking.end_time)}`}
+                                      {`${formatTime(booking.start_time)} - ${formatTime(booking.end_time)}`}
                                    </span>
                                 </div>
                               );
