@@ -212,7 +212,7 @@ const getTableDerivedStatus = (table, dateFilter, bookingsForTable) => {
 // ─────────────────────────────────────────────
 //  Modal
 // ─────────────────────────────────────────────
-const TableDetailModal = ({ table, booking, isBookingActive, onClose, onStatusChange, onCheckout, onRefresh }) => {
+const TableDetailModal = ({ table, booking, isBookingActive, onClose, onStatusChange, onCheckoutCash, onCheckoutBank, onRefresh }) => {
   if (!table) return null;
 
   const [loading, setLoading] = useState(false);
@@ -223,6 +223,8 @@ const TableDetailModal = ({ table, booking, isBookingActive, onClose, onStatusCh
   const [showExtendPanel, setShowExtendPanel] = useState(false);
   const [extendMinutes, setExtendMinutes] = useState(30);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [showCheckoutPanel, setShowCheckoutPanel] = useState(false);
+  const [checkoutPreview, setCheckoutPreview] = useState(null);
 
   const isTableAvailable = !booking && table.status === "Available";
 
@@ -327,12 +329,74 @@ const TableDetailModal = ({ table, booking, isBookingActive, onClose, onStatusCh
     onClose();
   };
 
-  const handleCheckoutClick = async () => {
+  const computeCheckoutPreview = () => {
+    if (!booking) return null;
+
+    const startMin = timeToMinutes(booking.start_time);
+    const endTimeStr = `${String(currentTime.getHours()).padStart(2, "0")}:${String(currentTime.getMinutes()).padStart(2, "0")}`;
+
+    let endMin = currentTime.getHours() * 60 + currentTime.getMinutes();
+    if (endMin <= startMin) endMin += 24 * 60;
+
+    const durationHours = (endMin - startMin) / 60;
+    const tableCost = Math.round(durationHours * (booking.hour_price || 0));
+
+    const serviceTotal = bookingServices.reduce((sum, s) => sum + s.unit_price * s.quantity, 0);
+    const deposit = booking.deposit || 0;
+    const fullTotal = tableCost + serviceTotal;
+    const dueAmount = Math.max(0, fullTotal - deposit);
+
+    return {
+      endTimeStr,
+      tableCost,
+      serviceTotal,
+      deposit,
+      fullTotal,
+      dueAmount
+    };
+  };
+
+  const handleCheckoutClick = () => {
+    const preview = computeCheckoutPreview();
+    if (!preview) return;
+    // Tắt các panel khác để tránh chồng UI
+    setShowOrderPanel(false);
+    setShowExtendPanel(false);
+    setCheckoutPreview(preview);
+    setShowCheckoutPanel(true);
+  };
+
+  const handleCheckoutCash = async () => {
     if (!booking) return;
-    setLoading(true);
-    await onCheckout(booking._id);
-    setLoading(false);
-    onClose();
+    try {
+      setLoading(true);
+      const res = await onCheckoutCash?.(booking._id);
+      if (res?.success === false) return;
+      setShowCheckoutPanel(false);
+      onClose();
+    } catch (e) {
+      // onCheckoutCash thường tự toast lỗi, chỉ fallback ở đây
+      toast.error("Thanh toán tiền mặt thất bại");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCheckoutBank = async () => {
+    if (!booking) return;
+    try {
+      setLoading(true);
+      const res = await onCheckoutBank?.(booking._id);
+      // Nếu backend hoàn tất ngay (due = 0) thì đóng modal
+      if (res?.completedNow) {
+        setShowCheckoutPanel(false);
+        onClose();
+      }
+    } catch (e) {
+      toast.error("Thanh toán chuyển khoản thất bại");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -544,14 +608,83 @@ const TableDetailModal = ({ table, booking, isBookingActive, onClose, onStatusCh
                     </div>
                   )}
 
-                  <Button 
-                    variant="default" 
-                    className="w-full bg-green-600 hover:bg-green-700 text-white font-bold h-12 shadow-lg rounded-xl mt-2"
-                    onClick={handleCheckoutClick}
-                    disabled={loading}
-                  >
-                    <CheckCircle2 size={18} className="mr-2" /> Thanh toán / Kết thúc
-                  </Button>
+                  {!showCheckoutPanel ? (
+                    <Button
+                      variant="default"
+                      className="w-full bg-green-600 hover:bg-green-700 text-white font-bold h-12 shadow-lg rounded-xl mt-2"
+                      onClick={handleCheckoutClick}
+                      disabled={loading}
+                    >
+                      <CheckCircle2 size={18} className="mr-2" /> Thanh toán / Kết thúc
+                    </Button>
+                  ) : (
+                    <div className="border border-green-100 rounded-xl p-4 bg-green-50/30 animate-in slide-in-from-top-2 duration-200 space-y-3 mt-2">
+                      <h4 className="font-extrabold text-green-900">Xác nhận thanh toán</h4>
+
+                      {checkoutPreview ? (
+                        <div className="space-y-2 text-sm">
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600">Tiền bàn</span>
+                            <span className="font-bold text-gray-900">
+                              {checkoutPreview.tableCost.toLocaleString("vi-VN")}đ
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600">Tổng dịch vụ</span>
+                            <span className="font-bold text-gray-900">
+                              {checkoutPreview.serviceTotal.toLocaleString("vi-VN")}đ
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600">Đã trả cọc</span>
+                            <span className="font-bold text-gray-900">
+                              {checkoutPreview.deposit.toLocaleString("vi-VN")}đ
+                            </span>
+                          </div>
+
+                          <div className="pt-2 border-t border-green-200">
+                            <div className="flex items-center justify-between">
+                              <span className="text-gray-700 font-semibold">Cần thanh toán</span>
+                              <span className="font-extrabold text-green-700 text-lg">
+                                {checkoutPreview.dueAmount.toLocaleString("vi-VN")}đ
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-gray-500 mt-1">
+                              Tạm tính đến {checkoutPreview.endTimeStr}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-500">Đang tính số tiền...</div>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 font-bold h-11 rounded-xl"
+                          onClick={handleCheckoutCash}
+                          disabled={loading}
+                        >
+                          Tiền mặt
+                        </Button>
+                        <Button
+                          className="bg-green-600 hover:bg-green-700 text-white font-bold h-11 rounded-xl"
+                          onClick={handleCheckoutBank}
+                          disabled={loading}
+                        >
+                          Chuyển khoản
+                        </Button>
+                      </div>
+
+                      <Button
+                        variant="ghost"
+                        className="w-full text-gray-600 hover:text-gray-900"
+                        onClick={() => setShowCheckoutPanel(false)}
+                        disabled={loading}
+                      >
+                        Quay lại
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </section>
@@ -885,6 +1018,47 @@ export const StaffClubPageManagerTable = () => {
     }
   };
 
+  const handleCheckoutCash = async (bookingId) => {
+    try {
+      const res = await bookingService.checkOutBooking(bookingId);
+      if (res?.success) {
+        toast.success("Thanh toán tiền mặt thành công. Bàn đã chuyển về Đang hoạt động.");
+        await loadData();
+      }
+      return res;
+    } catch (err) {
+      toast.error("Thanh toán tiền mặt thất bại");
+      throw err;
+    }
+  };
+
+  const handleCheckoutBank = async (bookingId) => {
+    try {
+      const res = await bookingService.createPayOSBookingCheckoutPayment(bookingId);
+      if (res?.success) {
+        const completedNow = !!res?.data?.completed;
+        const checkoutUrl = res?.data?.checkoutUrl;
+        if (completedNow) {
+          toast.success("Thanh toán thành công (due = 0).");
+          await loadData();
+          return { completedNow: true };
+        }
+        if (checkoutUrl) {
+          window.location.href = checkoutUrl;
+          return { redirected: true };
+        }
+      }
+      toast.error(res?.message || "Không thể tạo mã PayOS");
+      return { redirected: false };
+    } catch (err) {
+      const message = err?.response?.data?.message || "Thanh toán chuyển khoản thất bại";
+      const details = err?.response?.data?.details;
+      console.error("Checkout bank error:", err?.response?.data || err);
+      toast.error(details ? `${message} (${JSON.stringify(details)})` : message);
+      return { redirected: false };
+    }
+  };
+
   const counts = { all: tables.length, playing: 0, booked: 0, holding: 0, available: 0, maintenance: 0 };
   tables.forEach(t => {
      const ds = getTableDerivedStatus(t, currentDate, bookings.filter(b => (b.table_id?._id || b.table_id) === t._id));
@@ -900,7 +1074,8 @@ export const StaffClubPageManagerTable = () => {
           isBookingActive={modalTarget.isBookingActive}
           onClose={() => setModalTarget(null)}
           onStatusChange={handleStatusChange}
-          onCheckout={handleCheckout}
+          onCheckoutCash={handleCheckoutCash}
+          onCheckoutBank={handleCheckoutBank}
           onRefresh={loadData}
         />
       )}

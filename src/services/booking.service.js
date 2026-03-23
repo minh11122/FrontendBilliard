@@ -101,6 +101,30 @@ export const checkOutBooking = async (bookingId) => {
   }
 };
 
+// Tạo PayOS payment link cho thanh toán kết thúc (Playing -> Completed)
+export const createPayOSBookingCheckoutPayment = async (bookingId) => {
+  try {
+    const response = await api.post(
+      `/bookings/${bookingId}/checkout/payos/create-payment`,
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error in createPayOSBookingCheckoutPayment:", error);
+    throw error;
+  }
+};
+
+// Verify PayOS thanh toán kết thúc (dùng khi redirect về frontend)
+export const verifyBookingPayOSCheckoutPayment = async (orderCode) => {
+  try {
+    const response = await api.post("/bookings/payos/checkout/verify", { orderCode });
+    return response.data;
+  } catch (error) {
+    console.error("Error in verifyBookingPayOSCheckoutPayment:", error);
+    throw error;
+  }
+};
+
 // Nhân viên tạo đặt bàn trực tiếp (walk-in) cho khách đến quán
 export const createWalkInBooking = async (data) => {
   try {
@@ -181,6 +205,8 @@ export const bookingService = {
   createPayOSBookingPayment,
   verifyBookingPayOSPayment,
   checkOutBooking,
+  createPayOSBookingCheckoutPayment,
+  verifyBookingPayOSCheckoutPayment,
   getBookingServices,
   addServiceToBooking,
   updateBookingServiceQuantity,
