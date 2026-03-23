@@ -170,6 +170,17 @@ export const extendBooking = async (bookingId, minutes) => {
   }
 };
 
+// Đổi bàn
+export const changeTable = async (bookingId, newTableId) => {
+  try {
+    const response = await api.post(`/bookings/${bookingId}/change-table`, { new_table_id: newTableId });
+    return response.data;
+  } catch (error) {
+    console.error("Error in changeTable:", error);
+    throw error;
+  }
+};
+
 export const bookingService = {
   createBooking,
   cancelHold,
@@ -186,6 +197,7 @@ export const bookingService = {
   updateBookingServiceQuantity,
   deleteBookingService,
   extendBooking,
+  changeTable,
 };
 
 export default bookingService;
