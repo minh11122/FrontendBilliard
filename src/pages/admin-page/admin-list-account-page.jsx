@@ -97,6 +97,7 @@ export const AccountManagement = () => {
 
   return (
     <div className="p-6 space-y-6">
+      <Toaster position="top-right" />
       {/* Title */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Quản lý tài khoản</h1>
@@ -167,8 +168,18 @@ export const AccountManagement = () => {
               >
                 {/* User */}
                 <td className="px-4 py-3 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center">
-                    <User className="h-4 w-4 text-slate-500" />
+                  <div className="w-9 h-9 rounded-full overflow-hidden bg-slate-100">
+                    {acc.avatar_url ? (
+                      <img
+                        src={acc.avatar_url}
+                        alt="avatar"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <User className="h-4 w-4 text-slate-500" />
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -208,7 +219,7 @@ export const AccountManagement = () => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleBan(acc._id);
+                      handleBan(acc._id, acc.status);
                     }}
                     className={`px-2 py-1 text-xs rounded ${
                       acc.status === "BANNED"
@@ -271,6 +282,91 @@ export const AccountManagement = () => {
           </button>
         </div>
       </div>
+
+      {showModal && selectedAccount && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+          onClick={() => setShowModal(false)}
+        >
+          <div
+            className="bg-white w-[420px] rounded-2xl shadow-xl p-6 space-y-5 animate-fadeIn"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full overflow-hidden bg-slate-100">
+                {selectedAccount.avatar_url ? (
+                  <img
+                    src={selectedAccount.avatar_url}
+                    alt="avatar"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-emerald-600 text-xl font-bold">
+                    {selectedAccount.fullname?.charAt(0) || "U"}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <h2 className="text-lg font-semibold">
+                  {selectedAccount.fullname}
+                </h2>
+                <p className="text-sm text-slate-500">
+                  {selectedAccount.email}
+                </p>
+              </div>
+            </div>
+
+            {/* Info */}
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="col-span-2">
+                <p className="text-slate-400">Số điện thoại</p>
+                <p className="font-medium">
+                  {selectedAccount.phone || "Không có"}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-slate-400">Role</p>
+                <p className="font-medium">{selectedAccount.role_id?.name}</p>
+              </div>
+
+              <div>
+                <p className="text-slate-400">Trạng thái</p>
+                <span
+                  className={`inline-block px-2 py-1 text-xs rounded-full mt-1 ${
+                    selectedAccount.status === "ACTIVE"
+                      ? "bg-green-100 text-green-600"
+                      : selectedAccount.status === "BANNED"
+                        ? "bg-red-100 text-red-600"
+                        : "bg-yellow-100 text-yellow-600"
+                  }`}
+                >
+                  {selectedAccount.status}
+                </span>
+              </div>
+
+              <div className="col-span-2">
+                <p className="text-slate-400">Ngày tạo</p>
+                <p className="font-medium">
+                  {new Date(selectedAccount.created_at).toLocaleString()}
+                </p>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-2 pt-3 border-t">
+              <button
+                onClick={() => setShowModal(false)}
+                className="px-4 py-2 text-sm bg-slate-100 hover:bg-slate-200 rounded-lg"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

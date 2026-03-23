@@ -1,11 +1,12 @@
 import { useState, useContext } from "react";
-import { ChevronDown, Moon, User, LogOut } from "lucide-react";
+import { ChevronDown, Moon, User, LogOut,Bell  } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { AuthContext } from "@/context/AuthContext";
 
 export const HeaderHome = () => {
   const [openMenu, setOpenMenu] = useState(false);
   const [openUserMenu, setOpenUserMenu] = useState(false);
+  const [openNoti, setOpenNoti] = useState(false);
   const navigate = useNavigate();
 
   const { user, logout } = useContext(AuthContext);
@@ -16,10 +17,14 @@ export const HeaderHome = () => {
     navigate("/");
   };
 
+  const [notifications, setNotifications] = useState([
+  { id: 1, text: "Bạn đã đặt bàn thành công", read: false },
+  { id: 2, text: "Có giải đấu mới", read: false },
+]);
+
   return (
     <header className="w-full bg-white border-b shadow-sm relative z-[9999]">
       <div className="container mx-auto px-6 py-3 flex items-center justify-between">
-
         {/* Logo */}
         <Link to="/" className="hover:text-green-500">
           <div className="flex items-center gap-2 font-bold text-xl">
@@ -83,7 +88,45 @@ export const HeaderHome = () => {
           <button className="p-2 rounded-lg hover:bg-gray-100">
             <Moon size={18} />
           </button>
+          {user && (
+            <div className="relative">
+              <button
+                onClick={() => setOpenNoti(!openNoti)}
+                className="p-2 rounded-lg hover:bg-gray-100 relative"
+              >
+                <Bell size={18} />
 
+                {/* Badge */}
+                {notifications.some((n) => !n.read) && (
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+                )}
+              </button>
+
+              {/* Dropdown */}
+              {openNoti && (
+                <div className="absolute right-0 mt-2 w-72 bg-white border rounded-xl shadow-lg py-2">
+                  <p className="px-4 py-2 text-sm font-semibold text-gray-700">
+                    Thông báo
+                  </p>
+
+                  {notifications.length === 0 ? (
+                    <p className="px-4 py-2 text-sm text-gray-500">
+                      Không có thông báo
+                    </p>
+                  ) : (
+                    notifications.map((n) => (
+                      <div
+                        key={n.id}
+                        className="px-4 py-2 text-sm hover:bg-gray-50 cursor-pointer"
+                      >
+                        {n.text}
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           {/* Nếu đã đăng nhập */}
           {user ? (
             <div className="relative">
