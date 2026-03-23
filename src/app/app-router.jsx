@@ -40,7 +40,6 @@ import {
   StaffClubPageBooking,
   StaffClubPageStatic,
   StaffClubPageTournament,
-  StaffCheckoutSuccessPage,
   SystemStaff,
   SystemStaff1,
   SystemStaff2,
@@ -144,7 +143,6 @@ export const router = createBrowserRouter([
         children: [
           { path: "dashboard", element: <StaffClubPageStatic /> },
           { path: "tables", element: <StaffClubPageManagerTable /> },
-          { path: "checkout-success", element: <StaffCheckoutSuccessPage /> },
           { path: "bookings", element: <StaffClubPageBooking /> },
           { path: "tournaments", element: <StaffClubPageTournament /> },
         ],
