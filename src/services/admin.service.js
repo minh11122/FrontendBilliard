@@ -11,3 +11,9 @@ export const getAllClubs = (params) => {
 export const getAllSubscriptions = (params) => {
   return api.get("/admin/subscriptions", { params });
 };
+
+export const toggleBanAccount = (id) =>
+  api.patch(`/admin/accounts/${id}/toggle-ban`);
+
+export const deleteAccount = (id) =>
+  api.patch(`/admin/accounts/${id}/delete`);
