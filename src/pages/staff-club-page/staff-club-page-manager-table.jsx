@@ -212,7 +212,7 @@ const getTableDerivedStatus = (table, dateFilter, bookingsForTable) => {
 // ─────────────────────────────────────────────
 //  Modal
 // ─────────────────────────────────────────────
-const TableDetailModal = ({ table, booking, isBookingActive, onClose, onStatusChange, onCheckout, onRefresh }) => {
+const TableDetailModal = ({ table, booking, isBookingActive, allTables, onClose, onStatusChange, onCheckout, onRefresh }) => {
   if (!table) return null;
 
   const [loading, setLoading] = useState(false);
@@ -222,6 +222,8 @@ const TableDetailModal = ({ table, booking, isBookingActive, onClose, onStatusCh
   const [fetchingServices, setFetchingServices] = useState(false);
   const [showExtendPanel, setShowExtendPanel] = useState(false);
   const [extendMinutes, setExtendMinutes] = useState(30);
+  const [showChangeTablePanel, setShowChangeTablePanel] = useState(false);
+  const [selectedNewTable, setSelectedNewTable] = useState("");
   const [currentTime, setCurrentTime] = useState(new Date());
 
   const isTableAvailable = !booking && table.status === "Available";
@@ -315,6 +317,23 @@ const TableDetailModal = ({ table, booking, isBookingActive, onClose, onStatusCh
       if (onRefresh) await onRefresh();
     } catch (e) {
       toast.error(e.response?.data?.message || "Không thể gia hạn");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChangeTable = async () => {
+    if (!selectedNewTable) return toast.error("Chọn bàn để chuyển đến");
+    
+    try {
+      setLoading(true);
+      await bookingService.changeTable(booking._id, selectedNewTable);
+      toast.success("Chuyển bàn thành công");
+      setShowChangeTablePanel(false);
+      onClose();
+      if (onRefresh) await onRefresh();
+    } catch (e) {
+      toast.error(e.response?.data?.message || "Không thể chuyển bàn");
     } finally {
       setLoading(false);
     }
@@ -461,7 +480,11 @@ const TableDetailModal = ({ table, booking, isBookingActive, onClose, onStatusCh
                 <div className="space-y-4">
                   <div className="grid grid-cols-3 gap-3">
                     <button 
-                      onClick={() => setShowOrderPanel(!showOrderPanel)}
+                      onClick={() => {
+                        setShowOrderPanel(!showOrderPanel);
+                        setShowExtendPanel(false);
+                        setShowChangeTablePanel(false);
+                      }}
                       className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${showOrderPanel ? 'bg-green-600 border-green-600 text-white shadow-lg' : 'bg-white border-gray-200 text-green-600 hover:bg-green-50'}`}
                     >
                       <ShoppingCart size={24} />
@@ -471,13 +494,21 @@ const TableDetailModal = ({ table, booking, isBookingActive, onClose, onStatusCh
                       onClick={() => {
                         setShowExtendPanel(!showExtendPanel);
                         setShowOrderPanel(false);
+                        setShowChangeTablePanel(false);
                       }}
                       className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${showExtendPanel ? 'bg-green-600 border-green-600 text-white shadow-lg' : 'bg-white border-gray-200 text-green-600 hover:bg-green-50'}`}
                     >
                       <RotateCcw size={24} />
                       <span className="text-[11px] font-bold uppercase">GIA HẠN</span>
                     </button>
-                    <button className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl border border-gray-200 bg-white text-green-600 hover:bg-green-50 transition-all">
+                    <button 
+                      onClick={() => {
+                        setShowChangeTablePanel(!showChangeTablePanel);
+                        setShowOrderPanel(false);
+                        setShowExtendPanel(false);
+                      }}
+                      className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${showChangeTablePanel ? 'bg-green-600 border-green-600 text-white shadow-lg' : 'bg-white border-gray-200 text-green-600 hover:bg-green-50'}`}
+                    >
                       <ArrowLeftRight size={24} />
                       <span className="text-[11px] font-bold uppercase">ĐỔI BÀN</span>
                     </button>
@@ -513,6 +544,34 @@ const TableDetailModal = ({ table, booking, isBookingActive, onClose, onStatusCh
                           disabled={loading || extendMinutes <= 0}
                         >
                           Lưu
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {showChangeTablePanel && (
+                    <div className="border border-green-100 rounded-xl p-4 bg-green-50/30 animate-in slide-in-from-top-2 duration-200">
+                      <h4 className="font-bold text-green-800 text-sm mb-3">Chọn bàn để chuyển đến</h4>
+                      <div className="flex items-center gap-2">
+                        <Select value={selectedNewTable} onValueChange={setSelectedNewTable}>
+                          <SelectTrigger className="w-full bg-white h-9 border-gray-200">
+                             <SelectValue placeholder="Bàn trống..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                             {allTables?.filter(t => t.status === "Available").map(t => (
+                               <SelectItem key={t._id} value={t._id}>
+                                  Bàn {t.table_number} ({t.table_type_id?.name || "Bàn"})
+                               </SelectItem>
+                             ))}
+                          </SelectContent>
+                        </Select>
+                        <Button 
+                          size="sm" 
+                          className="bg-green-600 hover:bg-green-700 h-9 px-4 font-bold shrink-0 text-white"
+                          onClick={handleChangeTable}
+                          disabled={loading || !selectedNewTable}
+                        >
+                          Xác nhận
                         </Button>
                       </div>
                     </div>
@@ -886,9 +945,11 @@ export const StaffClubPageManagerTable = () => {
   };
 
   const counts = { all: tables.length, playing: 0, booked: 0, holding: 0, available: 0, maintenance: 0 };
+  const availableTables = [];
   tables.forEach(t => {
      const ds = getTableDerivedStatus(t, currentDate, bookings.filter(b => (b.table_id?._id || b.table_id) === t._id));
      if (counts[ds] !== undefined) counts[ds]++;
+     if (ds === "available") availableTables.push(t);
   });
 
   return (
@@ -898,6 +959,7 @@ export const StaffClubPageManagerTable = () => {
           table={modalTarget.table}
           booking={modalTarget.booking}
           isBookingActive={modalTarget.isBookingActive}
+          allTables={availableTables}
           onClose={() => setModalTarget(null)}
           onStatusChange={handleStatusChange}
           onCheckout={handleCheckout}
@@ -1036,8 +1098,12 @@ export const StaffClubPageManagerTable = () => {
                               const bMeta = STATUS_META[booking.status.toLowerCase()] || STATUS_META.completed;
                               return (
                                 <div key={booking._id} className={`absolute top-2 bottom-2 rounded-lg p-2 border overflow-hidden cursor-pointer transition-transform hover:scale-[1.01] hover:shadow-md z-10 flex flex-col justify-center ${bMeta.blockClass}`} style={{ left, width }} onClick={() => setModalTarget({ table, booking, isBookingActive: true })}>
-                                   <div className="flex items-center justify-between gap-2 max-w-full"><span className="font-bold text-[13px] truncate">{booking.account_id?.fullname || booking.guest_name || "Khách"}</span></div>
-                                   <span className="text-[11px] opacity-80 mt-[2px] truncate font-semibold">{formatTime(booking.start_time)} - {booking.status === "Playing" ? minutesToTime(currentTime.getHours()*60 + currentTime.getMinutes()) : formatTime(booking.end_time)}</span>
+                                   <div className="flex items-center justify-between gap-2 max-w-full"><span className="font-bold text-[13px] truncate">{booking.guest_name || booking.account_id?.fullname || "Khách"}</span></div>
+                                   <span className="text-[11px] opacity-80 mt-[2px] truncate font-semibold">
+                                      {booking.status === "Playing" && booking.guest_name
+                                         ? `${formatTime(booking.start_time)} - Đang chơi`
+                                         : `${formatTime(booking.start_time)} - ${formatTime(booking.end_time)}`}
+                                   </span>
                                 </div>
                               );
                            })}

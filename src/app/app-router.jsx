@@ -18,6 +18,7 @@ import {
   ForgotPasswordForm,
   HomePage,
   TournamentPage,
+  TournamentDetailPage,
   BookingPage,
   ClubDetailPage,
   PaymentPage,
@@ -54,7 +55,10 @@ import {
   OwnerUpdateEmployeePage,
   AmenitiesPage,
   OwnerResubmitClubPage,
-  OwnerOnboardingPage
+  OwnerOnboardingPage,
+  OwnerTournamentListPage,
+  OwnerCreateTournamentPage,
+  OwnerEditTournamentPage
 } from "@/pages";
 
 export const router = createBrowserRouter([
@@ -79,6 +83,7 @@ export const router = createBrowserRouter([
         children: [
           { path: "", element: <HomePage /> },
           { path: "/tournament", element: <TournamentPage /> },
+          { path: "/tournament/:id", element: <TournamentDetailPage /> },
           { path: "/booking", element: <BookingPage /> },
           { path: "/booking/:id", element: <ClubDetailPage /> },
           { path: "/payment/:bookingId", element: <PaymentPage /> },
@@ -135,6 +140,9 @@ export const router = createBrowserRouter([
           { path: "employees/create", element: <OwnerCreateEmployeePage /> },
           { path: "employees/edit/:id", element: <OwnerUpdateEmployeePage /> },
           { path: "amenities", element: <AmenitiesPage /> },
+          { path: "tournaments", element: <OwnerTournamentListPage /> },
+          { path: "tournaments/create", element: <OwnerCreateTournamentPage /> },
+          { path: "tournaments/edit/:id", element: <OwnerEditTournamentPage /> },
         ],
       },
       {

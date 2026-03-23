@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
   CheckCircle2, ChevronRight, CreditCard, Package, Image as ImageIcon,
   Users, TableProperties, ConciergeBell, Sparkles, Store, Loader2, X, Plus, Upload
 } from "lucide-react";
+import { completeOnboarding, getClubBank, saveClubBank } from "@/services/club.service";
 import api from "@/lib/axios";
-import { completeOnboarding, getClubBank, saveClubBank, getSubscriptions } from "@/services/club.service";
 import { createTable, getTableTypes } from "@/services/billiardTable.service";
 import { staffClubService } from "@/services/staff-club.service";
 import { uploadImages } from "@/utils/cloudinary";
@@ -118,19 +118,68 @@ const PLAN_FEATURES = {
   pro: ["Tất cả tính năng Basic", "+ Quản lý Giải đấu", "+ Đăng bài quảng cáo"],
 };
 
-function StepSubscription({ clubId, selectedPlan, onSelect, onNext }) {
+function StepSubscription({ clubId, selectedPlan, onSelect, onNext, onBack }) {
   const [plans, setPlans] = useState([]);
+  const [currentSub, setCurrentSub] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getSubscriptions().then(res => {
-      if (res?.success) setPlans(res.data);
+    Promise.all([
+      api.get("/subscriptions"),
+      api.get(`/subscriptions/current?club_id=${clubId}`)
+    ]).then(([resPlans, resCurrent]) => {
+      if (resPlans.data?.success) setPlans(resPlans.data.data);
+      if (resCurrent.data?.success && resCurrent.data.data) {
+        setCurrentSub(resCurrent.data.data);
+        if (resCurrent.data.data.subscription_id?.name) {
+          // Find the key like "basic", "pro" from full name
+          const subName = resCurrent.data.data.subscription_id.name.toLowerCase();
+          const key = ["free", "basic", "pro"].find(k => subName.includes(k)) || "free";
+          onSelect(key);
+        }
+      }
     }).catch(() => {}).finally(() => setLoading(false));
-  }, []);
+  }, [clubId, onSelect]);
 
   const getPrice = (name) => {
     const found = plans.find(p => p.name?.toLowerCase().includes(name));
     return found ? found.price?.toLocaleString("vi-VN") + " đ/tháng" : "---";
+  };
+
+  const handleConfirm = async () => {
+    const plan = plans.find(p => p.name?.toLowerCase().includes(selectedPlan));
+    
+    // Check if they already purchased this exact plan and it's active
+    const alreadyPurchased = currentSub && 
+                             currentSub.subscription_id?._id === plan?._id && 
+                             currentSub.status === "Active";
+    
+    // If it's a paid plan and not yet purchased
+    if (plan && plan.price > 0 && !alreadyPurchased) {
+      try {
+        const returnUrl = window.location.origin + `/owner/onboarding/${clubId}?step=3`;
+        const cancelUrl = window.location.origin + `/owner/onboarding/${clubId}?step=2`;
+        
+        localStorage.setItem(`pending_sub_${clubId}`, plan._id);
+
+        const res = await api.post("/subscriptions/payos/create-payment", {
+          subscription_id: plan._id,
+          club_id: clubId,
+          returnUrl,
+          cancelUrl
+        });
+
+        if (res.data.success && res.data.data.checkoutUrl) {
+          window.location.href = res.data.data.checkoutUrl;
+          return; // Wait for redirect
+        }
+      } catch (err) {
+        toast.error("Lỗi khi tạo mã thanh toán, vui lòng thử lại.");
+        return;
+      }
+    }
+    
+    onNext();
   };
 
   const planCards = [
@@ -153,11 +202,17 @@ function StepSubscription({ clubId, selectedPlan, onSelect, onNext }) {
         {planCards.map(plan => {
           const c = colorMap[plan.color];
           const isActive = selectedPlan === plan.key;
+          const isPurchased = currentSub && 
+                              currentSub.subscription_id?.name?.toLowerCase().includes(plan.key) && 
+                              currentSub.status === "Active";
           return (
             <div key={plan.key} onClick={() => onSelect(plan.key)}
               className={`rounded-xl border-2 p-5 cursor-pointer transition-all ${isActive ? c.active : c.border + " hover:shadow-md"}`}>
-              <span className={`text-xs font-bold px-2 py-1 rounded-full ${c.badge}`}>{plan.label}</span>
-              <p className="mt-3 text-xl font-black text-gray-900">{plan.price}</p>
+              <div className="flex justify-between items-center mb-3">
+                <span className={`text-xs font-bold px-2 py-1 rounded-full ${c.badge}`}>{plan.label}</span>
+                {isPurchased && <span className="text-xs bg-green-100 text-green-700 font-bold px-2 py-1 rounded-full flex items-center gap-1"><CheckCircle2 size={12}/> Đã mua</span>}
+              </div>
+              <p className="text-xl font-black text-gray-900">{plan.price}</p>
               <p className="text-xs text-gray-500 mt-1 mb-4">{plan.desc}</p>
               <ul className="space-y-1.5">
                 {PLAN_FEATURES[plan.key].map((f, i) => (
@@ -176,20 +231,40 @@ function StepSubscription({ clubId, selectedPlan, onSelect, onNext }) {
           Gói Free giới hạn một số tính năng. Bạn có thể nâng cấp bất kỳ lúc nào trong Cài đặt.
         </p>
       )}
-      <button onClick={onNext} disabled={!selectedPlan} className="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition disabled:opacity-60 flex items-center justify-center gap-2">
-        <ChevronRight size={18} />
-        Xác nhận gói & tiếp tục
-      </button>
+      <div className="flex gap-3">
+        <button onClick={onBack} className="flex-1 py-3 border border-gray-200 text-gray-600 font-semibold rounded-xl hover:bg-gray-50 transition flex items-center justify-center gap-2">
+          Quay lại
+        </button>
+        <button onClick={handleConfirm} disabled={!selectedPlan} className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition disabled:opacity-60 flex items-center justify-center gap-2">
+          <ChevronRight size={18} />
+          {(() => {
+            const currentSelectedPlan = plans.find(p => p.name?.toLowerCase().includes(selectedPlan));
+            const isPurchased = currentSelectedPlan && currentSub && currentSub.subscription_id?._id === currentSelectedPlan._id && currentSub.status === "Active";
+            if (isPurchased || !currentSelectedPlan || currentSelectedPlan.price === 0) return "Tiếp tục";
+            return "Thanh toán & tiếp tục";
+          })()}
+        </button>
+      </div>
     </div>
   );
 }
 
 // ─── Step 3: Ảnh quán ─────────────────────────────────────────────────────
-function StepClubImages({ clubId, onNext }) {
+function StepClubImages({ clubId, onNext, onBack }) {
   const fileInputRef = useRef(null);
   const [files, setFiles] = useState([]);
   const [previews, setPreviews] = useState([]);
+  const [existingImages, setExistingImages] = useState([]);
   const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    // Fetch existing images to show if user comes back
+    api.get(`/clubs/${clubId}`).then(res => {
+      if (res.data?.success && res.data.data.images?.length > 0) {
+        setExistingImages(res.data.data.images.map(img => img.image_url));
+      }
+    }).catch(() => {});
+  }, [clubId]);
 
   const handleFiles = (e) => {
     const selected = Array.from(e.target.files);
@@ -228,6 +303,17 @@ function StepClubImages({ clubId, onNext }) {
 
   return (
     <div className="space-y-5">
+      {existingImages.length > 0 && previews.length === 0 && (
+         <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-3">
+           <p className="text-sm text-blue-800 font-medium">Quán đã có {existingImages.length} ảnh được lưu.</p>
+           <p className="text-xs text-blue-600 mt-1">Lưu ý: Nếu tải lên ảnh mới, các ảnh cũ sẽ bị thay thế.</p>
+           <div className="flex gap-2 mt-2 overflow-x-auto">
+             {existingImages.map((src, idx) => (
+               <img key={idx} src={src} className="h-16 w-24 object-cover rounded shadow-sm" alt="saved"/>
+             ))}
+           </div>
+         </div>
+      )}
       {previews.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {previews.map((src, idx) => (
@@ -251,24 +337,54 @@ function StepClubImages({ clubId, onNext }) {
         </button>
       )}
       <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFiles} />
-      <button onClick={handleUpload} disabled={uploading || files.length === 0}
-        className="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition disabled:opacity-60 flex items-center justify-center gap-2">
-        {uploading ? <Loader2 size={18} className="animate-spin" /> : <ChevronRight size={18} />}
-        {uploading ? "Đang upload..." : "Lưu ảnh & tiếp tục"}
-      </button>
+      <div className="flex gap-3">
+        <button onClick={onBack} className="flex-1 py-3 border border-gray-200 text-gray-600 font-semibold rounded-xl hover:bg-gray-50 transition flex items-center justify-center gap-2">
+          Quay lại
+        </button>
+        {files.length === 0 && existingImages.length > 0 ? (
+          <button onClick={onNext} className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-2">
+            Tiếp tục <ChevronRight size={18} />
+          </button>
+        ) : (
+          <button onClick={handleUpload} disabled={uploading || files.length === 0}
+            className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition disabled:opacity-60 flex items-center justify-center gap-2">
+            {uploading ? <Loader2 size={18} className="animate-spin" /> : <ChevronRight size={18} />}
+            {uploading ? "Đang upload..." : "Lưu ảnh & tiếp tục"}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
 
 // ─── Step 4: Thêm nhân viên ─────────────────────────────────────────────────
-function StepAddStaff({ clubId, onNext }) {
-  const [form, setForm] = useState({ username: "", password: "", fullname: "", phone: "", email: "" });
+function StepAddStaff({ clubId, onNext, onBack }) {
+  const [form, setForm] = useState({ password: "", fullname: "", phone: "", email: "" });
   const [saving, setSaving] = useState(false);
   const [added, setAdded] = useState([]);
+  const [existingCount, setExistingCount] = useState(0);
+
+  useEffect(() => {
+    staffClubService.getActiveStaff(clubId).then(res => {
+      if (res.data?.data) {
+        setExistingCount(res.data.data.length);
+      }
+    }).catch(() => {});
+  }, [clubId, added]);
 
   const handleAdd = async () => {
-    if (!form.username || !form.password || !form.fullname) {
-      toast.error("Vui lòng nhập Tên đăng nhập, Mật khẩu và Họ tên nhân viên");
+    if (!form.password || !form.fullname || !form.email) {
+      toast.error("Vui lòng nhập Họ tên, Email và Mật khẩu nhân viên");
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) {
+      toast.error("Email không hợp lệ");
+      return;
+    }
+    const phoneRegex = /^(0|\+84)[0-9]{9}$/;
+    if (form.phone && !phoneRegex.test(form.phone)) {
+      toast.error("Số điện thoại không hợp lệ");
       return;
     }
     setSaving(true);
@@ -276,7 +392,7 @@ function StepAddStaff({ clubId, onNext }) {
       await staffClubService.createStaff({ ...form, club_id: clubId });
       toast.success(`Đã thêm nhân viên: ${form.fullname}`);
       setAdded(prev => [...prev, form.fullname]);
-      setForm({ username: "", password: "", fullname: "", phone: "", email: "" });
+      setForm({ password: "", fullname: "", phone: "", email: "" });
     } catch (e) {
       toast.error(e.response?.data?.message || "Thêm nhân viên thất bại");
     } finally {
@@ -288,17 +404,24 @@ function StepAddStaff({ clubId, onNext }) {
 
   return (
     <div className="space-y-4">
+      {existingCount > 0 && (
+         <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+           <p className="text-sm font-semibold text-blue-700 flex items-center gap-1">
+             <CheckCircle2 size={16} /> Quán đang có {existingCount} nhân viên hoạt động.
+           </p>
+         </div>
+      )}
       {added.length > 0 && (
         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-          <p className="text-xs font-semibold text-green-700 mb-1">Đã thêm ({added.length}):</p>
+          <p className="text-xs font-semibold text-green-700 mb-1">Vừa thêm trong phiên này ({added.length}):</p>
           {added.map((n, i) => <p key={i} className="text-sm text-green-800 flex items-center gap-1"><CheckCircle2 size={14} />{n}</p>)}
         </div>
       )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Tên đăng nhập <span className="text-red-500">*</span></label>
-          <input className={inputCls} placeholder="username" value={form.username}
-            onChange={e => setForm(p => ({ ...p, username: e.target.value }))} />
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Họ tên <span className="text-red-500">*</span></label>
+          <input className={inputCls} placeholder="Nguyễn Văn A" value={form.fullname}
+            onChange={e => setForm(p => ({ ...p, fullname: e.target.value }))} />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">Mật khẩu <span className="text-red-500">*</span></label>
@@ -306,28 +429,26 @@ function StepAddStaff({ clubId, onNext }) {
             onChange={e => setForm(p => ({ ...p, password: e.target.value }))} />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Họ tên <span className="text-red-500">*</span></label>
-          <input className={inputCls} placeholder="Nguyễn Văn A" value={form.fullname}
-            onChange={e => setForm(p => ({ ...p, fullname: e.target.value }))} />
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Email <span className="text-red-500">*</span></label>
+          <input className={inputCls} placeholder="nhanvien@email.com" value={form.email}
+            onChange={e => setForm(p => ({ ...p, email: e.target.value }))} />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">Số điện thoại</label>
           <input className={inputCls} placeholder="0901234567" value={form.phone}
             onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} />
         </div>
-        <div className="sm:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
-          <input className={inputCls} placeholder="nhanvien@email.com" value={form.email}
-            onChange={e => setForm(p => ({ ...p, email: e.target.value }))} />
-        </div>
       </div>
       <div className="flex gap-3">
+        <button onClick={onBack} className="flex-1 py-2.5 border border-gray-200 text-gray-600 font-medium rounded-xl hover:bg-gray-50 transition flex items-center justify-center gap-2">
+          Quay lại
+        </button>
         <button onClick={handleAdd} disabled={saving}
           className="flex-1 py-2.5 border-2 border-blue-500 text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition disabled:opacity-60 flex items-center justify-center gap-2">
           {saving ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
-          Thêm nhân viên này
+          Thêm nhân viên
         </button>
-        <button onClick={onNext} disabled={added.length === 0}
+        <button onClick={onNext} disabled={added.length === 0 && existingCount === 0}
           className="flex-1 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition disabled:opacity-60 flex items-center justify-center gap-2">
           <ChevronRight size={16} />
           Xong & tiếp tục
@@ -338,15 +459,32 @@ function StepAddStaff({ clubId, onNext }) {
 }
 
 // ─── Step 5: Thêm bàn bida ────────────────────────────────────────────────
-function StepAddTable({ clubId, onNext, onSkip }) {
+function StepAddTable({ clubId, onNext, onSkip, onBack }) {
   const [types, setTypes] = useState([]);
-  const [form, setForm] = useState({ table_number: "", table_type_id: "", price: "" });
+  const [form, setForm] = useState({ table_number: "", table_type_id: "", price: "", description: "" });
+  const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const fileInputRef = useRef(null);
   const [saving, setSaving] = useState(false);
   const [added, setAdded] = useState([]);
+  const [existingCount, setExistingCount] = useState(0);
 
   useEffect(() => {
     getTableTypes().then(r => { if (r.data.success) setTypes(r.data.data); });
-  }, []);
+    api.get("/tables", { params: { club_id: clubId, limit: 100 } }).then(res => {
+      if (res.data?.success && res.data.data) {
+        setExistingCount(res.data.data.length);
+      }
+    }).catch(() => {});
+  }, [clubId]);
+
+  const handleFile = (e) => {
+    const f = e.target.files[0];
+    if (f) {
+      setFile(f);
+      setPreview(URL.createObjectURL(f));
+    }
+  };
 
   const handleAdd = async () => {
     if (!form.table_number || !form.table_type_id || !form.price) { toast.error("Nhập đủ tên bàn, loại bàn và đơn giá"); return; }
@@ -357,12 +495,20 @@ function StepAddTable({ clubId, onNext, onSkip }) {
       fd.append("table_number", form.table_number);
       fd.append("table_type_id", form.table_type_id);
       fd.append("price", form.price);
+      fd.append("description", form.description);
       fd.append("area", "Khu vực chung");
       fd.append("isActive", true);
+      
+      if (file) {
+         fd.append("images", file);
+      }
+
       await createTable(fd);
       toast.success(`Đã thêm: ${form.table_number}`);
       setAdded(p => [...p, form.table_number]);
-      setForm({ table_number: "", table_type_id: "", price: "" });
+      setForm({ table_number: "", table_type_id: "", price: "", description: "" });
+      setFile(null);
+      setPreview(null);
     } catch (e) {
       toast.error(e.response?.data?.message || "Thêm bàn thất bại");
     } finally { setSaving(false); }
@@ -371,9 +517,16 @@ function StepAddTable({ clubId, onNext, onSkip }) {
   const inputCls = "w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:border-blue-500 outline-none transition text-sm";
   return (
     <div className="space-y-4">
+      {existingCount > 0 && (
+         <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+           <p className="text-sm font-semibold text-blue-700 flex items-center gap-1">
+             <CheckCircle2 size={16} /> Quán đang có {existingCount} bàn hoạt động.
+           </p>
+         </div>
+      )}
       {added.length > 0 && (
         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-          <p className="text-xs font-semibold text-green-700 mb-1">Đã thêm ({added.length} bàn):</p>
+          <p className="text-xs font-semibold text-green-700 mb-1">Vừa thêm trong phiên này ({added.length} bàn):</p>
           {added.map((n, i) => <p key={i} className="text-sm text-green-800 flex items-center gap-1"><CheckCircle2 size={14} />{n}</p>)}
         </div>
       )}
@@ -393,16 +546,42 @@ function StepAddTable({ clubId, onNext, onSkip }) {
           <label className="block text-sm font-medium text-gray-700 mb-1.5">Đơn giá (đ/giờ)</label>
           <input className={inputCls} type="number" placeholder="0" value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} />
         </div>
+        <div className="sm:col-span-3">
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Mô tả bàn</label>
+          <input className={inputCls} placeholder="Mô tả..." value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} />
+        </div>
+        <div className="sm:col-span-3">
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Ảnh bàn (tùy chọn)</label>
+          {preview ? (
+            <div className="relative group aspect-video rounded-xl overflow-hidden border border-gray-200 w-48">
+              <img src={preview} alt="" className="w-full h-full object-cover" />
+              <button type="button" onClick={() => { setFile(null); setPreview(null); }}
+                className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                <X size={12} />
+              </button>
+            </div>
+          ) : (
+            <button type="button" onClick={() => fileInputRef.current?.click()}
+              className="w-48 h-24 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1.5 text-gray-400 hover:border-blue-400 hover:text-blue-400 transition-Colors cursor-pointer">
+              <Upload size={24} />
+              <span className="text-sm font-medium">Thêm ảnh bàn</span>
+            </button>
+          )}
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+        </div>
       </div>
       <div className="flex gap-3">
+        <button onClick={onBack} className="flex-1 py-2.5 border border-gray-200 text-gray-600 font-medium rounded-xl hover:bg-gray-50 transition flex items-center justify-center gap-2">
+          Quay lại
+        </button>
         <button onClick={onSkip} className="flex-1 py-2.5 border border-gray-200 text-gray-500 font-medium rounded-xl hover:bg-gray-50 transition">
           Bỏ qua
         </button>
         <button onClick={handleAdd} disabled={saving}
           className="flex-1 py-2.5 border-2 border-blue-500 text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition disabled:opacity-60 flex items-center justify-center gap-2">
-          <Plus size={16} />Thêm bàn này
+          {saving ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}Thêm bàn này
         </button>
-        <button onClick={onNext} disabled={added.length === 0}
+        <button onClick={onNext} disabled={added.length === 0 && existingCount === 0}
           className="flex-1 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition disabled:opacity-60 flex items-center justify-center gap-2">
           <ChevronRight size={16} />Xong
         </button>
@@ -412,10 +591,34 @@ function StepAddTable({ clubId, onNext, onSkip }) {
 }
 
 // ─── Step 6: Thêm dịch vụ ─────────────────────────────────────────────────
-function StepAddService({ clubId, onNext, onSkip }) {
+function StepAddService({ clubId, onNext, onSkip, onBack }) {
   const [form, setForm] = useState({ name: "", price: "", description: "" });
+  const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const fileInputRef = useRef(null);
   const [saving, setSaving] = useState(false);
   const [added, setAdded] = useState([]);
+  const [existingCount, setExistingCount] = useState(0);
+
+  useEffect(() => {
+    api.get("/services", { params: { club_id: clubId, limit: 100 } }).then(res => {
+      if (res.data?.success && res.data.data) {
+        setExistingCount(res.data.data.length);
+      } else {
+        console.warn("[StepAddService] service fetch returned unexpected shape:", res.data);
+      }
+    }).catch((err) => {
+      console.error("[StepAddService] failed to fetch services:", err?.response?.data || err.message);
+    });
+  }, [clubId]);
+
+  const handleFile = (e) => {
+    const f = e.target.files[0];
+    if (f) {
+      setFile(f);
+      setPreview(URL.createObjectURL(f));
+    }
+  };
 
   const handleAdd = async () => {
     if (!form.name || !form.price) { toast.error("Nhập tên và đơn giá dịch vụ"); return; }
@@ -426,10 +629,17 @@ function StepAddService({ clubId, onNext, onSkip }) {
       fd.append("name", form.name);
       fd.append("price", form.price);
       fd.append("description", form.description);
+
+      if (file) {
+         fd.append("images", file);
+      }
+
       await api.post("/services", fd);
       toast.success(`Đã thêm: ${form.name}`);
       setAdded(p => [...p, form.name]);
       setForm({ name: "", price: "", description: "" });
+      setFile(null);
+      setPreview(null);
     } catch (e) {
       toast.error(e.response?.data?.message || "Thêm dịch vụ thất bại");
     } finally { setSaving(false); }
@@ -438,6 +648,13 @@ function StepAddService({ clubId, onNext, onSkip }) {
   const inputCls = "w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:border-blue-500 outline-none transition text-sm";
   return (
     <div className="space-y-4">
+      {existingCount > 0 && (
+         <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+           <p className="text-sm font-semibold text-blue-700 flex items-center gap-1">
+             <CheckCircle2 size={16} /> Quán đang cung cấp {existingCount} dịch vụ.
+           </p>
+         </div>
+      )}
       {added.length > 0 && (
         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
           {added.map((n, i) => <p key={i} className="text-sm text-green-800 flex items-center gap-1"><CheckCircle2 size={14} />{n}</p>)}
@@ -456,13 +673,35 @@ function StepAddService({ clubId, onNext, onSkip }) {
           <label className="block text-sm font-medium text-gray-700 mb-1.5">Mô tả (tùy chọn)</label>
           <input className={inputCls} placeholder="Mô tả ngắn về dịch vụ" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} />
         </div>
+        <div className="sm:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Ảnh dịch vụ (tùy chọn)</label>
+          {preview ? (
+            <div className="relative group aspect-video rounded-xl overflow-hidden border border-gray-200 w-48">
+              <img src={preview} alt="" className="w-full h-full object-cover" />
+              <button type="button" onClick={() => { setFile(null); setPreview(null); }}
+                className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                <X size={12} />
+              </button>
+            </div>
+          ) : (
+            <button type="button" onClick={() => fileInputRef.current?.click()}
+              className="w-48 h-24 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1.5 text-gray-400 hover:border-blue-400 hover:text-blue-400 transition-Colors cursor-pointer">
+              <Upload size={24} />
+              <span className="text-sm font-medium">Thêm ảnh</span>
+            </button>
+          )}
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+        </div>
       </div>
       <div className="flex gap-3">
+        <button onClick={onBack} className="flex-1 py-2.5 border border-gray-200 text-gray-600 font-medium rounded-xl hover:bg-gray-50 transition">
+          Quay lại
+        </button>
         <button onClick={onSkip} className="flex-1 py-2.5 border border-gray-200 text-gray-500 font-medium rounded-xl hover:bg-gray-50 transition">Bỏ qua</button>
         <button onClick={handleAdd} disabled={saving} className="flex-1 py-2.5 border-2 border-blue-500 text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition disabled:opacity-60 flex items-center justify-center gap-2">
-          <Plus size={16} />Thêm
+          {saving ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}Thêm
         </button>
-        <button onClick={onNext} disabled={added.length === 0} className="flex-1 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition disabled:opacity-60 flex items-center justify-center gap-2">
+        <button onClick={onNext} disabled={added.length === 0 && existingCount === 0} className="flex-1 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition disabled:opacity-60 flex items-center justify-center gap-2">
           <ChevronRight size={16} />Xong
         </button>
       </div>
@@ -471,13 +710,41 @@ function StepAddService({ clubId, onNext, onSkip }) {
 }
 
 // ─── Step 7: Tiện ích ─────────────────────────────────────────────────────
-const AMENITY_OPTIONS = ["WiFi", "Điều hòa", "Bãi đỗ xe", "Toilet", "Camera an ninh", "Đồ uống", "Billiard cue cho thuê", "Hệ thống âm thanh"];
+const INITIAL_AMENITY_OPTIONS = ["WiFi", "Điều hòa", "Bãi đỗ xe", "Toilet", "Camera an ninh", "Đồ uống", "Billiard cue cho thuê", "Hệ thống âm thanh"];
 
-function StepAddAmenity({ clubId, onFinish }) {
+function StepAddAmenity({ clubId, onFinish, onBack }) {
   const [selected, setSelected] = useState([]);
+  const [customAmenity, setCustomAmenity] = useState("");
+  const [options, setOptions] = useState(INITIAL_AMENITY_OPTIONS);
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    api.get(`/clubs/${clubId}`).then(res => {
+      if (res.data?.success && res.data.data.amenities) {
+        const existingAmenities = res.data.data.amenities.map(a => a.name);
+        setSelected(existingAmenities);
+        setOptions(p => {
+           const newOpts = [...p];
+           existingAmenities.forEach(a => { if(!newOpts.includes(a)) newOpts.push(a); });
+           return newOpts;
+        });
+      }
+    }).catch(() => {});
+  }, [clubId]);
+
   const toggle = (a) => setSelected(p => p.includes(a) ? p.filter(x => x !== a) : [...p, a]);
+
+  const handleAddCustom = () => {
+    if (!customAmenity.trim()) return;
+    const newAmenity = customAmenity.trim();
+    if (!options.includes(newAmenity)) {
+      setOptions(p => [...p, newAmenity]);
+    }
+    if (!selected.includes(newAmenity)) {
+      setSelected(p => [...p, newAmenity]);
+    }
+    setCustomAmenity("");
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -493,7 +760,7 @@ function StepAddAmenity({ clubId, onFinish }) {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {AMENITY_OPTIONS.map(a => {
+        {options.map(a => {
           const active = selected.includes(a);
           return (
             <button key={a} type="button" onClick={() => toggle(a)}
@@ -504,14 +771,39 @@ function StepAddAmenity({ clubId, onFinish }) {
           );
         })}
       </div>
-      <div className="flex gap-3">
-        <button onClick={onFinish} className="flex-1 py-2.5 border border-gray-200 text-gray-500 font-medium rounded-xl hover:bg-gray-50 transition">
+      
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-2">
+         <p className="text-xs text-blue-700">Lưu ý: Bấm hoàn tất sẽ cập nhật lại toàn bộ danh sách tiện ích của quán dựa theo lựa chọn hiện tại.</p>
+      </div>
+
+      <div className="flex items-center gap-2 mt-2">
+        <input 
+          type="text" 
+          placeholder="Nhập tiện ích khác..." 
+          value={customAmenity}
+          onChange={(e) => setCustomAmenity(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddCustom(); } }}
+          className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-blue-500 outline-none transition text-sm" 
+        />
+        <button 
+          onClick={handleAddCustom}
+          disabled={!customAmenity.trim()}
+          className="px-4 py-2.5 bg-gray-900 text-white font-semibold rounded-xl hover:bg-black transition disabled:opacity-50 flex items-center gap-1 text-sm">
+          <Plus size={16}/> Thêm
+        </button>
+      </div>
+
+      <div className="flex gap-3 pt-2">
+        <button onClick={onBack} className="flex-1 py-3 border border-gray-200 text-gray-600 font-medium rounded-xl hover:bg-gray-50 transition">
+          Quay lại
+        </button>
+        <button onClick={onFinish} className="flex-1 py-3 border border-gray-200 text-gray-500 font-medium rounded-xl hover:bg-gray-50 transition">
           Bỏ qua
         </button>
         <button onClick={handleSave} disabled={saving || selected.length === 0}
           className="flex-1 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition disabled:opacity-60 flex items-center justify-center gap-2">
           {saving ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
-          Hoàn tất thiết lập
+          Hoàn tất
         </button>
       </div>
     </div>
@@ -522,17 +814,38 @@ function StepAddAmenity({ clubId, onFinish }) {
 export default function OwnerOnboardingPage() {
   const { clubId } = useParams();
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(1);
+  const [searchParams] = useSearchParams();
+  const initialStep = Number(searchParams.get("step")) || 1;
+  const [currentStep, setCurrentStep] = useState(initialStep);
   const [selectedPlan, setSelectedPlan] = useState("free");
   const clubName = localStorage.getItem("selected_club_name") || "Quán của bạn";
 
+  useEffect(() => {
+    // Check if returned from PayOS
+    const orderCode = searchParams.get("orderCode");
+    const status = searchParams.get("status");
+    if (orderCode && status === "PAID") {
+      const subId = localStorage.getItem(`pending_sub_${clubId}`);
+      if (subId) {
+        api.post("/subscriptions/payos/verify", {
+           orderCode, subscription_id: subId, club_id: clubId
+        }).then(() => {
+           toast.success("Thanh toán thành công!");
+           localStorage.removeItem(`pending_sub_${clubId}`);
+        }).catch(() => toast.error("Lỗi xác minh thanh toán"));
+      }
+    }
+  }, [searchParams, clubId]);
+
+  const priorStep = () => setCurrentStep(s => Math.max(1, s - 1));
   const next = () => setCurrentStep(s => s + 1);
   const skip = () => setCurrentStep(s => s + 1);
 
   const handleFinish = async () => {
     try {
-      await completeOnboarding(clubId, selectedPlan);
-      localStorage.setItem("selected_club_plan", selectedPlan);
+      const res = await completeOnboarding(clubId, selectedPlan);
+      const realPlan = res?.data?.plan_type || selectedPlan;
+      localStorage.setItem("selected_club_plan", realPlan);
       toast.success("Thiết lập hoàn tất! Chào mừng bạn 🎉");
       navigate("/owner/dashboard");
     } catch (e) {
@@ -599,12 +912,12 @@ export default function OwnerOnboardingPage() {
           </div>
 
           {currentStep === 1 && <StepBankAccount clubId={clubId} onNext={next} />}
-          {currentStep === 2 && <StepSubscription clubId={clubId} selectedPlan={selectedPlan} onSelect={setSelectedPlan} onNext={next} />}
-          {currentStep === 3 && <StepClubImages clubId={clubId} onNext={next} />}
-          {currentStep === 4 && <StepAddStaff clubId={clubId} onNext={next} />}
-          {currentStep === 5 && <StepAddTable clubId={clubId} onNext={next} onSkip={skip} />}
-          {currentStep === 6 && <StepAddService clubId={clubId} onNext={next} onSkip={skip} />}
-          {currentStep === 7 && <StepAddAmenity clubId={clubId} onFinish={handleFinish} />}
+          {currentStep === 2 && <StepSubscription clubId={clubId} selectedPlan={selectedPlan} onSelect={setSelectedPlan} onNext={next} onBack={priorStep} />}
+          {currentStep === 3 && <StepClubImages clubId={clubId} onNext={next} onBack={priorStep} />}
+          {currentStep === 4 && <StepAddStaff clubId={clubId} onNext={next} onBack={priorStep} />}
+          {currentStep === 5 && <StepAddTable clubId={clubId} onNext={next} onSkip={skip} onBack={priorStep} />}
+          {currentStep === 6 && <StepAddService clubId={clubId} onNext={next} onSkip={skip} onBack={priorStep} />}
+          {currentStep === 7 && <StepAddAmenity clubId={clubId} onFinish={handleFinish} onBack={priorStep} />}
         </div>
       </div>
     </div>

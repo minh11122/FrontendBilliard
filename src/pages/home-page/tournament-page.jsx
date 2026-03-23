@@ -1,40 +1,32 @@
+import React, { useState, useEffect } from "react";
 import { Search, MapPin, Calendar, CheckCircle } from "lucide-react";
+import { getPublicTournaments } from "@/services/tournament.service";
+import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
 export const TournamentPage = () => {
-  const tournaments = [
-    {
-      title: "Giải Billiards 9 Bi Mở Rộng - FPT Cup 2023",
-      date: "15/11/2023 - 09:00",
-      club: "CLB Bida Thanh Xuân, Hà Nội",
-      fee: "200.000 VND",
-      status: "upcoming",
-      img: "https://images.unsplash.com/photo-1611599537845-1c7aca0091c0?q=80&w=800",
-    },
-    {
-      title: "Giải Vô Địch Bida Phong Trào Hà Nội",
-      date: "10/11 - 12/11/2023",
-      club: "CLB King Billiards",
-      fee: "Miễn phí",
-      status: "live",
-      img: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=800",
-    },
-    {
-      title: "Thanh Xuân Open - 8 Ball Pool",
-      date: "25/11/2023 - 14:00",
-      club: "CLB Thanh Xuân, Hà Nội",
-      fee: "300.000 VND",
-      status: "upcoming",
-      img: "https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=800",
-    },
-    {
-      title: "Giải Vô Địch CLB Bida Sài Gòn 2022",
-      date: "01/12/2022",
-      club: "CLB Sài Gòn Billiards",
-      fee: "500.000 VND",
-      status: "ended",
-      img: "https://images.unsplash.com/photo-1517649763962-0c623066013b?q=80&w=800",
-    },
-  ];
+  const navigate = useNavigate();
+  const [tournaments, setTournaments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState("all");
+  const [feeFilter, setFeeFilter] = useState("all");
+
+  useEffect(() => {
+    const fetchTournaments = async () => {
+      try {
+        const res = await getPublicTournaments();
+        if (res.success) {
+          setTournaments(res.data);
+        }
+      } catch (err) {
+        toast.error("Không thể tải danh sách giải đấu");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTournaments();
+  }, []);
 
   const statusConfig = {
     upcoming: {
@@ -79,88 +71,124 @@ export const TournamentPage = () => {
             />
             <input
               placeholder="Tìm kiếm giải đấu theo tên, CLB..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-9 pr-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
           </div>
 
-          <div className="flex flex-wrap gap-2 text-sm">
-            <button className="px-3 py-1.5 rounded-lg bg-orange-500 text-white">
+          <div className="flex flex-wrap gap-2 text-sm items-center">
+            <button 
+              onClick={() => setActiveTab("all")}
+              className={`px-3 py-1.5 rounded-lg ${activeTab === "all" ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
               Tất cả
             </button>
-            <button className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600">
-              Sắp diễn ra
-            </button>
-            <button className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600">
+            <button 
+              onClick={() => setActiveTab("live")}
+              className={`px-3 py-1.5 rounded-lg ${activeTab === "live" ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
               Đang diễn ra
             </button>
-            <button className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600">
-              Đã kết thúc
-            </button>
+            <div className="h-6 w-[1px] bg-slate-200 mx-2"></div>
+            <select
+              value={feeFilter}
+              onChange={(e) => setFeeFilter(e.target.value)}
+              className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 outline-none hover:bg-gray-200 cursor-pointer"
+            >
+              <option value="all">Mọi lệ phí</option>
+              <option value="free">Miễn phí</option>
+              <option value="under100">Dưới 100.000đ</option>
+              <option value="100to500">100.000đ - 500.000đ</option>
+              <option value="over500">Trên 500.000đ</option>
+            </select>
           </div>
         </div>
 
         {/* Cards */}
-        <div className="grid md:grid-cols-4 gap-6">
-          {tournaments.map((t, i) => {
-            const cfg = statusConfig[t.status];
-            return (
-              <div
-                key={i}
-                className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition"
-              >
-                <div className="relative">
-                  <img src={t.img} className="h-40 w-full object-cover" />
-                  <span
-                    className={`absolute top-3 right-3 text-xs px-2 py-1 rounded-full ${cfg.color}`}
-                  >
-                    {cfg.label}
-                  </span>
-                </div>
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full"></div>
+          </div>
+        ) : tournaments.length === 0 ? (
+          <div className="text-center py-20 bg-white rounded-2xl">
+            <p className="text-gray-500">Chưa có giải đấu nào.</p>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-4 gap-6">
+            {tournaments
+            .filter((t) => {
+              const matchSearch = t.name?.toLowerCase().includes(search.toLowerCase()) || t.club_id?.name?.toLowerCase().includes(search.toLowerCase());
+              let uiStatus = "upcoming";
+              if (t.status === "InProgress") uiStatus = "live";
+              if (t.status === "Completed") uiStatus = "ended";
 
-                <div className="p-4">
-                  <h3 className="font-semibold text-sm mb-3 line-clamp-2">
-                    {t.title}
-                  </h3>
+              const matchTab = activeTab === "all" ? true : activeTab === uiStatus;
+              
+              let matchFee = true;
+              const fee = t.fee || 0;
+              if (feeFilter === "free") matchFee = fee === 0;
+              if (feeFilter === "under100") matchFee = fee > 0 && fee < 100000;
+              if (feeFilter === "100to500") matchFee = fee >= 100000 && fee <= 500000;
+              if (feeFilter === "over500") matchFee = fee > 500000;
 
-                  <div className="space-y-1 text-xs text-gray-500 mb-4">
-                    <p className="flex gap-1 items-center">
-                      <Calendar size={12} /> {t.date}
-                    </p>
-                    <p className="flex gap-1 items-center">
-                      <MapPin size={12} /> {t.club}
-                    </p>
-                    <p className="flex gap-1 items-center">
-                      <CheckCircle size={12} /> {t.fee}
-                    </p>
-                  </div>
+              return matchSearch && matchTab && matchFee;
+            })
+            .map((t, i) => {
+              // Map db status to ui status
+              let uiStatus = "upcoming";
+              if (t.status === "InProgress") uiStatus = "live";
+              if (t.status === "Completed") uiStatus = "ended";
 
-                  <div className="flex gap-2">
-                    <button className="flex-1 text-xs px-3 py-2 rounded-lg border hover:bg-gray-50">
-                      Chi tiết
-                    </button>
-                    <button
-                      className={`flex-1 text-xs px-3 py-2 rounded-lg ${cfg.buttonStyle}`}
-                      disabled={t.status === "ended"}
+              const cfg = statusConfig[uiStatus];
+              const displayDate = t.play_date ? new Date(t.play_date).toLocaleDateString("vi-VN") : "Đang cập nhật";
+              const displayClub = t.club_id?.name || "Đang cập nhật";
+              const displayFee = t.fee > 0 ? `${t.fee.toLocaleString()} VND` : "Miễn phí";
+              const displayImg = t.banner && t.banner.trim().length > 0 ? t.banner : "https://images.unsplash.com/photo-1611599537845-1c7aca0091c0?q=80&w=800";
+
+              return (
+                <div
+                  key={t._id || i}
+                  className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition"
+                >
+                  <div className="relative">
+                    <img src={displayImg} className="h-40 w-full object-cover" alt="" />
+                    <span
+                      className={`absolute top-3 right-3 text-xs px-2 py-1 rounded-full ${cfg.color}`}
                     >
-                      {cfg.button}
-                    </button>
+                      {cfg.label}
+                    </span>
+                  </div>
+
+                  <div className="p-4">
+                    <h3 className="font-semibold text-sm mb-3 line-clamp-2">
+                      {t.name}
+                    </h3>
+
+                    <div className="space-y-1 text-xs text-gray-500 mb-4">
+                      <p className="flex gap-1 items-center">
+                        <Calendar size={12} /> {displayDate}
+                      </p>
+                      <p className="flex gap-1 items-center">
+                        <MapPin size={12} /> {displayClub}
+                      </p>
+                      <p className="flex gap-1 items-center">
+                        <CheckCircle size={12} /> {displayFee}
+                      </p>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => navigate(`/tournament/${t._id}`)}
+                        className="w-full text-sm font-semibold px-4 py-2.5 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 transition-colors"
+                      >
+                        Xem chi tiết
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Pagination */}
-        <div className="flex justify-center gap-2 mt-10">
-          <button className="w-8 h-8 rounded-lg bg-orange-500 text-white">
-            1
-          </button>
-          <button className="w-8 h-8 rounded-lg bg-gray-100">2</button>
-          <button className="w-8 h-8 rounded-lg bg-gray-100">3</button>
-          <button className="w-8 h-8 rounded-lg bg-gray-100">…</button>
-          <button className="w-8 h-8 rounded-lg bg-gray-100">8</button>
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
