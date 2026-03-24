@@ -1,6 +1,7 @@
 import { useState, useContext } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Package } from "lucide-react";
 import {
   UsersRound,
   UserCheck,
@@ -32,9 +33,9 @@ export const SidebarAdmin = () => {
       icon: UsersRound,
     },
     {
-      name: "Tài khoản chờ duyệt",
+      name: "Gói dịch vụ",
       href: "/admin/list-acc-pending",
-      icon: UserCheck,
+      icon: Package,
     },
     {
       name: "Danh sách cửa hàng",

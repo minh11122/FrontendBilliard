@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Search, Filter, User, ShieldCheck, MoreVertical } from "lucide-react";
+import { Search, Filter, User, ShieldCheck, ChevronLeft, ChevronRight, X, Ban, CheckCircle2, Trash2 } from "lucide-react";
 import { Toaster } from "react-hot-toast";
 import toast from "react-hot-toast";
 import {
@@ -8,6 +8,43 @@ import {
   deleteAccount,
 } from "@/services/admin.service";
 
+const STATUS_STYLE = {
+  ACTIVE: "bg-emerald-100 text-emerald-700 border border-emerald-200",
+  BANNED: "bg-rose-100 text-rose-700 border border-rose-200",
+  PENDING: "bg-amber-100 text-amber-700 border border-amber-200",
+};
+
+const ROLE_COLORS = [
+  "bg-violet-100 text-violet-700",
+  "bg-sky-100 text-sky-700",
+  "bg-teal-100 text-teal-700",
+  "bg-orange-100 text-orange-700",
+];
+
+const roleColorMap = {};
+let roleColorIdx = 0;
+const getRoleColor = (role) => {
+  if (!role) return ROLE_COLORS[0];
+  if (!roleColorMap[role]) {
+    roleColorMap[role] = ROLE_COLORS[roleColorIdx % ROLE_COLORS.length];
+    roleColorIdx++;
+  }
+  return roleColorMap[role];
+};
+
+const Avatar = ({ src, name, size = "sm" }) => {
+  const dim = size === "lg" ? "w-14 h-14 text-xl" : "w-9 h-9 text-sm";
+  return (
+    <div className={`${dim} rounded-full overflow-hidden bg-gradient-to-br from-emerald-100 to-teal-200 flex items-center justify-center shrink-0`}>
+      {src ? (
+        <img src={src} alt="avatar" className="w-full h-full object-cover" />
+      ) : (
+        <span className="font-bold text-emerald-700">{name?.charAt(0)?.toUpperCase() || "U"}</span>
+      )}
+    </div>
+  );
+};
+
 export const AccountManagement = () => {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
@@ -15,42 +52,30 @@ export const AccountManagement = () => {
   const [showModal, setShowModal] = useState(false);
 
   const [accounts, setAccounts] = useState([]);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    totalPages: 1,
-    total: 0,
-  });
+  const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
+  const [loading, setLoading] = useState(false);
 
   const fetchAccounts = async (page = 1) => {
     try {
-      const res = await getAccounts({
-        page,
-        limit: 10,
-        search,
-        role: roleFilter,
-      });
-
+      setLoading(true);
+      const res = await getAccounts({ page, limit: 10, search, role: roleFilter });
       setAccounts(res.data.data);
       setPagination(res.data.pagination);
     } catch (err) {
       console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchAccounts(1);
-  }, []);
+  useEffect(() => { fetchAccounts(1); }, []);
 
   const handleBan = async (id, status) => {
     try {
       await toggleBanAccount(id);
-
-      toast.success(
-        status === "BANNED" ? "Đã bỏ ban tài khoản" : "Đã ban tài khoản",
-      );
-
+      toast.success(status === "BANNED" ? "Đã bỏ ban tài khoản" : "Đã ban tài khoản");
       fetchAccounts(pagination.page);
-    } catch (err) {
+    } catch {
       toast.error("Có lỗi xảy ra!");
     }
   };
@@ -59,307 +84,310 @@ export const AccountManagement = () => {
     toast(
       (t) => (
         <div className="space-y-3">
-          <p className="text-sm font-medium">
-            Bạn chắc chắn muốn xóa tài khoản?
-          </p>
-
+          <p className="text-sm font-semibold text-gray-800">Bạn chắc chắn muốn xóa tài khoản?</p>
           <div className="flex gap-2 justify-end">
-            <button
-              onClick={() => toast.dismiss(t.id)}
-              className="px-3 py-1 text-sm bg-slate-200 rounded"
-            >
-              Hủy
-            </button>
-
+            <button onClick={() => toast.dismiss(t.id)} className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors">Hủy</button>
             <button
               onClick={async () => {
                 try {
                   await deleteAccount(id);
                   toast.success("Đã xóa tài khoản");
                   fetchAccounts(pagination.page);
-                } catch (err) {
-                  toast.error("Xóa thất bại");
-                }
+                } catch { toast.error("Xóa thất bại"); }
                 toast.dismiss(t.id);
               }}
-              className="px-3 py-1 text-sm bg-red-500 text-white rounded"
-            >
-              Xóa
-            </button>
+              className="px-3 py-1.5 text-sm bg-rose-500 hover:bg-rose-600 text-white rounded-lg font-medium transition-colors"
+            >Xóa</button>
           </div>
         </div>
       ),
-      {
-        duration: 5000,
-      },
+      { duration: 5000 }
     );
   };
 
+  const totalPages = pagination.totalPages || 1;
+  const currentPage = pagination.page || 1;
+
+  const pageNumbers = (() => {
+    const pages = [];
+    const delta = 1;
+    for (let i = Math.max(1, currentPage - delta); i <= Math.min(totalPages, currentPage + delta); i++) {
+      pages.push(i);
+    }
+    return pages;
+  })();
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="min-h-screen bg-gray-50/60 p-8">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        .acc-root { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .acc-row { transition: background 0.12s; }
+        .acc-input:focus { outline: none; border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.12); }
+        .modal-overlay { animation: fadeIn 0.18s ease; }
+        .modal-box { animation: slideUp 0.2s ease; }
+        @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+        @keyframes slideUp { from { opacity:0; transform:translateY(16px) } to { opacity:1; transform:translateY(0) } }
+      `}</style>
       <Toaster position="top-right" />
-      {/* Title */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Quản lý tài khoản</h1>
-        <p className="text-sm text-slate-500">
-          Quản lý tất cả tài khoản trong hệ thống
-        </p>
-      </div>
 
-      {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-        {/* Search */}
-        <div className="relative w-full md:w-80">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
-          <input
-            type="text"
-            placeholder="Tìm kiếm email hoặc tên..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2 text-sm"
-          />
+      <div className="acc-root max-w-6xl mx-auto space-y-6">
+
+        {/* ── Header ── */}
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600 mb-1">Quản lý</p>
+          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Tài khoản hệ thống</h1>
         </div>
 
-        {/* Role filter */}
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-slate-400" />
-          <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            className="border rounded-lg px-3 py-2 text-sm"
-          >
-            <option value="ALL">Tất cả</option>
-            <option value="CUSTOMER">Customer</option>
-            <option value="STAFF_CLUB">Staff</option>
-            <option value="OWNER">Owner</option>
-          </select>
-
-          <button
-            onClick={() => fetchAccounts(1)}
-            className="bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm"
-          >
-            Lọc
-          </button>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-slate-500">
-            <tr>
-              <th className="text-left px-4 py-3">Tài khoản</th>
-              <th className="text-left px-4 py-3">Role</th>
-              <th className="text-left px-4 py-3">Trạng thái</th>
-              <th className="text-left px-4 py-3">Ngày tạo</th>
-              <th className="text-right px-4 py-3">Hành động</th>
-            </tr>
-          </thead>
-
-          <tbody className="divide-y">
-            {accounts.map((acc) => (
-              <tr
-                key={acc._id}
-                className="hover:bg-slate-50"
-                onDoubleClick={() => {
-                  setSelectedAccount(acc);
-                  setShowModal(true);
-                }}
-              >
-                {/* User */}
-                <td className="px-4 py-3 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full overflow-hidden bg-slate-100">
-                    {acc.avatar_url ? (
-                      <img
-                        src={acc.avatar_url}
-                        alt="avatar"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <User className="h-4 w-4 text-slate-500" />
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <p className="font-medium">{acc.fullname}</p>
-                    <p className="text-xs text-slate-500">{acc.email}</p>
-                  </div>
-                </td>
-
-                {/* Role */}
-                <td className="px-4 py-3">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs text-emerald-600">
-                    <ShieldCheck className="h-3 w-3" />
-                    {acc.role_id?.name}
-                  </span>
-                </td>
-
-                {/* Status */}
-                <td className="px-4 py-3">
-                  <span
-                    className={`text-xs px-2 py-1 rounded-full ${
-                      acc.status === "ACTIVE"
-                        ? "text-green-600 bg-green-50"
-                        : "text-yellow-600 bg-yellow-50"
-                    }`}
-                  >
-                    {acc.status}
-                  </span>
-                </td>
-
-                {/* Date */}
-                <td className="px-4 py-3 text-slate-600">
-                  {new Date(acc.created_at).toLocaleDateString()}
-                </td>
-
-                {/* Actions */}
-                <td className="px-4 py-3 text-right space-x-2">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleBan(acc._id, acc.status);
-                    }}
-                    className={`px-2 py-1 text-xs rounded ${
-                      acc.status === "BANNED"
-                        ? "bg-green-100 text-green-600"
-                        : "bg-yellow-100 text-yellow-700"
-                    }`}
-                  >
-                    {acc.status === "BANNED" ? "Bỏ ban" : "Ban"}
-                  </button>
-
-                  <button
-                    onClick={() => handleDelete(acc._id)}
-                    className="px-2 py-1 text-xs bg-red-100 text-red-600 rounded"
-                  >
-                    Xóa
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Pagination */}
-      <div className="flex justify-between items-center text-sm text-slate-500">
-        <p>
-          Trang {pagination.page} / {pagination.totalPages} — {pagination.total}{" "}
-          tài khoản
-        </p>
-
-        <div className="flex gap-2">
-          <button
-            disabled={pagination.page === 1}
-            onClick={() => fetchAccounts(pagination.page - 1)}
-            className="px-3 py-1 border rounded-lg"
-          >
-            Trước
-          </button>
-
-          {[...Array(pagination.totalPages || 1)].map((_, i) => (
-            <button
-              key={i}
-              onClick={() => fetchAccounts(i + 1)}
-              className={`px-3 py-1 border rounded-lg ${
-                pagination.page === i + 1
-                  ? "bg-emerald-50 text-emerald-600"
-                  : ""
-              }`}
-            >
-              {i + 1}
-            </button>
+        {/* ── Stats strip ── */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {[
+            { label: "Tổng tài khoản", value: pagination.total ?? 0, color: "text-emerald-600 bg-emerald-50" },
+            { label: "Trang hiện tại", value: `${currentPage} / ${totalPages}`, color: "text-violet-600 bg-violet-50" },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="bg-white border border-gray-100 rounded-2xl px-4 py-3 flex items-center gap-3 shadow-sm">
+              <div className={`p-2 rounded-xl ${color}`}><User className="w-4 h-4" /></div>
+              <div>
+                <p className="text-xs text-gray-400 font-medium">{label}</p>
+                <p className="text-sm font-bold text-gray-800">{value}</p>
+              </div>
+            </div>
           ))}
+        </div>
 
-          <button
-            disabled={pagination.page === pagination.totalPages}
-            onClick={() => fetchAccounts(pagination.page + 1)}
-            className="px-3 py-1 border rounded-lg"
-          >
-            Sau
-          </button>
+        {/* ── Filters ── */}
+        <div className="bg-white border border-gray-100 rounded-2xl px-5 py-4 shadow-sm flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+          <div className="relative w-full sm:w-80">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <input
+              type="text"
+              placeholder="Tìm kiếm email hoặc tên..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && fetchAccounts(1)}
+              className="acc-input w-full rounded-xl border border-gray-200 bg-gray-50 pl-9 pr-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 transition-all"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-gray-400 shrink-0" />
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              className="acc-input border border-gray-200 bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-700 transition-all"
+            >
+              <option value="ALL">Tất cả vai trò</option>
+              <option value="CUSTOMER">Customer</option>
+              <option value="STAFF_CLUB">Staff</option>
+              <option value="OWNER">Owner</option>
+            </select>
+
+            <button
+              onClick={() => fetchAccounts(1)}
+              className="bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-semibold px-4 py-2.5 rounded-xl text-sm shadow-md shadow-emerald-200 transition-all"
+            >
+              Lọc
+            </button>
+          </div>
+        </div>
+
+        {/* ── Table ── */}
+        <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-100">
+                {["Tài khoản", "Vai trò", "Trạng thái", "Ngày tạo", "Hành động"].map((h, i) => (
+                  <th key={h} className={`px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-gray-400 ${i === 4 ? "text-right" : "text-left"}`}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-gray-50">
+              {loading
+                ? [...Array(6)].map((_, i) => (
+                    <tr key={i}>
+                      {[...Array(5)].map((_, j) => (
+                        <td key={j} className="px-5 py-4">
+                          <div className="h-4 bg-gray-100 rounded animate-pulse" style={{ width: j === 0 ? "70%" : "50%" }} />
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                : accounts.map((acc) => (
+                    <tr
+                      key={acc._id}
+                      className="acc-row hover:bg-gray-50/80 cursor-pointer"
+                      onDoubleClick={() => { setSelectedAccount(acc); setShowModal(true); }}
+                    >
+                      {/* User */}
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <Avatar src={acc.avatar_url} name={acc.fullname} />
+                          <div>
+                            <p className="font-semibold text-gray-900">{acc.fullname}</p>
+                            <p className="text-xs text-gray-400">{acc.email}</p>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Role */}
+                      <td className="px-5 py-3.5">
+                        <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${getRoleColor(acc.role_id?.name)}`}>
+                          <ShieldCheck className="w-3 h-3" />
+                          {acc.role_id?.name}
+                        </span>
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-5 py-3.5">
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${STATUS_STYLE[acc.status] ?? "bg-gray-100 text-gray-500"}`}>
+                          {acc.status}
+                        </span>
+                      </td>
+
+                      {/* Date */}
+                      <td className="px-5 py-3.5 text-gray-500 text-xs">
+                        {new Date(acc.created_at).toLocaleDateString("vi-VN")}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-5 py-3.5 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleBan(acc._id, acc.status); }}
+                            className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${
+                              acc.status === "BANNED"
+                                ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                                : "bg-amber-50 text-amber-700 hover:bg-amber-100"
+                            }`}
+                          >
+                            {acc.status === "BANNED" ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Ban className="w-3.5 h-3.5" />}
+                            {acc.status === "BANNED" ? "Bỏ ban" : "Ban"}
+                          </button>
+
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDelete(acc._id); }}
+                            className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Xóa
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+            </tbody>
+          </table>
+
+          {!loading && accounts.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-20 text-gray-400 gap-2">
+              <User className="w-10 h-10 opacity-30" />
+              <p className="text-sm font-medium">Không tìm thấy tài khoản</p>
+            </div>
+          )}
+        </div>
+
+        {/* ── Pagination ── */}
+        <div className="bg-white border border-gray-100 rounded-2xl px-5 py-3 shadow-sm flex items-center justify-between">
+          <p className="text-sm text-gray-500 font-medium">
+            Trang <span className="font-bold text-gray-800">{currentPage}</span> / {totalPages}
+            <span className="ml-2 text-gray-400">— {pagination.total} tài khoản</span>
+          </p>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              disabled={currentPage === 1}
+              onClick={() => fetchAccounts(currentPage - 1)}
+              className="flex items-center gap-1 text-sm font-semibold text-gray-500 disabled:opacity-30 disabled:cursor-not-allowed hover:text-emerald-600 hover:bg-emerald-50 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" /> Trước
+            </button>
+
+            {pageNumbers.map((n) => (
+              <button
+                key={n}
+                onClick={() => fetchAccounts(n)}
+                className={`w-8 h-8 text-sm font-bold rounded-lg transition-colors ${
+                  n === currentPage
+                    ? "bg-emerald-500 text-white shadow-md shadow-emerald-200"
+                    : "text-gray-500 hover:bg-gray-100"
+                }`}
+              >
+                {n}
+              </button>
+            ))}
+
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => fetchAccounts(currentPage + 1)}
+              className="flex items-center gap-1 text-sm font-semibold text-gray-500 disabled:opacity-30 disabled:cursor-not-allowed hover:text-emerald-600 hover:bg-emerald-50 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Sau <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
+      {/* ══ DETAIL MODAL ══ */}
       {showModal && selectedAccount && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+          className="modal-overlay fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           onClick={() => setShowModal(false)}
         >
           <div
-            className="bg-white w-[420px] rounded-2xl shadow-xl p-6 space-y-5 animate-fadeIn"
+            className="modal-box bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full overflow-hidden bg-slate-100">
-                {selectedAccount.avatar_url ? (
-                  <img
-                    src={selectedAccount.avatar_url}
-                    alt="avatar"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-emerald-600 text-xl font-bold">
-                    {selectedAccount.fullname?.charAt(0) || "U"}
+            {/* Banner */}
+            <div className="bg-gradient-to-r from-emerald-500 to-teal-400 px-6 py-5">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <Avatar src={selectedAccount.avatar_url} name={selectedAccount.fullname} size="lg" />
+                  <div>
+                    <p className="text-emerald-100 text-xs font-semibold uppercase tracking-widest mb-0.5">Chi tiết tài khoản</p>
+                    <h2 className="text-white text-lg font-extrabold leading-tight">{selectedAccount.fullname}</h2>
+                    <p className="text-emerald-100 text-xs mt-0.5">{selectedAccount.email}</p>
                   </div>
-                )}
-              </div>
-
-              <div>
-                <h2 className="text-lg font-semibold">
-                  {selectedAccount.fullname}
-                </h2>
-                <p className="text-sm text-slate-500">
-                  {selectedAccount.email}
-                </p>
+                </div>
+                <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 transition-colors text-white">
+                  <X className="w-4 h-4" />
+                </button>
               </div>
             </div>
 
-            {/* Info */}
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="col-span-2">
-                <p className="text-slate-400">Số điện thoại</p>
-                <p className="font-medium">
-                  {selectedAccount.phone || "Không có"}
-                </p>
-              </div>
+            {/* Body */}
+            <div className="px-6 py-5 space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Vai trò</p>
+                  <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${getRoleColor(selectedAccount.role_id?.name)}`}>
+                    <ShieldCheck className="w-3 h-3" />
+                    {selectedAccount.role_id?.name}
+                  </span>
+                </div>
 
-              <div>
-                <p className="text-slate-400">Role</p>
-                <p className="font-medium">{selectedAccount.role_id?.name}</p>
-              </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Trạng thái</p>
+                  <span className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full ${STATUS_STYLE[selectedAccount.status] ?? "bg-gray-100 text-gray-500"}`}>
+                    {selectedAccount.status}
+                  </span>
+                </div>
 
-              <div>
-                <p className="text-slate-400">Trạng thái</p>
-                <span
-                  className={`inline-block px-2 py-1 text-xs rounded-full mt-1 ${
-                    selectedAccount.status === "ACTIVE"
-                      ? "bg-green-100 text-green-600"
-                      : selectedAccount.status === "BANNED"
-                        ? "bg-red-100 text-red-600"
-                        : "bg-yellow-100 text-yellow-600"
-                  }`}
-                >
-                  {selectedAccount.status}
-                </span>
-              </div>
+                <div className="col-span-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Số điện thoại</p>
+                  <p className="font-semibold text-gray-800">{selectedAccount.phone || "Không có"}</p>
+                </div>
 
-              <div className="col-span-2">
-                <p className="text-slate-400">Ngày tạo</p>
-                <p className="font-medium">
-                  {new Date(selectedAccount.created_at).toLocaleString()}
-                </p>
+                <div className="col-span-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Ngày tạo</p>
+                  <p className="font-semibold text-gray-800">{new Date(selectedAccount.created_at).toLocaleString("vi-VN")}</p>
+                </div>
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex justify-end gap-2 pt-3 border-t">
+            <div className="px-6 pb-5">
               <button
                 onClick={() => setShowModal(false)}
-                className="px-4 py-2 text-sm bg-slate-100 hover:bg-slate-200 rounded-lg"
+                className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl transition-colors"
               >
                 Đóng
               </button>
