@@ -32,7 +32,7 @@ export default function TournamentDetailPage() {
         const res = await getTournamentById(id);
         if (res.success) setTournament(res.data);
         else toast.error("Không tìm thấy giải đấu");
-      } catch (err) {
+      } catch {
         toast.error("Lỗi khi tải thông tin giải đấu");
       } finally {
         setLoading(false);
@@ -62,6 +62,14 @@ export default function TournamentDetailPage() {
   const cfg = statusConfig[tournament.status] || statusConfig.Draft;
   const fallbackImg = "https://images.unsplash.com/photo-1611599537845-1c7aca0091c0?q=80&w=1200";
   const bannerUrl = tournament.banner && tournament.banner.trim().length > 0 ? tournament.banner : fallbackImg;
+  const handleRegisterNow = () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/auth/login");
+      return;
+    }
+    navigate(`/tournament/${tournament._id}/payment`);
+  };
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -166,7 +174,7 @@ export default function TournamentDetailPage() {
             {/* CTA */}
             {tournament.status === "Open" && (
               <button
-                onClick={() => toast.success("Chức năng đăng ký sắp có mặt!")}
+                onClick={handleRegisterNow}
                 className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-2xl transition-all shadow-md shadow-orange-500/30 text-lg"
               >
                 Đăng ký ngay 🏆
