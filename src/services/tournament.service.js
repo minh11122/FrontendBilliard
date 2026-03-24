@@ -30,6 +30,11 @@ export const verifyTournamentPayOSPayment = async (orderCode) => {
   return res.data;
 };
 
+export const getMyRegisteredTournamentIds = async () => {
+  const res = await api.get("/tournaments/my/registered-ids");
+  return res.data;
+};
+
 // Create tournament
 export const createTournament = async (clubId, data) => {
   const res = await api.post("/tournaments", data, {

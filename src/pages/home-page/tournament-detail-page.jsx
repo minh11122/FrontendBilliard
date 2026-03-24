@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getTournamentById } from "@/services/tournament.service";
+import { getMyRegisteredTournamentIds, getTournamentById } from "@/services/tournament.service";
 import { Calendar, Users, Trophy, MapPin, ArrowLeft, Clock, CheckCircle, Store } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -25,6 +25,7 @@ export default function TournamentDetailPage() {
   const navigate = useNavigate();
   const [tournament, setTournament] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [joined, setJoined] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -39,6 +40,24 @@ export default function TournamentDetailPage() {
       }
     };
     fetchData();
+  }, [id]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    const fetchJoinedStatus = async () => {
+      try {
+        const res = await getMyRegisteredTournamentIds();
+        if (res?.success) {
+          setJoined((res.data || []).includes(id));
+        }
+      } catch {
+        // Keep silent to avoid noisy UX
+      }
+    };
+
+    fetchJoinedStatus();
   }, [id]);
 
   if (loading) {
@@ -172,7 +191,12 @@ export default function TournamentDetailPage() {
             </div>
 
             {/* CTA */}
-            {tournament.status === "Open" && (
+            {tournament.status === "Open" && joined && (
+              <div className="w-full py-3 bg-green-100 text-green-700 font-bold rounded-2xl text-center">
+                Đã tham gia
+              </div>
+            )}
+            {tournament.status === "Open" && !joined && (
               <button
                 onClick={handleRegisterNow}
                 className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-2xl transition-all shadow-md shadow-orange-500/30 text-lg"

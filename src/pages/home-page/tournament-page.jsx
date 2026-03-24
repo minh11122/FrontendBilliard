@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Search, MapPin, Calendar, CheckCircle } from "lucide-react";
-import { getPublicTournaments } from "@/services/tournament.service";
+import { getMyRegisteredTournamentIds, getPublicTournaments } from "@/services/tournament.service";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 
@@ -11,6 +11,7 @@ export const TournamentPage = () => {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [feeFilter, setFeeFilter] = useState("all");
+  const [registeredIds, setRegisteredIds] = useState([]);
 
   useEffect(() => {
     const fetchTournaments = async () => {
@@ -19,13 +20,31 @@ export const TournamentPage = () => {
         if (res.success) {
           setTournaments(res.data);
         }
-      } catch (err) {
+      } catch {
         toast.error("Không thể tải danh sách giải đấu");
       } finally {
         setLoading(false);
       }
     };
     fetchTournaments();
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    const fetchRegistered = async () => {
+      try {
+        const res = await getMyRegisteredTournamentIds();
+        if (res?.success) {
+          setRegisteredIds(res.data || []);
+        }
+      } catch {
+        // silent
+      }
+    };
+
+    fetchRegistered();
   }, []);
 
   const statusConfig = {
@@ -143,6 +162,7 @@ export const TournamentPage = () => {
               const displayClub = t.club_id?.name || "Đang cập nhật";
               const displayFee = t.fee > 0 ? `${t.fee.toLocaleString()} VND` : "Miễn phí";
               const displayImg = t.banner && t.banner.trim().length > 0 ? t.banner : "https://images.unsplash.com/photo-1611599537845-1c7aca0091c0?q=80&w=800";
+              const isRegistered = registeredIds.includes(String(t._id));
 
               return (
                 <div
@@ -156,6 +176,11 @@ export const TournamentPage = () => {
                     >
                       {cfg.label}
                     </span>
+                    {isRegistered && (
+                      <span className="absolute top-3 left-3 text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-semibold">
+                        Đã đăng ký
+                      </span>
+                    )}
                   </div>
 
                   <div className="p-4">
