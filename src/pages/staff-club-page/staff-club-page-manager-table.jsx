@@ -24,7 +24,7 @@ import {
 // ─────────────────────────────────────────────
 const TIMELINE_START = 0; // 00:00
 const TIMELINE_HOURS = 24; // 24 hours total (one full day)
-const HOUR_WIDTH = 140; // px per hour
+const HOUR_WIDTH = 80; // px per hour
 
 const HOURS = Array.from({ length: TIMELINE_HOURS }, (_, i) => {
   const trueHour = TIMELINE_START + i;
@@ -820,13 +820,13 @@ export const StaffClubPageManagerTable = () => {
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const [dateMode, setDateMode] = useState("day"); 
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const [modalTarget, setModalTarget] = useState(null); 
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const timelineScrollRef = useRef(null);
+  const dateInputRef = useRef(null);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -902,9 +902,7 @@ export const StaffClubPageManagerTable = () => {
 
   const handleDateChange = (direction) => {
     const newDate = new Date(currentDate);
-    if (dateMode === "day") newDate.setDate(newDate.getDate() + direction);
-    else if (dateMode === "week") newDate.setDate(newDate.getDate() + direction * 7);
-    else newDate.setMonth(newDate.getMonth() + direction);
+    newDate.setDate(newDate.getDate() + direction);
     setCurrentDate(newDate);
   };
 
@@ -999,21 +997,24 @@ export const StaffClubPageManagerTable = () => {
       />
 
       <div className="flex flex-col xl:flex-row items-center justify-between gap-4 mb-6">
-        <div className="flex items-center bg-gray-100 p-1 rounded-lg">
-          {['day', 'week', 'month'].map(mode => (
-             <button 
-               key={mode} 
-               onClick={() => setDateMode(mode)}
-               className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-all ${dateMode === mode ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
-             >
-               {mode === 'day' ? 'Hôm nay' : mode === 'week' ? 'Tuần' : 'Tháng'}
-             </button>
-          ))}
-        </div>
-
         <div className="flex items-center gap-3 bg-white px-2 py-1 rounded-lg border border-gray-200 shadow-sm">
            <button onClick={() => handleDateChange(-1)} className="p-2 hover:bg-gray-50 rounded-md transition-colors"><ChevronLeft size={18} className="text-gray-500"/></button>
-           <span className="font-extrabold text-gray-900 min-w-[180px] text-center">{formatCurrentDateLabel()}</span>
+           <div 
+             className="relative flex items-center justify-center min-w-[200px] hover:bg-gray-50 px-3 py-1.5 rounded-md cursor-pointer transition-all group border border-transparent hover:border-green-200"
+             onClick={() => dateInputRef.current?.showPicker?.()}
+           >
+             <CalendarDays size={16} className="mr-2 text-green-600 group-hover:scale-110 transition-transform" />
+             <span className="font-extrabold text-gray-900 text-center select-none">{formatCurrentDateLabel()}</span>
+             <input 
+               ref={dateInputRef}
+               type="date"
+               className="absolute inset-0 opacity-0 cursor-pointer w-full pointer-events-none"
+               value={formatDateInput(currentDate)}
+               onChange={(e) => {
+                 if(e.target.value) setCurrentDate(new Date(e.target.value));
+               }}
+             />
+           </div>
            <button onClick={() => handleDateChange(1)} className="p-2 hover:bg-gray-50 rounded-md transition-colors"><ChevronRight size={18} className="text-gray-500"/></button>
         </div>
 

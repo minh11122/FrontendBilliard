@@ -3,11 +3,14 @@ import toast from "react-hot-toast";
 import {
   Search, Calendar as CalendarIcon, MoreVertical, TrendingUp, Loader2,
   LogIn, List, User, Clock, CreditCard, MapPin, Hash, Phone, ArrowRight,
-  CheckCircle, XCircle, PlusCircle, RefreshCw, ChevronLeft, ChevronRight
+  CheckCircle, XCircle, PlusCircle, RefreshCw, ChevronLeft, ChevronRight,
+  Eye, ShoppingCart, RotateCcw, ArrowLeftRight, Minus, Plus, Trash2, 
+  CalendarDays, BadgeCheck, Circle, CheckCircle2, Info
 } from "lucide-react";
 
-import { checkInBooking, getClubBookings, confirmPayment, createWalkInBooking } from "@/services/booking.service";
-import { getTables } from "@/services/billiardTable.service";
+import bookingService, { checkInBooking, getClubBookings, confirmPayment, createWalkInBooking } from "@/services/booking.service";
+import { getTables, updateTable } from "@/services/billiardTable.service";
+import { getServices } from "@/services/service.service";
 import useDebounce from "@/hooks/useDebounce";
 
 import { Button } from "@/components/ui/button";
@@ -82,6 +85,301 @@ const getTodayDate = () => {
 const getCurrentTime = () => {
   const now = new Date();
   return `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
+};
+
+const timeToMinutes = (t = "00:00") => {
+  const [h, m] = t.split(":").map(Number);
+  return (h || 0) * 60 + (m || 0);
+};
+
+// ─── Shared Components ────────────────────────────────────────
+const InfoRow = ({ icon, label, value }) => (
+  <div className="flex flex-col gap-0.5">
+    <span className="text-[11px] text-gray-400 font-medium flex items-center gap-1.5">{icon}{label}</span>
+    <span className="text-sm text-gray-900">{value}</span>
+  </div>
+);
+
+const BookingDetailModal = ({ table, booking, allTables, onClose, onRefresh }) => {
+  if (!booking) return null;
+  const displayTable = table || booking.table_id;
+
+  const [loading, setLoading] = useState(false);
+  const [showOrderPanel, setShowOrderPanel] = useState(false);
+  const [allServices, setAllServices] = useState([]);
+  const [bookingServices, setBookingServices] = useState([]);
+  const [fetchingServices, setFetchingServices] = useState(false);
+  const [showExtendPanel, setShowExtendPanel] = useState(false);
+  const [extendMinutes, setExtendMinutes] = useState(30);
+  const [showChangeTablePanel, setShowChangeTablePanel] = useState(false);
+  const [selectedNewTable, setSelectedNewTable] = useState("");
+
+  useEffect(() => {
+    if (booking) {
+      fetchBookingServices();
+      if (booking.status === "Playing") {
+        fetchAllClubServices();
+      }
+    }
+  }, [booking?._id, booking?.status]);
+
+  const fetchBookingServices = async () => {
+    try {
+      const res = await bookingService.getBookingServices(booking._id);
+      if (res.success) setBookingServices(res.data || []);
+    } catch (e) {
+      console.error("Lỗi fetch booking services:", e);
+    }
+  };
+
+  const fetchAllClubServices = async () => {
+    try {
+      setFetchingServices(true);
+      const res = await getServices({ page: 1, limit: 100, status: "Active" });
+      if (res.data.success) setAllServices(res.data.data || []);
+    } catch (e) {
+      console.error("Lỗi fetch club services:", e);
+    } finally {
+      setFetchingServices(false);
+    }
+  };
+
+  const handleAddService = async (serviceId) => {
+    try {
+      setLoading(true);
+      await bookingService.addServiceToBooking(booking._id, serviceId, 1);
+      toast.success("Đã thêm dịch vụ");
+      await fetchBookingServices();
+      if (onRefresh) await onRefresh();
+    } catch (e) {
+      toast.error("Không thể thêm dịch vụ");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateServiceQuantity = async (bsId, currentQty, delta) => {
+    try {
+      const newQty = currentQty + delta;
+      if (newQty < 1) return;
+      setLoading(true);
+      await bookingService.updateBookingServiceQuantity(booking._id, bsId, newQty);
+      toast.success("Đã cập nhật số lượng");
+      await fetchBookingServices();
+      if (onRefresh) await onRefresh();
+    } catch (e) {
+      toast.error("Không thể cập nhật số lượng");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteService = async (bsId) => {
+    if (!window.confirm("Bạn có chắc chắn muốn xoá dịch vụ này?")) return;
+    try {
+      setLoading(true);
+      await bookingService.deleteBookingService(booking._id, bsId);
+      toast.success("Đã xoá dịch vụ");
+      await fetchBookingServices();
+      if (onRefresh) await onRefresh();
+    } catch (e) {
+      toast.error("Không thể xoá dịch vụ");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExtendBooking = async () => {
+    try {
+      setLoading(true);
+      await bookingService.extendBooking(booking._id, extendMinutes);
+      toast.success(`Đã gia hạn thêm ${extendMinutes} phút`);
+      setShowExtendPanel(false);
+      if (onRefresh) await onRefresh();
+    } catch (e) {
+      toast.error(e.response?.data?.message || "Không thể gia hạn");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChangeTable = async () => {
+    if (!selectedNewTable) return toast.error("Chọn bàn để chuyển đến");
+    try {
+      setLoading(true);
+      await bookingService.changeTable(booking._id, selectedNewTable);
+      toast.success("Chuyển bàn thành công");
+      setShowChangeTablePanel(false);
+      onClose();
+      if (onRefresh) await onRefresh();
+    } catch (e) {
+      toast.error(e.response?.data?.message || "Không thể chuyển bàn");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCheckout = async () => {
+    if (!booking) return;
+    try {
+      setLoading(true);
+      const res = await bookingService.checkOutBooking(booking._id);
+      if (res.success) {
+        toast.success("Thanh toán thành công");
+        if (onRefresh) await onRefresh();
+        onClose();
+      }
+    } catch(err) {
+      toast.error("Thanh toán thất bại");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+        <div className="px-6 py-4 flex items-center justify-between border-b border-gray-100 bg-gray-50/50">
+          <h2 className="font-extrabold text-gray-900 text-xl">Chi tiết đơn #{booking.code_number}</h2>
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-200 transition-colors"><XCircle size={20} className="text-gray-500" /></button>
+        </div>
+
+        <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+          <section className="space-y-4">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2"><CalendarDays size={14} /> Thông tin đặt bàn</h3>
+            <div className="rounded-xl border border-gray-200 p-4 space-y-4 bg-white shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600"><User size={18} /></div>
+                <div>
+                  <h4 className="font-bold text-gray-800">{booking.guest_name || booking.account_id?.fullname || "Khách"}</h4>
+                  <p className="text-xs text-gray-500">{booking.guest_name ? "Khách vãng lai" : (booking.account_id?.phone || "–")}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-100">
+                <InfoRow icon={<MapPin size={14} />} label="Bàn" value={<span className="font-bold text-[#4caf50]">{displayTable?.table_number ? `Bàn ${displayTable.table_number}` : "–"}</span>} />
+                <InfoRow icon={<Clock size={14} />} label="Thời gian" value={`${formatTime(booking.start_time)} – ${formatTime(booking.end_time)}`} />
+                <InfoRow icon={<Circle size={14} />} label="Trạng thái" value={<span className="font-semibold">{booking.status}</span>} />
+                <InfoRow icon={<BadgeCheck size={14} />} label="Tổng tiền" value={
+                  <span className="font-bold text-green-600 text-lg">
+                    {booking.status === "Playing" 
+                      ? (() => {
+                          const startMin = timeToMinutes(booking.start_time);
+                          let endMin = timeToMinutes(booking.end_time);
+                          if (endMin <= startMin && endMin !== 0) endMin += 24 * 60;
+                          const dur = Math.max(0, (endMin - startMin) / 60);
+                          const playCost = dur * (booking.hour_price || 0);
+                          const serviceTotal = bookingServices.reduce((sum, s) => sum + (s.unit_price * s.quantity), 0);
+                          return Math.round(playCost + serviceTotal).toLocaleString("vi-VN");
+                        })()
+                      : (booking.total_bill || 0)?.toLocaleString("vi-VN")
+                    }đ
+                  </span>
+                } />
+              </div>
+
+              {booking.note && (
+                <div className="pt-3 border-t border-gray-100 flex flex-col gap-1">
+                  <span className="text-[11px] text-gray-400 font-medium flex items-center gap-1.5"><Info size={12}/> Ghi chú / Lịch sử</span>
+                  <p className="text-xs text-blue-600 font-medium bg-blue-50 p-2 rounded-lg italic">"{booking.note}"</p>
+                </div>
+              )}
+            </div>
+
+            {bookingServices.length > 0 && (
+              <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                <h4 className="text-[11px] font-bold text-gray-400 uppercase mb-2">Dịch vụ ({bookingServices.length})</h4>
+                <div className="space-y-2">
+                  {bookingServices.map((bs, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-sm bg-white p-2 rounded-lg border border-gray-50 shadow-sm font-sans">
+                      <div className="flex flex-col">
+                        <span className="text-gray-800 font-bold">{bs.service_id?.name}</span>
+                        <span className="text-[10px] text-gray-500">{(bs.unit_price).toLocaleString("vi-VN")}đ</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {booking.status === "Playing" ? (
+                          <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-1">
+                            <button onClick={() => handleUpdateServiceQuantity(bs._id, bs.quantity, -1)} disabled={loading || bs.quantity <= 1} className="p-1 rounded-md hover:bg-white text-gray-500 disabled:opacity-30"><Minus size={14}/></button>
+                            <span className="w-6 text-center font-bold text-xs">{bs.quantity}</span>
+                            <button onClick={() => handleUpdateServiceQuantity(bs._id, bs.quantity, 1)} disabled={loading} className="p-1 rounded-md hover:bg-white text-gray-500"><Plus size={14}/></button>
+                          </div>
+                        ) : (
+                          <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded">x{bs.quantity}</span>
+                        )}
+                        <div className="flex flex-col items-end min-w-[80px]">
+                          <span className="text-gray-900 font-bold">{(bs.unit_price * bs.quantity).toLocaleString("vi-VN")}đ</span>
+                          {booking.status === "Playing" && <button onClick={() => handleDeleteService(bs._id)} disabled={loading} className="text-red-400 hover:text-red-600 p-1"><Trash2 size={14}/></button>}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {booking.status === "Playing" && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-3">
+                  <button onClick={() => { setShowOrderPanel(!showOrderPanel); setShowExtendPanel(false); setShowChangeTablePanel(false); }} className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${showOrderPanel ? 'bg-green-600 border-green-600 text-white shadow-lg' : 'bg-white border-gray-200 text-green-600 hover:bg-green-50'}`}><ShoppingCart size={24} /><span className="text-[11px] font-bold uppercase">ORDER</span></button>
+                  <button onClick={() => { setShowExtendPanel(!showExtendPanel); setShowOrderPanel(false); setShowChangeTablePanel(false); }} className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${showExtendPanel ? 'bg-green-600 border-green-600 text-white shadow-lg' : 'bg-white border-gray-200 text-green-600 hover:bg-green-50'}`}><RotateCcw size={24} /><span className="text-[11px] font-bold uppercase">GIA HẠN</span></button>
+                  <button onClick={() => { setShowChangeTablePanel(!showChangeTablePanel); setShowOrderPanel(false); setShowExtendPanel(false); }} className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${showChangeTablePanel ? 'bg-green-600 border-green-600 text-white shadow-lg' : 'bg-white border-gray-200 text-green-600 hover:bg-green-50'}`}><ArrowLeftRight size={24} /><span className="text-[11px] font-bold uppercase">ĐỔI BÀN</span></button>
+                </div>
+
+                {showExtendPanel && (
+                  <div className="border border-green-100 rounded-xl p-4 bg-green-50/30 space-y-3">
+                    <h4 className="font-bold text-green-800 text-sm">Gia hạn thêm thời gian</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {[30, 60, 90, 120].map(mins => (
+                        <button key={mins} onClick={() => setExtendMinutes(mins)} className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${extendMinutes === mins ? 'bg-green-600 border-green-600 text-white' : 'bg-white border-gray-200 text-gray-600 hover:border-green-300'}`}>+{mins}p</button>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input type="number" min="1" value={extendMinutes} onChange={(e) => setExtendMinutes(parseInt(e.target.value) || 0)} className="h-9 text-sm" />
+                      <Button size="sm" className="bg-green-600 hover:bg-green-700 h-9 px-4 text-white font-bold" onClick={handleExtendBooking} disabled={loading || extendMinutes <= 0}>Lưu</Button>
+                    </div>
+                  </div>
+                )}
+
+                {showChangeTablePanel && (
+                  <div className="border border-green-100 rounded-xl p-4 bg-green-50/30">
+                    <h4 className="font-bold text-green-800 text-sm mb-3">Chọn bàn để chuyển đến</h4>
+                    <div className="flex items-center gap-2">
+                      <Select value={selectedNewTable} onValueChange={setSelectedNewTable}>
+                        <SelectTrigger className="w-full bg-white h-9 border-gray-200 text-sm"><SelectValue placeholder="Bàn trống..." /></SelectTrigger>
+                        <SelectContent>{allTables?.filter(t => t.status === "Available" || t.status === "available").map(t => <SelectItem key={t._id} value={t._id}>Bàn {t.table_number}</SelectItem>)}</SelectContent>
+                      </Select>
+                      <Button size="sm" className="bg-green-600 hover:bg-green-700 h-9 px-4 text-white font-bold shrink-0" onClick={handleChangeTable} disabled={loading || !selectedNewTable}>Xác nhận</Button>
+                    </div>
+                  </div>
+                )}
+
+                {showOrderPanel && (
+                  <div className="border border-green-100 rounded-xl p-4 bg-green-50/30">
+                    <div className="flex items-center justify-between mb-3"><h4 className="font-bold text-green-800 text-sm">Menu dịch vụ</h4>{fetchingServices && <RefreshCw size={14} className="animate-spin text-green-600"/>}</div>
+                    <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-1">
+                      {allServices.map(s => (
+                        <div key={s._id} className="bg-white p-2 rounded-lg border border-gray-100 flex flex-col gap-1 shadow-sm">
+                          <span className="text-xs font-bold text-gray-800 truncate">{s.name}</span>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="text-[10px] text-gray-500">{s.price?.toLocaleString()}đ</span>
+                            <button onClick={() => handleAddService(s._id)} disabled={loading} className="p-1 rounded bg-green-100 text-green-600 hover:bg-green-600 hover:text-white"><Plus size={14}/></button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <Button className="w-full bg-green-600 hover:bg-green-700 text-white font-bold h-12 shadow-lg rounded-xl" onClick={handleCheckout} disabled={loading}>
+                  <CheckCircle2 size={18} className="mr-2" /> Thanh toán / Kết thúc
+                </Button>
+              </div>
+            )}
+          </section>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 // ─── Check-in Section ─────────────────────────────────────────
@@ -318,6 +616,23 @@ const BookingListSection = () => {
   const [dateMode, setDateMode] = useState("day"); // 'day', 'week', 'month'
   const [currentDate, setCurrentDate] = useState(new Date());
 
+  const [modalTarget, setModalTarget] = useState(null);
+  const [availableTables, setAvailableTables] = useState([]);
+
+  useEffect(() => {
+    const fetchAvailableTables = async () => {
+      try {
+        const res = await getTables({ page: 1, limit: 100 });
+        if (res.data.success) {
+          setAvailableTables(res.data.data.filter(t => t.status === "Available" || t.status === "available"));
+        }
+      } catch (e) {
+        console.error("Lỗi fetch tables:", e);
+      }
+    };
+    fetchAvailableTables();
+  }, []);
+
   const handleDateChange = (dir) => {
     const newDate = new Date(currentDate);
     if (dateMode === 'day') {
@@ -405,6 +720,15 @@ const BookingListSection = () => {
 
   return (
     <>
+      {modalTarget && (
+        <BookingDetailModal
+          booking={modalTarget.booking}
+          table={modalTarget.table}
+          allTables={availableTables}
+          onClose={() => setModalTarget(null)}
+          onRefresh={fetchBookings}
+        />
+      )}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         {/* Controls Row */}
         <div className="p-4 md:p-6 flex flex-col lg:flex-row gap-6 border-b border-gray-100 bg-white">
@@ -509,6 +833,7 @@ const BookingListSection = () => {
                 <TableHead className="px-6 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Bàn</TableHead>
                 <TableHead className="px-6 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Thời gian</TableHead>
                 <TableHead className="px-6 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Trạng thái</TableHead>
+                <TableHead className="px-6 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider text-right">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -575,6 +900,16 @@ const BookingListSection = () => {
                           </Button>
                         )}
                       </div>
+                    </TableCell>
+                    <TableCell className="px-6 py-4 text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 px-3 border-blue-200 text-blue-600 hover:bg-blue-50 text-xs font-medium"
+                        onClick={() => setModalTarget({ booking, table: booking.table_id })}
+                      >
+                        <Eye size={14} className="mr-1.5" /> Chi tiết
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))

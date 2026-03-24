@@ -6,7 +6,7 @@ export const DashboardStaffClubLayout = () => {
   return (
     <div className="min-h-screen flex">
       <SidebarClub />
-      <main className="flex-1">
+      <main className="flex-1 min-w-0 overflow-hidden">
         <Outlet />
       </main>
     </div>
