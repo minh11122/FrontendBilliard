@@ -170,7 +170,7 @@ export default function OwnerTournamentListPage() {
                     Quản lý
                   </button>
                   <button
-                    onClick={() => navigate(`/owner/tournaments/${t._id}/players`)}
+                    onClick={() => navigate(`/tournament/${t._id}/players`)}
                     className="px-6 py-2 bg-white hover:bg-slate-50 text-[#00A65A] font-semibold rounded-full text-sm transition-all border border-[#00A65A]"
                   >
                     Chi tiết

@@ -191,6 +191,12 @@ export default function TournamentDetailPage() {
             </div>
 
             {/* CTA */}
+            <button
+              onClick={() => navigate(`/tournament/${tournament._id}/players`)}
+              className="w-full py-3 bg-white hover:bg-slate-50 text-slate-800 font-bold rounded-2xl transition-all border border-slate-200 text-lg"
+            >
+              Xem chi tiết 🧑‍🤝‍🧑
+            </button>
             {tournament.status === "Open" && joined && (
               <div className="w-full py-3 bg-green-100 text-green-700 font-bold rounded-2xl text-center">
                 Đã tham gia
