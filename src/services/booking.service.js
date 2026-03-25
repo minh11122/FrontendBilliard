@@ -46,6 +46,26 @@ export const verifyBookingPayOSPayment = async (orderCode) => {
   }
 };
 
+// Get booking by id (STAFF/OWNER)
+export const getBookingById = async (bookingId) => {
+  const response = await api.get(`/bookings/${bookingId}`);
+  return response.data;
+};
+
+// Create PayOS payment link for remaining amount (Playing -> Completed)
+export const createPayOSBookingCheckoutPayment = async (bookingId) => {
+  const response = await api.post(
+    `/bookings/${bookingId}/checkout/payos/create-payment`
+  );
+  return response.data;
+};
+
+// Verify PayOS checkout payment after redirect
+export const verifyBookingCheckoutPayOSPayment = async (orderCode) => {
+  const response = await api.post("/bookings/checkout/payos/verify", { orderCode });
+  return response.data;
+};
+
 // Lấy danh sách booking của tôi
 export const getMyBookings = async () => {
   try {
@@ -191,6 +211,9 @@ export const bookingService = {
   confirmPayment,
   createPayOSBookingPayment,
   verifyBookingPayOSPayment,
+  getBookingById,
+  createPayOSBookingCheckoutPayment,
+  verifyBookingCheckoutPayOSPayment,
   checkOutBooking,
   getBookingServices,
   addServiceToBooking,
