@@ -121,8 +121,10 @@ export default function BookingCheckoutPage() {
         return;
       }
 
-      setPayment(res.data);
-      toast.success("Đã tạo mã PayOS, hãy thanh toán tại QR/Checkout.");
+      if (res.data.checkoutUrl) {
+  window.location.href = res.data.checkoutUrl;
+  return;
+}
     } catch (e) {
       toast.error(e?.response?.data?.message || e.message || "Không thể tạo PayOS");
     } finally {
