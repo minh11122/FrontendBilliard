@@ -35,6 +35,11 @@ export const getMyRegisteredTournamentIds = async () => {
   return res.data;
 };
 
+export const getTournamentPlayers = async (tournamentId) => {
+  const res = await api.get(`/tournaments/${tournamentId}/players`);
+  return res.data;
+};
+
 // Create tournament
 export const createTournament = async (clubId, data) => {
   const res = await api.post("/tournaments", data, {

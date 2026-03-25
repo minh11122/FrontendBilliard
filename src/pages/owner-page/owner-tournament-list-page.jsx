@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Trophy, Plus, Calendar, Users, Trash2, Edit, Search, Swords } from "lucide-react";
 import toast from "react-hot-toast";
-import { getTournamentsByClub, deleteTournament, updateTournament } from "@/services/tournament.service";
+import { getTournamentsByClub, updateTournament } from "@/services/tournament.service";
 
 const tabs = [
   { id: "All", label: "Tất cả", statuses: [] },
@@ -27,27 +27,17 @@ export default function OwnerTournamentListPage() {
       setLoading(true);
       const res = await getTournamentsByClub(CLUB_ID);
       if (res.success) setTournaments(res.data);
-    } catch (err) {
+    } catch {
       toast.error("Không thể tải danh sách giải đấu");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
-
-  const handleDelete = async (id, name) => {
-    if (!window.confirm(`Bạn chắc chắn muốn xóa giải "${name}"?`)) return;
-    try {
-      const res = await deleteTournament(id);
-      if (res.success) {
-        toast.success("Đã xóa giải đấu");
-        fetchData();
-      }
-    } catch (err) {
-      toast.error("Xóa giải đấu thất bại");
-    }
-  };
+  useEffect(() => {
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handlePublish = async (id, name) => {
     if (!window.confirm(`Bạn muốn mở đăng ký cho giải "${name}"?`)) return;
@@ -57,7 +47,7 @@ export default function OwnerTournamentListPage() {
         toast.success("Giải đấu đã được chuyển sang trạng thái Mở đăng ký");
         fetchData();
       }
-    } catch (err) {
+    } catch {
       toast.error("Lỗi khi cập nhật trạng thái");
     }
   };

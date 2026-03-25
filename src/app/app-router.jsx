@@ -23,6 +23,7 @@ import {
   ClubDetailPage,
   PaymentPage,
   TournamentPaymentPage,
+  TournamentPlayersPage,
   BookingHistoryPage,
   Forbidden,
   AccPendingManagement,
@@ -42,6 +43,7 @@ import {
   StaffClubPageBooking,
   StaffClubPageStatic,
   StaffClubPageTournament,
+  BookingCheckoutPage,
   SystemStaff,
   SystemStaff1,
   SystemStaff2,
@@ -59,7 +61,8 @@ import {
   OwnerOnboardingPage,
   OwnerTournamentListPage,
   OwnerCreateTournamentPage,
-  OwnerEditTournamentPage
+  OwnerEditTournamentPage,
+  OwnerTournamentPlayersPage,
 } from "@/pages";
 
 export const router = createBrowserRouter([
@@ -86,6 +89,7 @@ export const router = createBrowserRouter([
           { path: "/tournament", element: <TournamentPage /> },
           { path: "/tournament/:id", element: <TournamentDetailPage /> },
           { path: "/tournament/:id/payment", element: <TournamentPaymentPage /> },
+          { path: "/tournament/:id/players", element: <TournamentPlayersPage /> },
           { path: "/booking", element: <BookingPage /> },
           { path: "/booking/:id", element: <ClubDetailPage /> },
           { path: "/payment/:bookingId", element: <PaymentPage /> },
@@ -144,6 +148,7 @@ export const router = createBrowserRouter([
           { path: "amenities", element: <AmenitiesPage /> },
           { path: "tournaments", element: <OwnerTournamentListPage /> },
           { path: "tournaments/create", element: <OwnerCreateTournamentPage /> },
+          { path: "tournaments/:id/players", element: <OwnerTournamentPlayersPage /> },
           { path: "tournaments/edit/:id", element: <OwnerEditTournamentPage /> },
         ],
       },
@@ -153,6 +158,7 @@ export const router = createBrowserRouter([
         children: [
           { path: "dashboard", element: <StaffClubPageStatic /> },
           { path: "tables", element: <StaffClubPageManagerTable /> },
+          { path: "tables/checkout/:id", element: <BookingCheckoutPage /> },
           { path: "bookings", element: <StaffClubPageBooking /> },
           { path: "tournaments", element: <StaffClubPageTournament /> },
         ],

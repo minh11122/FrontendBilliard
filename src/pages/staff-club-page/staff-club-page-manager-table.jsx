@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 import {
   Search, LayoutGrid, Circle, Edit2, X,
   CheckCircle2, Clock, AlertCircle, User, CalendarDays,
@@ -810,6 +811,7 @@ const QuickCreateModal = ({ open, tables, tableTypes, date, bookings, onCreate, 
 };
 
 export const StaffClubPageManagerTable = () => {
+  const navigate = useNavigate();
   const [tables, setTables] = useState([]);
   const [tableTypes, setTableTypes] = useState([]);
   const [bookings, setBookings] = useState([]);
@@ -953,15 +955,8 @@ export const StaffClubPageManagerTable = () => {
   };
 
   const handleCheckout = async (bookingId) => {
-    try {
-       const res = await bookingService.checkOutBooking(bookingId);
-       if (res.success) {
-           toast.success("Thanh toán thành công. Bàn đã chuyển về Đang hoạt động.");
-           await loadData();
-       }
-    } catch(err) {
-       toast.error("Thanh toán thất bại");
-    }
+    // Điều hướng tới trang hiển thị hóa đơn kết thúc
+    navigate(`/staff/tables/checkout/${bookingId}`);
   };
 
   const counts = { all: tables.length, playing: 0, booked: 0, holding: 0, available: 0, maintenance: 0 };
