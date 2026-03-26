@@ -24,7 +24,8 @@ import {
   ArrowLeftCircle,
   Sparkles,
   FileText,
-  Lock
+  Lock,
+  PieChart
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -44,6 +45,12 @@ export const SidebarOwner = () => {
       name: "Tổng quan",
       href: "/owner/dashboard",
       icon: LayoutDashboard,
+      roles: ["basic", "pro"]
+    },
+    {
+      name: "Báo cáo doanh thu",
+      href: "/owner/reports",
+      icon: PieChart,
       roles: ["basic", "pro"]
     },
     {

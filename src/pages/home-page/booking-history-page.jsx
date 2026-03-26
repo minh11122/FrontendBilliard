@@ -1,7 +1,8 @@
 import { useState, useEffect, useContext } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { MapPin, Clock, Calendar, ChevronRight, X, Star, AlertCircle, CheckCircle2, Loader2, CalendarClock } from "lucide-react";
+import { MapPin, Clock, Calendar, ChevronRight, X, Star, AlertCircle, CheckCircle2, Loader2, CalendarClock, MessageSquare } from "lucide-react";
 import { getMyBookings, verifyBookingPayOSPayment, cancelHold } from "@/services/booking.service";
+import { createFeedback, getFeedbackByBookingId } from "@/services/feedback.service";
 import { AuthContext } from "@/context/AuthContext";
 import toast from "react-hot-toast";
 
@@ -211,6 +212,24 @@ export const BookingHistoryPage = () => {
                     <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${sc.color}`}>
                       {sc.label}
                     </span>
+                    {booking.status === "Completed" && booking.feedback_status && (
+                      booking.feedback_status.rated ? (
+                        <>
+                          <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full border bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1">
+                            <Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500" /> {booking.feedback_status.rating} sao
+                          </span>
+                          {booking.feedback_status.has_reply && (
+                            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full border bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1">
+                              <MessageSquare className="w-2.5 h-2.5" /> Quán đã phản hồi
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full border bg-gray-50 text-gray-500 border-gray-200 flex items-center gap-1">
+                          <Star className="w-2.5 h-2.5" /> Chưa đánh giá
+                        </span>
+                      )
+                    )}
                   </div>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
                     <span className="flex items-center gap-1">
@@ -310,6 +329,34 @@ const HoldCountdown = ({ heldUntil }) => {
 const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
   const sc = STATUS_CONFIG[booking.status] || STATUS_CONFIG.Pending;
   const [cancelling, setCancelling] = useState(false);
+  
+  // Feedback States
+  const [feedback, setFeedback] = useState(null);
+  const [loadingFeedback, setLoadingFeedback] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
+
+  useEffect(() => {
+    if (booking.status === "Completed") {
+      fetchFeedback();
+    }
+  }, [booking]);
+
+  const fetchFeedback = async () => {
+    try {
+      setLoadingFeedback(true);
+      const res = await getFeedbackByBookingId(booking._id);
+      if (res.success && res.data) {
+        setFeedback(res.data);
+      }
+    } catch (err) {
+      console.error("Lỗi tải đánh giá", err);
+    } finally {
+      setLoadingFeedback(false);
+    }
+  };
 
   const handleCancelBooking = async () => {
     if (!window.confirm("Bạn có chắc chắn muốn hủy đơn đặt bàn này không? Bàn sẽ được giải phóng ngay lập tức.")) {
@@ -330,6 +377,31 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
       toast.error("Lỗi khi kết nối máy chủ");
     } finally {
       setCancelling(false);
+    }
+  };
+
+  const handleSubmitFeedback = async () => {
+    if (rating === 0) {
+      toast.error("Vui lòng chọn số sao đánh giá");
+      return;
+    }
+    try {
+      setSubmittingFeedback(true);
+      const res = await createFeedback({
+         booking_id: booking._id,
+         rating,
+         comment
+      });
+      if (res.success) {
+        toast.success("Cảm ơn bạn đã đánh giá!");
+        setFeedback(res.data); // Update to read-only mode immediately
+      } else {
+        toast.error(res.message || "Lỗi khi gửi đánh giá");
+      }
+    } catch (error) {
+      toast.error(error?.message || "Lỗi kết nối");
+    } finally {
+       setSubmittingFeedback(false);
     }
   };
 
@@ -446,6 +518,64 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
               <span className="text-xl text-emerald-600">{(booking.total_bill || 0).toLocaleString()}đ</span>
             </div>
           </div>
+
+          {/* Feedback Section (Only for Completed) */}
+          {booking.status === "Completed" && (
+            <div className="border-t pt-5">
+               {loadingFeedback ? (
+                 <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-slate-400"/></div>
+               ) : feedback ? (
+                 <div className="bg-amber-50 border border-amber-100 rounded-xl p-5">
+                    <div className="flex justify-between items-start mb-2">
+                       <h4 className="font-bold text-amber-900 text-sm">Đánh giá của bạn</h4>
+                       <div className="flex text-amber-400">
+                          {[1,2,3,4,5].map(star => (
+                            <Star key={star} size={16} fill={star <= feedback.rating ? "currentColor" : "none"} className={star <= feedback.rating ? "" : "text-amber-200"} />
+                          ))}
+                       </div>
+                    </div>
+                    {feedback.comment && <p className="text-amber-800 text-sm italic">"{feedback.comment}"</p>}
+                    
+                    {feedback.reply_content && (
+                       <div className="mt-4 pt-4 border-t border-amber-200 text-sm">
+                          <p className="font-bold text-slate-700 text-xs mb-1">Phản hồi từ Quán:</p>
+                          <p className="text-slate-600">"{feedback.reply_content}"</p>
+                       </div>
+                    )}
+                 </div>
+               ) : (
+                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-5">
+                    <h4 className="font-bold text-slate-900 text-sm mb-3">⭐ Đánh giá trải nghiệm của bạn</h4>
+                    <div className="flex gap-1 mb-4">
+                       {[1,2,3,4,5].map(star => (
+                         <button 
+                           key={star} 
+                           onMouseEnter={() => setHoverRating(star)}
+                           onMouseLeave={() => setHoverRating(0)}
+                           onClick={() => setRating(star)}
+                           className="focus:outline-none transition-transform hover:scale-110"
+                         >
+                           <Star size={24} fill={(hoverRating || rating) >= star ? "#fbbf24" : "none"} className={(hoverRating || rating) >= star ? "text-amber-400" : "text-slate-300"} />
+                         </button>
+                       ))}
+                    </div>
+                    <textarea 
+                       value={comment}
+                       onChange={(e) => setComment(e.target.value)}
+                       placeholder="Để lại vài lời chia sẻ ủng hộ quán nhé (không bắt buộc)..."
+                       className="w-full text-sm border-slate-200 rounded-lg p-3 resize-none focus:ring-2 focus:ring-emerald-500 min-h-[80px]"
+                    />
+                    <button 
+                       onClick={handleSubmitFeedback}
+                       disabled={submittingFeedback}
+                       className="mt-3 w-full py-2.5 bg-slate-900 text-white font-bold rounded-lg text-sm hover:bg-slate-800 transition-colors flex justify-center items-center gap-2"
+                    >
+                       {submittingFeedback ? <Loader2 className="w-4 h-4 animate-spin"/> : "Gửi Đánh Giá"}
+                    </button>
+                 </div>
+               )}
+            </div>
+          )}
 
           {/* Actions */}
           {(booking.status === "Pending" || booking.status === "Booked") && (
