@@ -63,7 +63,8 @@ import {
   OwnerCreateTournamentPage,
   OwnerEditTournamentPage,
   OwnerTournamentPlayersPage,
-  OwnerReportsPage
+  OwnerReportsPage,
+  OwnerReviewListPage
 } from "@/pages";
 
 export const router = createBrowserRouter([
@@ -142,6 +143,7 @@ export const router = createBrowserRouter([
           { path: "services/edit/:id", element: <OwnerEditServicePage /> },
           { path: "dashboard", element: <OwnerDashboardPage /> },
           { path: "reports", element: <OwnerReportsPage /> },
+          { path: "reviews", element: <OwnerReviewListPage /> },
           { path: "settings", element: <SettingPage /> },
           { path: "payment-success", element: <PaymentSuccessPage  /> },
           { path: "list-employee", element: <OwnerListEmployeePage /> },

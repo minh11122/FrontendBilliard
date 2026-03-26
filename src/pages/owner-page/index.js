@@ -24,3 +24,4 @@ export { default as OwnerCreateTournamentPage } from "./owner-create-tournament-
 export { default as OwnerEditTournamentPage } from "./owner-edit-tournament-page";
 export { default as OwnerTournamentPlayersPage } from "./owner-tournament-players-page";
 export { default as OwnerReportsPage } from "./owner-reports-page";
+export { default as OwnerReviewListPage } from "./owner-review-list-page";

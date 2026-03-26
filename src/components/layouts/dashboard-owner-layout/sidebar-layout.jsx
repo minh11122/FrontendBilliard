@@ -25,7 +25,8 @@ import {
   Sparkles,
   FileText,
   Lock,
-  PieChart
+  PieChart,
+  Star
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -82,6 +83,12 @@ export const SidebarOwner = () => {
       href: "#",
       icon: FileText,
       roles: ["pro"]
+    },
+    {
+      name: "Quản lý đánh giá",
+      href: "/owner/reviews",
+      icon: Star,
+      roles: ["free", "basic", "pro"]
     },
     {
       name: "Quản lý tiện ích",
