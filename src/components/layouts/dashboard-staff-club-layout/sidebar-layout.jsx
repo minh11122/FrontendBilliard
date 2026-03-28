@@ -21,7 +21,8 @@ import {
   Swords,
   PenTool,
   AlertTriangle,
-  LayoutList
+  LayoutList,
+  MessageSquare
 } from "lucide-react";
 
 export const SidebarClub = () => {
@@ -50,6 +51,11 @@ export const SidebarClub = () => {
       name: "Quản lý giải đấu",
       href: "/staff/tournaments",
       icon: Trophy,
+    },
+    {
+      name: "Đánh giá",
+      href: "/staff/reviews",
+      icon: MessageSquare,
     },
   ];
 

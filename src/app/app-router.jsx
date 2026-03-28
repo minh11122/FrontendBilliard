@@ -64,7 +64,8 @@ import {
   OwnerEditTournamentPage,
   OwnerTournamentPlayersPage,
   OwnerReportsPage,
-  OwnerReviewListPage
+  OwnerReviewListPage,
+  StaffClubReviewListPage
 } from "@/pages";
 
 export const router = createBrowserRouter([
@@ -165,6 +166,7 @@ export const router = createBrowserRouter([
           { path: "tables/checkout/:id", element: <BookingCheckoutPage /> },
           { path: "bookings", element: <StaffClubPageBooking /> },
           { path: "tournaments", element: <StaffClubPageTournament /> },
+          { path: "reviews", element: <StaffClubReviewListPage /> }
         ],
       },
       {
