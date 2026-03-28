@@ -98,10 +98,13 @@ export const SidebarOwner = () => {
     },
   ];
 
-  const handleBackToSelection = () => {
+  const handleLogout = () => {
+    localStorage.removeItem("user_fullname");
     localStorage.removeItem("selected_club_id");
     localStorage.removeItem("selected_club_name");
-    navigate("/owner/select-club");
+    localStorage.removeItem("selected_club_plan");
+    logout();
+    navigate("/");
   };
 
   const handleProfile = () => navigate("/profile");
@@ -203,11 +206,11 @@ export const SidebarOwner = () => {
 
             <Button
               variant="ghost"
-              className="w-full justify-start gap-3 text-muted-foreground hover:bg-accent hover:text-foreground"
-              onClick={handleBackToSelection}
+              className="w-full justify-start gap-3 text-muted-foreground hover:bg-red-100 hover:text-red-600"
+              onClick={handleLogout}
             >
-              <ArrowLeftCircle className="h-5 w-5" />
-              <span className="text-sm font-medium">Chọn quán khác</span>
+              <LogOut className="h-5 w-5" />
+              <span className="text-sm font-medium">Đăng xuất</span>
             </Button>
           </div>
         </div>

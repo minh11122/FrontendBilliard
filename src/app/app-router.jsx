@@ -11,6 +11,7 @@ import {
 } from "@/components/layouts";
 
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { PlanProtectedRoute } from "@/components/PlanProtectedRoute";
 
 import {
   LoginForm,
@@ -142,8 +143,8 @@ export const router = createBrowserRouter([
           { path: "services", element: <OwnerServiceListPage /> },
           { path: "services/create", element: <OwnerCreateServicePage /> },
           { path: "services/edit/:id", element: <OwnerEditServicePage /> },
-          { path: "dashboard", element: <OwnerDashboardPage /> },
-          { path: "reports", element: <OwnerReportsPage /> },
+          { path: "dashboard", element: <PlanProtectedRoute allowedPlans={["basic", "pro"]}><OwnerDashboardPage /></PlanProtectedRoute> },
+          { path: "reports", element: <PlanProtectedRoute allowedPlans={["basic", "pro"]}><OwnerReportsPage /></PlanProtectedRoute> },
           { path: "reviews", element: <OwnerReviewListPage /> },
           { path: "settings", element: <SettingPage /> },
           { path: "payment-success", element: <PaymentSuccessPage  /> },
@@ -151,10 +152,10 @@ export const router = createBrowserRouter([
           { path: "employees/create", element: <OwnerCreateEmployeePage /> },
           { path: "employees/edit/:id", element: <OwnerUpdateEmployeePage /> },
           { path: "amenities", element: <AmenitiesPage /> },
-          { path: "tournaments", element: <OwnerTournamentListPage /> },
-          { path: "tournaments/create", element: <OwnerCreateTournamentPage /> },
-          { path: "tournaments/:id/players", element: <OwnerTournamentPlayersPage /> },
-          { path: "tournaments/edit/:id", element: <OwnerEditTournamentPage /> },
+          { path: "tournaments", element: <PlanProtectedRoute allowedPlans={["pro"]}><OwnerTournamentListPage /></PlanProtectedRoute> },
+          { path: "tournaments/create", element: <PlanProtectedRoute allowedPlans={["pro"]}><OwnerCreateTournamentPage /></PlanProtectedRoute> },
+          { path: "tournaments/:id/players", element: <PlanProtectedRoute allowedPlans={["pro"]}><OwnerTournamentPlayersPage /></PlanProtectedRoute> },
+          { path: "tournaments/edit/:id", element: <PlanProtectedRoute allowedPlans={["pro"]}><OwnerEditTournamentPage /></PlanProtectedRoute> },
         ],
       },
       {
