@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import toast from "react-hot-toast";
 import {
   Search, Calendar as CalendarIcon, MoreVertical, TrendingUp, Loader2,
@@ -73,6 +73,15 @@ const formatTableNumber = (tableNumber) => {
   }
   // Nếu đã có định dạng khác (Bàn 1, P3, B1, ...)
   return tableNumber;
+};
+
+// Helper lấy ngày hiện tại dạng YYYY-MM-DD cho input date
+const formatDateInput = (date) => {
+  const d = new Date(date);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
 };
 
 // Helper lấy ngày hôm nay dạng YYYY-MM-DD
@@ -258,7 +267,23 @@ const BookingDetailModal = ({ table, booking, allTables, onClose, onRefresh }) =
               
               <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-100">
                 <InfoRow icon={<MapPin size={14} />} label="Bàn" value={<span className="font-bold text-[#4caf50]">{displayTable?.table_number ? `Bàn ${displayTable.table_number}` : "–"}</span>} />
-                <InfoRow icon={<Clock size={14} />} label="Thời gian" value={`${formatTime(booking.start_time)} – ${formatTime(booking.end_time)}`} />
+                <InfoRow 
+                  icon={<Clock size={14} />} 
+                  label="Thời gian" 
+                  value={
+                    <div className="flex flex-col">
+                      <span>{formatTime(booking.start_time)} – {formatTime(booking.end_time)}</span>
+                      {booking.actual_end_time && booking.status === "Completed" && (
+                        <span className="text-[10px] text-blue-500 font-medium italic">
+                          (Thực tế: {formatTime(booking.actual_end_time)})
+                        </span>
+                      )}
+                      {timeToMinutes(booking.end_time) <= timeToMinutes(booking.start_time) && booking.end_time !== "00:00" && (
+                        <span className="text-[10px] text-orange-500 font-bold italic">(+1 ngày)</span>
+                      )}
+                    </div>
+                  } 
+                />
                 <InfoRow icon={<Circle size={14} />} label="Trạng thái" value={<span className="font-semibold">{booking.status}</span>} />
                 <InfoRow icon={<BadgeCheck size={14} />} label="Tổng tiền" value={
                   <span className="font-bold text-green-600 text-lg">
@@ -531,6 +556,9 @@ const CheckInSection = ({ onCheckInSuccess }) => {
               <span className="text-sm text-gray-500 min-w-[90px]">Thời gian</span>
               <span className="text-sm font-semibold text-gray-900">
                 {formatTime(foundBooking.start_time)} – {formatTime(foundBooking.end_time)}{" "}
+                {timeToMinutes(foundBooking.end_time) <= timeToMinutes(foundBooking.start_time) && foundBooking.end_time !== "00:00" && (
+                  <span className="text-[10px] text-orange-500 font-bold italic mr-1">(+1 ngày)</span>
+                )}
                 <span className="text-gray-400 font-normal">({formatDate(foundBooking.play_date)})</span>
               </span>
             </div>
@@ -618,6 +646,7 @@ const BookingListSection = () => {
 
   const [modalTarget, setModalTarget] = useState(null);
   const [availableTables, setAvailableTables] = useState([]);
+  const dateInputRef = useRef(null);
 
   useEffect(() => {
     const fetchAvailableTables = async () => {
@@ -782,10 +811,24 @@ const BookingListSection = () => {
                   {/* Date Selector */}
                   <div className="flex items-center justify-between gap-1 sm:gap-3 bg-white border border-gray-200 rounded-lg p-1 h-11 w-full md:w-fit shadow-sm">
                     <button onClick={() => handleDateChange('prev')} className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"><ChevronLeft size={16}/></button>
-                    <div className="font-extrabold text-sm min-w-[150px] text-center text-gray-800">
+                    <div 
+                      className="relative font-extrabold text-sm min-w-[170px] flex items-center justify-center text-center text-gray-800 hover:bg-gray-50 px-3 py-1.5 rounded-md cursor-pointer transition-all group border border-transparent hover:border-green-200 select-none"
+                      onClick={() => dateMode === 'day' && dateInputRef.current?.showPicker?.()}
+                    >
+                       <CalendarDays size={14} className="mr-2 text-green-600 group-hover:scale-110 transition-transform" />
                        {dateMode === 'day' && `Thứ ${currentDate.getDay() === 0 ? 'CN' : currentDate.getDay() + 1}, ${currentDate.getDate()} Thg ${currentDate.getMonth()+1}, ${currentDate.getFullYear()}`}
                        {dateMode === 'week' && `Tuần ${getWeekNumber(currentDate)}, ${currentDate.getFullYear()}`}
                        {dateMode === 'month' && `Tháng ${currentDate.getMonth()+1}, ${currentDate.getFullYear()}`}
+                       
+                       <input 
+                         ref={dateInputRef}
+                         type="date"
+                         className="absolute inset-0 opacity-0 cursor-pointer w-full pointer-events-none"
+                         value={formatDateInput(currentDate)}
+                         onChange={(e) => {
+                           if(e.target.value) setCurrentDate(new Date(e.target.value));
+                         }}
+                       />
                     </div>
                     <button onClick={() => handleDateChange('next')} className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"><ChevronRight size={16}/></button>
                   </div>
@@ -876,7 +919,19 @@ const BookingListSection = () => {
                       </span>
                     </TableCell>
                     <TableCell className="px-6 py-4">
-                      <div className="font-medium text-gray-900">{formatTime(booking.start_time)} – {formatTime(booking.end_time)}</div>
+                      <div className="font-medium text-gray-900 flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1.5">
+                          {formatTime(booking.start_time)} – {formatTime(booking.end_time)}
+                          {timeToMinutes(booking.end_time) <= timeToMinutes(booking.start_time) && booking.end_time !== "00:00" && (
+                            <span className="text-[10px] text-orange-500 font-bold bg-orange-50 px-1 rounded border border-orange-100 italic">(+1 ngày)</span>
+                          )}
+                        </div>
+                        {booking.actual_end_time && booking.status === "Completed" && (
+                          <div className="text-[10px] text-blue-500 font-medium italic">
+                            Kết thúc thực tế: {formatTime(booking.actual_end_time)}
+                          </div>
+                        )}
+                      </div>
                       <div className="text-gray-400 text-xs mt-0.5">{formatDate(booking.play_date)}</div>
                     </TableCell>
                     <TableCell className="px-6 py-4">
