@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { MapPin, Clock, Calendar, ChevronRight, X, Star, AlertCircle, CheckCircle2, Loader2, CalendarClock, MessageSquare } from "lucide-react";
 import { getMyBookings, verifyBookingPayOSPayment, cancelHold } from "@/services/booking.service";
-import { createFeedback, getFeedbackByBookingId } from "@/services/feedback.service";
+import { createFeedback, getFeedbackByBookingId, updateFeedback } from "@/services/feedback.service";
 import { AuthContext } from "@/context/AuthContext";
 import toast from "react-hot-toast";
 
@@ -337,6 +337,7 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState("");
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [isEditingFeedback, setIsEditingFeedback] = useState(false);
 
   useEffect(() => {
     if (booking.status === "Completed") {
@@ -387,14 +388,22 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
     }
     try {
       setSubmittingFeedback(true);
-      const res = await createFeedback({
-         booking_id: booking._id,
-         rating,
-         comment
-      });
+      
+      let res;
+      if (isEditingFeedback && feedback?._id) {
+        res = await updateFeedback(feedback._id, { rating, comment });
+      } else {
+        res = await createFeedback({
+           booking_id: booking._id,
+           rating,
+           comment
+        });
+      }
+
       if (res.success) {
-        toast.success("Cảm ơn bạn đã đánh giá!");
-        setFeedback(res.data); // Update to read-only mode immediately
+        toast.success(isEditingFeedback ? "Cập nhật đánh giá thành công!" : "Cảm ơn bạn đã đánh giá!");
+        setFeedback(res.data);
+        setIsEditingFeedback(false);
       } else {
         toast.error(res.message || "Lỗi khi gửi đánh giá");
       }
@@ -403,6 +412,22 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
     } finally {
        setSubmittingFeedback(false);
     }
+  };
+
+  // Logic to determine if feedback is editable
+  const canEditFeedback = () => {
+    if (!feedback) return false;
+    if (feedback.is_edited) return false;
+    const createdAt = new Date(feedback.created_at).getTime();
+    const now = Date.now();
+    const diffDays = (now - createdAt) / (1000 * 60 * 60 * 24);
+    return diffDays <= 3;
+  };
+
+  const handleStartEdit = () => {
+    setRating(feedback.rating);
+    setComment(feedback.comment || "");
+    setIsEditingFeedback(true);
   };
 
   return (
@@ -524,7 +549,7 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
             <div className="border-t pt-5">
                {loadingFeedback ? (
                  <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-slate-400"/></div>
-               ) : feedback ? (
+               ) : feedback && !isEditingFeedback ? (
                  <div className="bg-amber-50 border border-amber-100 rounded-xl p-5">
                     <div className="flex justify-between items-start mb-2">
                        <h4 className="font-bold text-amber-900 text-sm">Đánh giá của bạn</h4>
@@ -536,6 +561,15 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
                     </div>
                     {feedback.comment && <p className="text-amber-800 text-sm italic">"{feedback.comment}"</p>}
                     
+                    {canEditFeedback() && (
+                      <button 
+                        onClick={handleStartEdit}
+                        className="mt-3 text-xs font-bold text-emerald-600 hover:text-emerald-700 underline flex items-center gap-1"
+                      >
+                         Sửa đánh giá
+                      </button>
+                    )}
+
                     {feedback.reply_content && (
                        <div className="mt-4 pt-4 border-t border-amber-200 text-sm">
                           <p className="font-bold text-slate-700 text-xs mb-1">Phản hồi từ Quán:</p>
@@ -545,7 +579,27 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
                  </div>
                ) : (
                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-5">
-                    <h4 className="font-bold text-slate-900 text-sm mb-3">⭐ Đánh giá trải nghiệm của bạn</h4>
+                    <div className="flex justify-between items-center mb-3">
+                      <h4 className="font-bold text-slate-900 text-sm">
+                        {isEditingFeedback ? "Sửa đánh giá của bạn" : "⭐ Đánh giá trải nghiệm của bạn"}
+                      </h4>
+                      {isEditingFeedback && (
+                        <button 
+                          onClick={() => setIsEditingFeedback(false)}
+                          className="text-xs text-slate-500 hover:text-slate-700 font-bold"
+                        >
+                          Hủy
+                        </button>
+                      )}
+                    </div>
+                    
+                    {isEditingFeedback && (
+                      <div className="mb-4 bg-blue-50 text-blue-700 p-3 rounded-lg text-xs border border-blue-200 flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                        <p>Bạn chỉ được phép chỉnh sửa đánh giá <b>1 lần duy nhất</b> trong vòng 3 ngày kể từ khi tạo.</p>
+                      </div>
+                    )}
+
                     <div className="flex gap-1 mb-4">
                        {[1,2,3,4,5].map(star => (
                          <button 
@@ -568,9 +622,13 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
                     <button 
                        onClick={handleSubmitFeedback}
                        disabled={submittingFeedback}
-                       className="mt-3 w-full py-2.5 bg-slate-900 text-white font-bold rounded-lg text-sm hover:bg-slate-800 transition-colors flex justify-center items-center gap-2"
+                       className={`mt-3 w-full py-2.5 font-bold rounded-lg text-sm transition-colors flex justify-center items-center gap-2 ${
+                         isEditingFeedback 
+                           ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                           : "bg-slate-900 text-white hover:bg-slate-800"
+                       }`}
                     >
-                       {submittingFeedback ? <Loader2 className="w-4 h-4 animate-spin"/> : "Gửi Đánh Giá"}
+                       {submittingFeedback ? <Loader2 className="w-4 h-4 animate-spin"/> : (isEditingFeedback ? "Cập Nhật Đánh Giá" : "Gửi Đánh Giá")}
                     </button>
                  </div>
                )}

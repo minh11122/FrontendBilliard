@@ -21,3 +21,14 @@ export const getFeedbackByBookingId = async (bookingId) => {
     throw error;
   }
 };
+
+// Khách hàng sửa lại đánh giá
+export const updateFeedback = async (id, data) => {
+  try {
+    const res = await api.put(`/feedbacks/${id}`, data);
+    return res.data;
+  } catch (error) {
+    if (error.response?.data) return error.response.data;
+    throw error;
+  }
+};
