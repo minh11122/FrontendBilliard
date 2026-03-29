@@ -70,7 +70,8 @@ export function SettingPage() {
     province_name: "", // Tên hiển thị dự phòng
     district_name: "", // Tên hiển thị dự phòng
     avatar: "",
-    backgrounds: []
+    backgrounds: [],
+    deposit_percentage: 30
   });
   const guideSteps = [
   {
@@ -139,7 +140,8 @@ export function SettingPage() {
           province_name: club.province_name || "",
           district_name: club.district_name || "",
           avatar: avatarImg,
-          backgrounds: bgImages
+          backgrounds: bgImages,
+          deposit_percentage: club.deposit_percentage ?? 30
         });
 
       }
@@ -851,6 +853,55 @@ export function SettingPage() {
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Cấu hình tiền cọc */}
+            <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
+                  <span className="font-bold">%</span>
+                </div>
+                Cấu hình tiền cọc khi đặt bàn
+              </h3>
+              <p className="text-sm text-gray-500 mb-6">
+                Chủ quán có thể tùy chỉnh phần trăm tiền cọc yêu cầu khi khách hàng tạo đơn đặt bàn trước. Mặc định là 30%.
+              </p>
+
+              <div className="flex items-end gap-4 max-w-sm">
+                <div className="space-y-2 flex-1">
+                  <label className="text-sm font-semibold text-gray-700">Phần trăm tiền cọc (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={clubData.deposit_percentage}
+                    onChange={(e) => setClubData({ ...clubData, deposit_percentage: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 font-bold"
+                    placeholder="Ví dụ: 30"
+                  />
+                </div>
+                <button
+                  onClick={async () => {
+                    const val = Number(clubData.deposit_percentage);
+                    if (val < 0 || val > 100 || isNaN(val)) {
+                      return toast.error("Phần trăm cọc phải từ 0 đến 100 (%)");
+                    }
+                    try {
+                      setSaving(true);
+                      await clubService.updateClub(clubId, { deposit_percentage: val });
+                      toast.success("Lưu cấu hình tiền cọc thành công!");
+                    } catch (err) {
+                      toast.error(err.response?.data?.message || "Lỗi khi lưu tiền cọc");
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                  disabled={saving}
+                  className="px-6 py-3 h-[48px] rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-all disabled:opacity-50"
+                >
+                  {saving ? "Đang lưu" : "Lưu Thay Đổi"}
+                </button>
               </div>
             </div>
 

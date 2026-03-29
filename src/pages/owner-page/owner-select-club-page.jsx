@@ -104,6 +104,16 @@ export function OwnerSelectClubPage() {
           </div>
         ) : (
           <div className="w-full">
+            {/* Action Bar */}
+            <div className="flex justify-center mb-6 w-full max-w-5xl mx-auto">
+              <button 
+                onClick={() => navigate("/register-owner-account")}
+                className="px-6 py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-800 transition-all shadow-md hover:-translate-y-0.5"
+              >
+                + Thêm quán mới
+              </button>
+            </div>
+
             {/* Tabs */}
             <div className="flex bg-gray-200/50 p-1.5 rounded-2xl w-fit mx-auto mb-10">
               <button

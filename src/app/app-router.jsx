@@ -11,6 +11,7 @@ import {
 } from "@/components/layouts";
 
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { PlanProtectedRoute } from "@/components/PlanProtectedRoute";
 
 import {
   LoginForm,
@@ -67,6 +68,7 @@ import {
   OwnerReportsPage,
   OwnerReviewListPage,
   OwnerTournamentBracketPage
+  StaffClubReviewListPage
 } from "@/pages";
 
 export const router = createBrowserRouter([
@@ -143,8 +145,8 @@ export const router = createBrowserRouter([
           { path: "services", element: <OwnerServiceListPage /> },
           { path: "services/create", element: <OwnerCreateServicePage /> },
           { path: "services/edit/:id", element: <OwnerEditServicePage /> },
-          { path: "dashboard", element: <OwnerDashboardPage /> },
-          { path: "reports", element: <OwnerReportsPage /> },
+          { path: "dashboard", element: <PlanProtectedRoute allowedPlans={["basic", "pro"]}><OwnerDashboardPage /></PlanProtectedRoute> },
+          { path: "reports", element: <PlanProtectedRoute allowedPlans={["basic", "pro"]}><OwnerReportsPage /></PlanProtectedRoute> },
           { path: "reviews", element: <OwnerReviewListPage /> },
           { path: "settings", element: <SettingPage /> },
           { path: "payment-success", element: <PaymentSuccessPage  /> },
@@ -169,6 +171,7 @@ export const router = createBrowserRouter([
           { path: "bookings", element: <StaffClubPageBooking /> },
           { path: "tournaments", element: <StaffClubPageTournament /> },
           { path: "tournaments/:id/matches", element: <StaffClubPageMatchManagement /> },
+          { path: "reviews", element: <StaffClubReviewListPage /> }
         ],
       },
       {

@@ -30,22 +30,23 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 
-const OwnerReviewListPage = () => {
+export const StaffClubReviewListPage = () => {
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
+  
+  const [isReplyModalVisible, setIsReplyModalVisible] = useState(false);
+  const [selectedFeedback, setSelectedFeedback] = useState(null);
+  const [replyContent, setReplyContent] = useState("");
+  const [replyLoading, setReplyLoading] = useState(false);
   const [ratingFilter, setRatingFilter] = useState("all");
   const [replyFilter, setReplyFilter] = useState("all");
 
   const fetchFeedbacks = async (page = 1, limit = 10, rating = ratingFilter, isReplied = replyFilter) => {
     try {
       setLoading(true);
-      const clubId = localStorage.getItem("selected_club_id");
-      if (!clubId) {
-        toast.error("Vui lòng chọn câu lạc bộ trước");
-        return;
-      }
-      let url = `/feedbacks/club/${clubId}?page=${page}&limit=${limit}`;
+      // For staff, we pass "my" and the backend will use req.user.club_id
+      let url = `/feedbacks/club/my?page=${page}&limit=${limit}`;
       if (rating !== "all") url += `&rating=${rating}`;
       if (isReplied !== "all") url += `&isReplied=${isReplied}`;
       
@@ -76,6 +77,60 @@ const OwnerReviewListPage = () => {
     fetchFeedbacks(newPage, pagination.pageSize, ratingFilter, replyFilter);
   };
 
+  const openReplyModal = (record) => {
+    setSelectedFeedback(record);
+    setReplyContent("");
+    setIsReplyModalVisible(true);
+  };
+
+  const handleCancelReply = () => {
+    setIsReplyModalVisible(false);
+    setSelectedFeedback(null);
+    setReplyContent("");
+  };
+
+  const handleReplySubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedFeedback) return;
+    if (!replyContent.trim()) {
+      toast.error("Vui lòng nhập nội dung phản hồi");
+      return;
+    }
+    
+    try {
+      setReplyLoading(true);
+      const url = `/feedbacks/${selectedFeedback._id}/reply`;
+      const response = await axios.post(url, {
+        reply_content: replyContent
+      });
+
+      if (response.data && response.data.success) {
+        toast.success("Đã phản hồi đánh giá thành công");
+        
+        // Optimistic UI Update
+        const updatedFeedbacks = feedbacks.map(fb => {
+          if (fb._id === selectedFeedback._id) {
+            return {
+              ...fb,
+              reply_content: replyContent,
+              replied_at: new Date().toISOString()
+            };
+          }
+          return fb;
+        });
+        setFeedbacks(updatedFeedbacks);
+        
+        handleCancelReply();
+      }
+    } catch (error) {
+      console.error("Lỗi replyFeedback:", error);
+      const errorMsg = error.response?.data?.message || "Lỗi khi gửi phản hồi";
+      toast.error(errorMsg);
+    } finally {
+      setReplyLoading(false);
+    }
+  };
+
   const renderStars = (rating) => {
     return (
       <div className="flex">
@@ -93,7 +148,7 @@ const OwnerReviewListPage = () => {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Quản lý đánh giá</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Đánh giá khách hàng</h2>
           <p className="text-muted-foreground mt-1">
             Xem và phản hồi đánh giá của khách hàng về câu lạc bộ
           </p>
@@ -143,7 +198,8 @@ const OwnerReviewListPage = () => {
                   <TableHead className="w-[15%]">Khách hàng</TableHead>
                   <TableHead className="w-[20%]">Thông tin Booking</TableHead>
                   <TableHead className="w-[30%]">Đánh giá</TableHead>
-                  <TableHead className="w-[35%]">Trạng thái / Phản hồi</TableHead>
+                  <TableHead className="w-[25%]">Trạng thái / Phản hồi</TableHead>
+                  <TableHead className="w-[10%] text-right">Thao tác</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -194,6 +250,17 @@ const OwnerReviewListPage = () => {
                           )}
                         </div>
                       </TableCell>
+                      <TableCell className="text-right">
+                        <Button 
+                          variant={isReplied ? "outline" : "default"}
+                          disabled={isReplied}
+                          onClick={() => openReplyModal(fb)}
+                          className={!isReplied ? "bg-orange-500 hover:bg-orange-600 text-white" : ""}
+                          size="sm"
+                        >
+                          Phản hồi
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -202,7 +269,6 @@ const OwnerReviewListPage = () => {
           </div>
         )}
 
-        {/* Custom Pagination (if necessary, simple numbers for now) */}
         {pagination.total > pagination.pageSize && (
           <div className="p-4 border-t border-border flex justify-end items-center gap-2">
             <span className="text-sm text-muted-foreground mr-4">
@@ -227,8 +293,44 @@ const OwnerReviewListPage = () => {
           </div>
         )}
       </div>
+
+      <Dialog open={isReplyModalVisible} onOpenChange={setIsReplyModalVisible}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Phản hồi đánh giá</DialogTitle>
+          </DialogHeader>
+          <div className="mt-4 mb-4 p-4 bg-muted/50 rounded-lg border border-border">
+            <span className="text-sm text-muted-foreground mb-2 block">Khách hàng đánh giá:</span>
+            {renderStars(selectedFeedback?.rating || 5)}
+            <p className="mt-2 text-sm font-medium">
+              "{selectedFeedback?.comment || 'Không có bình luận'}"
+            </p>
+          </div>
+          <form onSubmit={handleReplySubmit} className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="reply_content" className="text-sm font-medium">Nội dung phản hồi của bạn:</label>
+              <Textarea
+                id="reply_content"
+                placeholder="Nhập nội dung phản hồi. Khách hàng sẽ nhìn thấy nội dung này..."
+                value={replyContent}
+                onChange={(e) => setReplyContent(e.target.value)}
+                className="min-h-[120px] resize-none"
+                required
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={handleCancelReply}>
+                Hủy
+              </Button>
+              <Button type="submit" disabled={replyLoading || !replyContent.trim()} className="bg-orange-500 hover:bg-orange-600">
+                {replyLoading ? "Đang gửi..." : "Gửi phản hồi"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
-export default OwnerReviewListPage;
+export default StaffClubReviewListPage;

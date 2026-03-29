@@ -117,8 +117,13 @@ const getBlockStyle = (booking, currentDate) => {
   let startMinutes = sh * 60 + sm;
   
   let endMinutes;
-  if (booking.end_time) {
-    const [eh, em] = booking.end_time.split(':').map(Number);
+  // Use actual_end_time if the booking is completed/checked out early
+  const displayEndTime = booking.status === "Completed" && booking.actual_end_time 
+    ? booking.actual_end_time 
+    : booking.end_time;
+
+  if (displayEndTime) {
+    const [eh, em] = displayEndTime.split(':').map(Number);
     endMinutes = eh * 60 + em;
     if (endMinutes <= startMinutes && endMinutes !== 0) endMinutes += 24 * 60; // Next day
   } else {
