@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
-import { ArrowLeft, Users, Trophy, Calendar, CheckCircle, Clock } from "lucide-react";
-import { getTournamentById, getTournamentPlayers } from "@/services/tournament.service";
+import { ArrowLeft, Users, Trophy, Calendar, CheckCircle, Clock, Swords } from "lucide-react";
+import { getTournamentById, getTournamentPlayers, getTournamentMatches } from "@/services/tournament.service";
 
 const formatDateTime = (dateStr) => {
   if (!dateStr) return "—";
@@ -18,6 +18,24 @@ const statusBadge = (status) => {
   return "bg-slate-100 text-slate-700";
 };
 
+const matchStatusBadge = (status) => {
+  const s = status || "";
+  if (s === "Finished") return "bg-green-100 text-green-700";
+  if (s === "Ready" || s === "InProgress") return "bg-blue-100 text-blue-700";
+  if (s === "Scheduled") return "bg-slate-100 text-slate-600";
+  return "bg-slate-100 text-slate-700";
+};
+
+const matchStatusLabel = (status) => {
+  const map = {
+    Scheduled: "Chưa bắt đầu",
+    Ready: "Sẵn sàng",
+    InProgress: "Đang diễn ra",
+    Finished: "Đã kết thúc"
+  };
+  return map[status] || status || "—";
+};
+
 export const TournamentPlayersPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -25,6 +43,8 @@ export const TournamentPlayersPage = () => {
   const [loading, setLoading] = useState(true);
   const [tournament, setTournament] = useState(null);
   const [players, setPlayers] = useState([]);
+  const [matches, setMatches] = useState([]);
+  const [matchesLoading, setMatchesLoading] = useState(false);
   const [tab, setTab] = useState("players");
 
   useEffect(() => {
@@ -46,8 +66,28 @@ export const TournamentPlayersPage = () => {
     fetchData();
   }, [id]);
 
+  const fetchMatches = async () => {
+    try {
+      setMatchesLoading(true);
+      const res = await getTournamentMatches(id);
+      if (res?.success) setMatches(res.data || []);
+    } catch (error) {
+      console.error("Error fetching matches:", error);
+    } finally {
+      setMatchesLoading(false);
+    }
+  };
+
   const handleMatchesTabClick = () => {
-    toast("Danh sách trận đấu sẽ có ở phiên bản sau");
+    setTab("matches");
+    if (matches.length === 0) {
+      fetchMatches();
+    }
+  };
+
+  const getPlayerName = (player) => {
+    if (!player) return "BYE";
+    return player.fullname || "—";
   };
 
   return (
@@ -99,10 +139,7 @@ export const TournamentPlayersPage = () => {
                 Danh sách người chơi
               </button>
               <button
-                onClick={() => {
-                  setTab("matches");
-                  handleMatchesTabClick();
-                }}
+                onClick={handleMatchesTabClick}
                 className={`px-3 py-2 rounded-lg text-sm font-bold transition-colors ${
                   tab === "matches"
                     ? "bg-white text-orange-600 shadow-sm border"
@@ -110,7 +147,7 @@ export const TournamentPlayersPage = () => {
                 }`}
               >
                 <span className="inline-flex items-center gap-2">
-                  <Clock size={14} /> Danh sách trận đấu
+                  <Swords size={14} /> Danh sách trận đấu
                 </span>
               </button>
             </div>
@@ -178,8 +215,45 @@ export const TournamentPlayersPage = () => {
               )}
             </div>
           ) : (
-            <div className="py-10 text-center text-slate-500">
-              Trang danh sách trận đấu sẽ được cập nhật sau.
+            <div>
+              {matchesLoading ? (
+                <div className="flex items-center justify-center py-14">
+                  <div className="animate-spin w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full" />
+                </div>
+              ) : matches.length === 0 ? (
+                <div className="py-10 text-center text-slate-500">
+                  Chưa có trận đấu nào. Bracket sẽ được tạo khi chủ quán chốt đăng ký.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {matches.map((m) => (
+                    <div
+                      key={m._id}
+                      className="flex items-center justify-between gap-3 p-4 border border-slate-100 rounded-xl bg-slate-50/50"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-slate-400 font-semibold mb-1">
+                          {m.match_name || `Trận ${m.match_no}`}
+                        </p>
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className={`font-bold ${m.winner_id && String(m.winner_id?._id || m.winner_id) === String(m.player1_id?._id || m.player1_id) ? "text-orange-600" : "text-slate-800"}`}>
+                            {getPlayerName(m.player1_id)}
+                          </span>
+                          <span className="text-slate-400 font-bold text-xs">
+                            {m.status === "Finished" ? `${m.player1_score ?? 0} - ${m.player2_score ?? 0}` : "vs"}
+                          </span>
+                          <span className={`font-bold ${m.winner_id && String(m.winner_id?._id || m.winner_id) === String(m.player2_id?._id || m.player2_id) ? "text-orange-600" : "text-slate-800"}`}>
+                            {getPlayerName(m.player2_id)}
+                          </span>
+                        </div>
+                      </div>
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold shrink-0 ${matchStatusBadge(m.status)}`}>
+                        {matchStatusLabel(m.status)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Users, Trophy, CalendarDays, CheckCircle } from "lucide-react";
-import { getTournamentById, getTournamentPlayers } from "@/services/tournament.service";
+import { getTournamentById, getTournamentPlayers, generateBracket, startTournament } from "@/services/tournament.service";
 
 const statusBadge = (status) => {
   const s = status || "";
@@ -25,6 +25,7 @@ export default function OwnerTournamentPlayersPage() {
   const [loading, setLoading] = useState(true);
   const [tournament, setTournament] = useState(null);
   const [players, setPlayers] = useState([]);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     const run = async () => {
@@ -44,6 +45,36 @@ export default function OwnerTournamentPlayersPage() {
     run();
   }, [id]);
 
+  const handleGenerate = async () => {
+    if (!window.confirm("Tạo / ghi đè bracket cho giải này?")) return;
+    try {
+      setActionLoading(true);
+      const res = await generateBracket(id, {});
+      if (res?.success) toast.success("Đã tạo bracket");
+      const tRes = await getTournamentById(id);
+      if (tRes?.success) setTournament(tRes.data);
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Không tạo được bracket");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleStart = async () => {
+    if (!window.confirm("Bắt đầu giải đấu này?")) return;
+    try {
+      setActionLoading(true);
+      const res = await startTournament(id);
+      if (res?.success) toast.success("Giải đấu đang diễn ra");
+      const tRes = await getTournamentById(id);
+      if (tRes?.success) setTournament(tRes.data);
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Không thể bắt đầu");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const feeText = useMemo(() => {
     if (!tournament) return "—";
     const fee = Number(tournament.fee || 0);
@@ -62,12 +93,32 @@ export default function OwnerTournamentPlayersPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => navigate("/owner/tournaments")}
-          className="px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-800 font-semibold rounded-xl transition-all border border-slate-200 flex items-center gap-2"
-        >
-          <ArrowLeft size={18} /> Quay lại
-        </button>
+        <div className="flex flex-wrap gap-2 justify-end">
+          {tournament?.status === "Closed" && (
+            <>
+              <button
+                disabled={actionLoading}
+                onClick={handleGenerate}
+                className="px-4 py-2.5 bg-slate-800 text-white font-semibold rounded-xl transition-all flex items-center gap-2 disabled:opacity-60"
+              >
+                <Trophy size={18} /> Random Bracket
+              </button>
+              <button
+                disabled={actionLoading}
+                onClick={handleStart}
+                className="px-4 py-2.5 bg-blue-600 text-white font-semibold rounded-xl transition-all flex items-center gap-2 disabled:opacity-60"
+              >
+                Bắt đầu giải
+              </button>
+            </>
+          )}
+          <button
+            onClick={() => navigate("/owner/tournaments")}
+            className="px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-800 font-semibold rounded-xl transition-all border border-slate-200 flex items-center gap-2"
+          >
+            <ArrowLeft size={18} /> Quay lại
+          </button>
+        </div>
       </div>
 
       {loading ? (

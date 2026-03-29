@@ -30,6 +30,51 @@ export const verifyTournamentPayOSPayment = async (orderCode) => {
   return res.data;
 };
 
+export const openRegistration = async (tournamentId) => {
+  const res = await api.post(`/tournaments/${tournamentId}/open`);
+  return res.data;
+};
+
+export const closeRegistration = async (tournamentId, payload = {}) => {
+  const res = await api.post(`/tournaments/${tournamentId}/close`, payload);
+  return res.data;
+};
+
+export const generateBracket = async (tournamentId, payload = {}) => {
+  const res = await api.post(`/tournaments/${tournamentId}/generate-bracket`, payload);
+  return res.data;
+};
+
+export const startTournament = async (tournamentId) => {
+  const res = await api.post(`/tournaments/${tournamentId}/start`);
+  return res.data;
+};
+
+export const getTournamentBracket = async (tournamentId) => {
+  const res = await api.get(`/tournaments/${tournamentId}/bracket`);
+  return res.data;
+};
+
+export const getTournamentMatches = async (tournamentId, params = {}) => {
+  const res = await api.get(`/tournaments/${tournamentId}/matches`, { params });
+  return res.data;
+};
+
+export const startMatch = async (tournamentId, matchId, payload = {}) => {
+  const res = await api.post(`/tournaments/${tournamentId}/matches/${matchId}/start`, payload);
+  return res.data;
+};
+
+export const submitMatchResult = async (tournamentId, matchId, payload) => {
+  const res = await api.post(`/tournaments/${tournamentId}/matches/${matchId}/result`, payload);
+  return res.data;
+};
+
+export const getLeaderboard = async (tournamentId) => {
+  const res = await api.get(`/tournaments/${tournamentId}/leaderboard`);
+  return res.data;
+};
+
 export const getMyRegisteredTournamentIds = async () => {
   const res = await api.get("/tournaments/my/registered-ids");
   return res.data;

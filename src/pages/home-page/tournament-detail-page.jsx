@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getMyRegisteredTournamentIds, getTournamentById } from "@/services/tournament.service";
+import { TournamentBracket } from "@/components/TournamentBracket";
 import { Calendar, Users, Trophy, MapPin, ArrowLeft, Clock, CheckCircle, Store } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -26,6 +27,7 @@ export default function TournamentDetailPage() {
   const [tournament, setTournament] = useState(null);
   const [loading, setLoading] = useState(true);
   const [joined, setJoined] = useState(false);
+  const [activeTab, setActiveTab] = useState("info");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -114,34 +116,51 @@ export default function TournamentDetailPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Left: Details */}
           <div className="md:col-span-2 space-y-6">
-            {/* About */}
-            {tournament.description && (
-              <div className="bg-white rounded-2xl p-6 shadow-sm">
-                <h2 className="font-bold text-slate-800 text-lg mb-3">Mô tả giải đấu</h2>
-                <p className="text-gray-600 whitespace-pre-line leading-relaxed">{tournament.description}</p>
-              </div>
+            <div className="flex border-b border-gray-200 mb-6">
+               <button onClick={() => setActiveTab('info')} className={`pb-3 px-4 font-bold ${activeTab === 'info' ? 'text-orange-500 border-b-2 border-orange-500' : 'text-gray-500 hover:text-gray-700 transition-colors'}`}>Thông tin chung</button>
+               {['Closed', 'InProgress', 'Completed'].includes(tournament.status) && (
+                 <button onClick={() => setActiveTab('bracket')} className={`pb-3 px-4 font-bold ${activeTab === 'bracket' ? 'text-orange-500 border-b-2 border-orange-500' : 'text-gray-500 hover:text-gray-700 transition-colors'}`}>Sơ đồ / Lịch thi đấu</button>
+               )}
+            </div>
+
+            {activeTab === 'info' && (
+              <>
+                {/* About */}
+                {tournament.description && (
+                  <div className="bg-white rounded-2xl p-6 shadow-sm">
+                    <h2 className="font-bold text-slate-800 text-lg mb-3">Mô tả giải đấu</h2>
+                    <p className="text-gray-600 whitespace-pre-line leading-relaxed">{tournament.description}</p>
+                  </div>
+                )}
+
+                {/* Schedule */}
+                <div className="bg-white rounded-2xl p-6 shadow-sm">
+                  <h2 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
+                    <Calendar size={18} className="text-orange-500" /> Lịch đấu
+                  </h2>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex items-center gap-3 text-gray-600">
+                      <CheckCircle size={16} className="text-green-500 shrink-0" />
+                      <span><b>Mở đăng ký:</b> {formatDate(tournament.registration_open)}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-gray-600">
+                      <Clock size={16} className="text-orange-400 shrink-0" />
+                      <span><b>Đóng đăng ký:</b> {formatDate(tournament.registration_deadline)}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-gray-600">
+                      <Trophy size={16} className="text-amber-500 shrink-0" />
+                      <span><b>Ngày thi đấu:</b> {formatDate(tournament.play_date)}</span>
+                    </div>
+                  </div>
+                </div>
+              </>
             )}
 
-            {/* Schedule */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <h2 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
-                <Calendar size={18} className="text-orange-500" /> Lịch đấu
-              </h2>
-              <div className="space-y-3 text-sm">
-                <div className="flex items-center gap-3 text-gray-600">
-                  <CheckCircle size={16} className="text-green-500 shrink-0" />
-                  <span><b>Mở đăng ký:</b> {formatDate(tournament.registration_open)}</span>
-                </div>
-                <div className="flex items-center gap-3 text-gray-600">
-                  <Clock size={16} className="text-orange-400 shrink-0" />
-                  <span><b>Đóng đăng ký:</b> {formatDate(tournament.registration_deadline)}</span>
-                </div>
-                <div className="flex items-center gap-3 text-gray-600">
-                  <Trophy size={16} className="text-amber-500 shrink-0" />
-                  <span><b>Ngày thi đấu:</b> {formatDate(tournament.play_date)}</span>
-                </div>
+            {activeTab === 'bracket' && (
+              <div className="bg-white rounded-2xl p-6 shadow-sm overflow-hidden">
+                <TournamentBracket tournamentId={tournament._id} format={tournament.format} />
               </div>
-            </div>
+            )}
           </div>
 
           {/* Right: Sidebar */}

@@ -43,6 +43,7 @@ import {
   StaffClubPageBooking,
   StaffClubPageStatic,
   StaffClubPageTournament,
+  StaffClubPageMatchManagement,
   BookingCheckoutPage,
   SystemStaff,
   SystemStaff1,
@@ -64,7 +65,8 @@ import {
   OwnerEditTournamentPage,
   OwnerTournamentPlayersPage,
   OwnerReportsPage,
-  OwnerReviewListPage
+  OwnerReviewListPage,
+  OwnerTournamentBracketPage
 } from "@/pages";
 
 export const router = createBrowserRouter([
@@ -153,6 +155,7 @@ export const router = createBrowserRouter([
           { path: "tournaments", element: <OwnerTournamentListPage /> },
           { path: "tournaments/create", element: <OwnerCreateTournamentPage /> },
           { path: "tournaments/:id/players", element: <OwnerTournamentPlayersPage /> },
+          { path: "tournaments/:id/bracket", element: <OwnerTournamentBracketPage /> },
           { path: "tournaments/edit/:id", element: <OwnerEditTournamentPage /> },
         ],
       },
@@ -165,6 +168,7 @@ export const router = createBrowserRouter([
           { path: "tables/checkout/:id", element: <BookingCheckoutPage /> },
           { path: "bookings", element: <StaffClubPageBooking /> },
           { path: "tournaments", element: <StaffClubPageTournament /> },
+          { path: "tournaments/:id/matches", element: <StaffClubPageMatchManagement /> },
         ],
       },
       {
