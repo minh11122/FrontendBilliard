@@ -67,7 +67,7 @@ import {
   OwnerTournamentPlayersPage,
   OwnerReportsPage,
   OwnerReviewListPage,
-  OwnerTournamentBracketPage
+  OwnerTournamentBracketPage,
   StaffClubReviewListPage
 } from "@/pages";
 

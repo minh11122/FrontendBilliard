@@ -66,11 +66,11 @@ export const StaffClubPageMatchManagement = () => {
   };
 
   const handleStartMatch = async () => {
+    if (!selectedTable) return toast.error("Vui lòng chọn bàn thi đấu!");
     if (raceTo < 1) return toast.error("Chạm (Target score) phải lớn hơn 0");
     try {
       setActionLoading(true);
-      const payload = { race_to: raceTo };
-      if (selectedTable) payload.table_id = selectedTable;
+      const payload = { race_to: raceTo, table_id: selectedTable };
       const res = await startMatch(id, selectedMatch._id, payload);
       if (res?.success) {
         toast.success("Bắt đầu trận thành công");
@@ -247,7 +247,7 @@ export const StaffClubPageMatchManagement = () => {
                   >
                     <option value="">Chọn bàn...</option>
                     {tables.map(t => (
-                      <option key={t._id} value={t._id}>Bàn {t.table_number || t.name || t._id} (Khu vực: {t.area})</option>
+                      <option key={t._id} value={t._id}>Bàn {t.table_number || t.name || t._id}</option>
                     ))}
                   </select>
                </div>

@@ -396,27 +396,34 @@ const TableDetailModal = ({ table, booking, isBookingActive, allTables, onClose,
                   <InfoRow icon={<Circle size={14} />} label="Trạng thái đơn" value={
                     <span className="font-semibold text-gray-800">{booking.status}</span>
                   } />
-                  <InfoRow icon={<BadgeCheck size={14} />} label="Tổng tiền" value={
-                    <span className="font-bold text-green-600 text-lg">
-                      {booking.status === "Playing" 
-                        ? (() => {
-                            const startMin = timeToMinutes(booking.start_time);
-                            let endMin = timeToMinutes(booking.end_time);
-                            if (endMin <= startMin && endMin !== 0) endMin += 24 * 60;
-
-                            const dur = Math.max(0, (endMin - startMin) / 60);
-                            const playCost = dur * (booking.hour_price || 0);
-                            const serviceTotal = bookingServices.reduce((sum, s) => sum + (s.unit_price * s.quantity), 0);
-                            return Math.round(playCost + serviceTotal).toLocaleString("vi-VN");
-                          })()
-                        : (booking.total_bill || 0)?.toLocaleString("vi-VN")
-                      }đ
-                    </span>
-                  } />
+                  <InfoRow 
+                    icon={<BadgeCheck size={14} />} 
+                    label={booking.note?.includes("TournamentMatch:") ? "Loại hình" : "Tổng tiền"} 
+                    value={
+                      booking.note?.includes("TournamentMatch:") ? (
+                        <span className="font-bold text-blue-600 text-lg">Giải đấu</span>
+                      ) : (
+                        <span className="font-bold text-green-600 text-lg">
+                          {booking.status === "Playing" 
+                            ? (() => {
+                                const startMin = timeToMinutes(booking.start_time);
+                                let endMin = timeToMinutes(booking.end_time);
+                                if (endMin <= startMin && endMin !== 0) endMin += 24 * 60;
+                                const dur = Math.max(0, (endMin - startMin) / 60);
+                                const playCost = dur * (booking.hour_price || 0);
+                                const serviceTotal = bookingServices.reduce((sum, s) => sum + (s.unit_price * s.quantity), 0);
+                                return Math.round(playCost + serviceTotal).toLocaleString("vi-VN");
+                              })()
+                            : (booking.total_bill || 0)?.toLocaleString("vi-VN")
+                          }đ
+                        </span>
+                      )
+                    } 
+                  />
                 </div>
               </div>
 
-              {booking.status === "Playing" && bookingServices.length > 0 && (
+              {!booking.note?.includes("TournamentMatch:") && booking.status === "Playing" && bookingServices.length > 0 && (
                 <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
                   <h4 className="text-[11px] font-bold text-gray-400 uppercase mb-2">Dịch vụ đã gọi</h4>
                   <div className="space-y-2">
@@ -466,139 +473,150 @@ const TableDetailModal = ({ table, booking, isBookingActive, allTables, onClose,
 
               {booking.status === "Playing" && (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-3 gap-3">
-                    <button 
-                      onClick={() => {
-                        setShowOrderPanel(!showOrderPanel);
-                        setShowExtendPanel(false);
-                        setShowChangeTablePanel(false);
-                      }}
-                      className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${showOrderPanel ? 'bg-green-600 border-green-600 text-white shadow-lg' : 'bg-white border-gray-200 text-green-600 hover:bg-green-50'}`}
-                    >
-                      <ShoppingCart size={24} />
-                      <span className="text-[11px] font-bold uppercase">ORDER</span>
-                    </button>
-                    <button 
-                      onClick={() => {
-                        setShowExtendPanel(!showExtendPanel);
-                        setShowOrderPanel(false);
-                        setShowChangeTablePanel(false);
-                      }}
-                      className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${showExtendPanel ? 'bg-green-600 border-green-600 text-white shadow-lg' : 'bg-white border-gray-200 text-green-600 hover:bg-green-50'}`}
-                    >
-                      <RotateCcw size={24} />
-                      <span className="text-[11px] font-bold uppercase">GIA HẠN</span>
-                    </button>
-                    <button 
-                      onClick={() => {
-                        setShowChangeTablePanel(!showChangeTablePanel);
-                        setShowOrderPanel(false);
-                        setShowExtendPanel(false);
-                      }}
-                      className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${showChangeTablePanel ? 'bg-green-600 border-green-600 text-white shadow-lg' : 'bg-white border-gray-200 text-green-600 hover:bg-green-50'}`}
-                    >
-                      <ArrowLeftRight size={24} />
-                      <span className="text-[11px] font-bold uppercase">ĐỔI BÀN</span>
-                    </button>
-                  </div>
-
-                  {showExtendPanel && (
-                    <div className="border border-green-100 rounded-xl p-4 bg-green-50/30 animate-in slide-in-from-top-2 duration-200 space-y-3">
-                      <h4 className="font-bold text-green-800 text-sm">Gia hạn thêm thời gian</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {[30, 60, 90, 120].map(mins => (
-                          <button
-                            key={mins}
-                            onClick={() => setExtendMinutes(mins)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${extendMinutes === mins ? 'bg-green-600 border-green-600 text-white' : 'bg-white border-gray-200 text-gray-600 hover:border-green-300'}`}
-                          >
-                            +{mins}p {mins >= 60 && `(${mins/60}h)`}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Input 
-                          type="number" 
-                          min="1" 
-                          value={extendMinutes} 
-                          onChange={(e) => setExtendMinutes(parseInt(e.target.value) || 0)}
-                          className="h-9 text-sm"
-                          placeholder="Số phút..."
-                        />
-                        <Button 
-                          size="sm" 
-                          className="bg-green-600 hover:bg-green-700 h-9 px-4 font-bold"
-                          onClick={handleExtendBooking}
-                          disabled={loading || extendMinutes <= 0}
+                  {!booking.note?.includes("TournamentMatch:") && (
+                    <>
+                      <div className="grid grid-cols-3 gap-3">
+                        <button 
+                          onClick={() => {
+                            setShowOrderPanel(!showOrderPanel);
+                            setShowExtendPanel(false);
+                            setShowChangeTablePanel(false);
+                          }}
+                          className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${showOrderPanel ? 'bg-green-600 border-green-600 text-white shadow-lg' : 'bg-white border-gray-200 text-green-600 hover:bg-green-50'}`}
                         >
-                          Lưu
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {showChangeTablePanel && (
-                    <div className="border border-green-100 rounded-xl p-4 bg-green-50/30 animate-in slide-in-from-top-2 duration-200">
-                      <h4 className="font-bold text-green-800 text-sm mb-3">Chọn bàn để chuyển đến</h4>
-                      <div className="flex items-center gap-2">
-                        <Select value={selectedNewTable} onValueChange={setSelectedNewTable}>
-                          <SelectTrigger className="w-full bg-white h-9 border-gray-200">
-                             <SelectValue placeholder="Bàn trống..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                             {allTables?.filter(t => t.status === "Available").map(t => (
-                               <SelectItem key={t._id} value={t._id}>
-                                  Bàn {t.table_number} ({t.table_type_id?.name || "Bàn"})
-                               </SelectItem>
-                             ))}
-                          </SelectContent>
-                        </Select>
-                        <Button 
-                          size="sm" 
-                          className="bg-green-600 hover:bg-green-700 h-9 px-4 font-bold shrink-0 text-white"
-                          onClick={handleChangeTable}
-                          disabled={loading || !selectedNewTable}
+                          <ShoppingCart size={24} />
+                          <span className="text-[11px] font-bold uppercase">ORDER</span>
+                        </button>
+                        <button 
+                          onClick={() => {
+                            setShowExtendPanel(!showExtendPanel);
+                            setShowOrderPanel(false);
+                            setShowChangeTablePanel(false);
+                          }}
+                          className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${showExtendPanel ? 'bg-green-600 border-green-600 text-white shadow-lg' : 'bg-white border-gray-200 text-green-600 hover:bg-green-50'}`}
                         >
-                          Xác nhận
-                        </Button>
+                          <RotateCcw size={24} />
+                          <span className="text-[11px] font-bold uppercase">GIA HẠN</span>
+                        </button>
+                        <button 
+                          onClick={() => {
+                            setShowChangeTablePanel(!showChangeTablePanel);
+                            setShowOrderPanel(false);
+                            setShowExtendPanel(false);
+                          }}
+                          className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${showChangeTablePanel ? 'bg-green-600 border-green-600 text-white shadow-lg' : 'bg-white border-gray-200 text-green-600 hover:bg-green-50'}`}
+                        >
+                          <ArrowLeftRight size={24} />
+                          <span className="text-[11px] font-bold uppercase">ĐỔI BÀN</span>
+                        </button>
                       </div>
-                    </div>
-                  )}
 
-                  {showOrderPanel && (
-                    <div className="border border-green-100 rounded-xl p-4 bg-green-50/30 animate-in slide-in-from-top-2 duration-200">
-                      <div className="flex items-center justify-between mb-3">
-                         <h4 className="font-bold text-green-800 text-sm">Menu dịch vụ</h4>
-                         {fetchingServices && <RefreshCw size={14} className="animate-spin text-green-600"/>}
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-1">
-                        {allServices.map(s => (
-                          <div key={s._id} className="bg-white p-2 rounded-lg border border-gray-100 flex flex-col gap-1 shadow-sm">
-                            <span className="text-xs font-bold text-gray-800 truncate">{s.name}</span>
-                            <div className="flex items-center justify-between mt-1">
-                              <span className="text-[10px] text-gray-500">{s.price?.toLocaleString()}đ</span>
-                              <button 
-                                onClick={() => handleAddService(s._id)}
-                                disabled={loading}
-                                className="p-1 rounded bg-green-100 text-green-600 hover:bg-green-600 hover:text-white transition-colors"
+                      {showExtendPanel && (
+                        <div className="border border-green-100 rounded-xl p-4 bg-green-50/30 animate-in slide-in-from-top-2 duration-200 space-y-3">
+                          <h4 className="font-bold text-green-800 text-sm">Gia hạn thêm thời gian</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {[30, 60, 90, 120].map(mins => (
+                              <button
+                                key={mins}
+                                onClick={() => setExtendMinutes(mins)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${extendMinutes === mins ? 'bg-green-600 border-green-600 text-white' : 'bg-white border-gray-200 text-gray-600 hover:border-green-300'}`}
                               >
-                                <Plus size={14}/>
+                                +{mins}p {mins >= 60 && `(${mins/60}h)`}
                               </button>
-                            </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                    </div>
+                          <div className="flex items-center gap-2">
+                            <Input 
+                              type="number" 
+                              min="1" 
+                              value={extendMinutes} 
+                              onChange={(e) => setExtendMinutes(parseInt(e.target.value) || 0)}
+                              className="h-9 text-sm"
+                              placeholder="Số phút..."
+                            />
+                            <Button 
+                              size="sm" 
+                              className="bg-green-600 hover:bg-green-700 h-9 px-4 font-bold"
+                              onClick={handleExtendBooking}
+                              disabled={loading || extendMinutes <= 0}
+                            >
+                              Lưu
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {showChangeTablePanel && (
+                        <div className="border border-green-100 rounded-xl p-4 bg-green-50/30 animate-in slide-in-from-top-2 duration-200">
+                          <h4 className="font-bold text-green-800 text-sm mb-3">Chọn bàn để chuyển đến</h4>
+                          <div className="flex items-center gap-2">
+                            <Select value={selectedNewTable} onValueChange={setSelectedNewTable}>
+                              <SelectTrigger className="w-full bg-white h-9 border-gray-200">
+                                 <SelectValue placeholder="Bàn trống..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                 {allTables?.filter(t => t.status === "Available").map(t => (
+                                   <SelectItem key={t._id} value={t._id}>
+                                      Bàn {t.table_number} ({t.table_type_id?.name || "Bàn"})
+                                   </SelectItem>
+                                 ))}
+                              </SelectContent>
+                            </Select>
+                            <Button 
+                              size="sm" 
+                              className="bg-green-600 hover:bg-green-700 h-9 px-4 font-bold shrink-0 text-white"
+                              onClick={handleChangeTable}
+                              disabled={loading || !selectedNewTable}
+                            >
+                              Xác nhận
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {showOrderPanel && (
+                        <div className="border border-green-100 rounded-xl p-4 bg-green-50/30 animate-in slide-in-from-top-2 duration-200">
+                          <div className="flex items-center justify-between mb-3">
+                             <h4 className="font-bold text-green-800 text-sm">Menu dịch vụ</h4>
+                             {fetchingServices && <RefreshCw size={14} className="animate-spin text-green-600"/>}
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-1">
+                            {allServices.map(s => (
+                              <div key={s._id} className="bg-white p-2 rounded-lg border border-gray-100 flex flex-col gap-1 shadow-sm">
+                                <span className="text-xs font-bold text-gray-800 truncate">{s.name}</span>
+                                <div className="flex items-center justify-between mt-1">
+                                  <span className="text-[10px] text-gray-500">{s.price?.toLocaleString()}đ</span>
+                                  <button 
+                                    onClick={() => handleAddService(s._id)}
+                                    disabled={loading}
+                                    className="p-1 rounded bg-green-100 text-green-600 hover:bg-green-600 hover:text-white transition-colors"
+                                  >
+                                    <Plus size={14}/>
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
 
-                  <Button 
-                    variant="default" 
-                    className="w-full bg-green-600 hover:bg-green-700 text-white font-bold h-12 shadow-lg rounded-xl mt-2"
-                    onClick={handleCheckoutClick}
-                    disabled={loading}
-                  >
-                    <CheckCircle2 size={18} className="mr-2" /> Thanh toán / Kết thúc
-                  </Button>
+                  {!booking.note?.includes("TournamentMatch:") ? (
+                    <Button 
+                      variant="default" 
+                      className="w-full bg-green-600 hover:bg-green-700 text-white font-bold h-12 shadow-lg rounded-xl mt-2"
+                      onClick={handleCheckoutClick}
+                      disabled={loading}
+                    >
+                      <CheckCircle2 size={18} className="mr-2" /> Thanh toán / Kết thúc
+                    </Button>
+                  ) : (
+                    <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-center mt-2">
+                      <p className="text-sm font-bold text-blue-700">Trận đấu giải đang diễn ra</p>
+                      <p className="text-[10px] text-blue-500">Kết quả sẽ được cập nhật tại trang Quản lý giải đấu</p>
+                    </div>
+                  )}
                 </div>
               )}
             </section>
