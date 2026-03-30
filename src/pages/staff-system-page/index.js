@@ -1,5 +1,5 @@
 export * from "./staff-system-manager-club";
-export * from "./staff-system-post";
+export * from "./staff-system-manage-post";
 export * from "./admin-setting-page";
 export * from "./staff-statistics-page";
 
