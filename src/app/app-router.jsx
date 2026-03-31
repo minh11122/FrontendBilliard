@@ -23,6 +23,7 @@ import {
   BookingPage,
   ClubDetailPage,
   PaymentPage,
+  PaymentHistoryPage,
   TournamentPaymentPage,
   TournamentPlayersPage,
   BookingHistoryPage,
@@ -66,9 +67,11 @@ import {
   OwnerTournamentPlayersPage,
   OwnerReportsPage,
   OwnerReviewListPage,
+  OwnerPaymentHistoryPage,
   StaffClubReviewListPage,
   PostPage,
-  OwnerPostPage
+  OwnerPostPage,
+  StaffClubPaymentHistoryPage
 } from "@/pages";
 
 export const router = createBrowserRouter([
@@ -100,6 +103,7 @@ export const router = createBrowserRouter([
           { path: "/booking/:id", element: <ClubDetailPage /> },
           { path: "/payment/:bookingId", element: <PaymentPage /> },
           { path: "/my-bookings", element: <BookingHistoryPage /> },
+          { path: "/payment-history", element: <PaymentHistoryPage /> },
           { path: "/register-owner-account", element: <RegisterOwnerAccount /> },
           { path: "/profile", element: <ProfilePage /> },
           { path: "/posts", element: <PostPage /> },
@@ -151,6 +155,7 @@ export const router = createBrowserRouter([
           { path: "reviews", element: <OwnerReviewListPage /> },
           { path: "settings", element: <SettingPage /> },
           { path: "payment-success", element: <PaymentSuccessPage  /> },
+          { path: "payment-history", element: <OwnerPaymentHistoryPage /> },
           { path: "list-employee", element: <OwnerListEmployeePage /> },
           { path: "employees/create", element: <OwnerCreateEmployeePage /> },
           { path: "employees/edit/:id", element: <OwnerUpdateEmployeePage /> },
@@ -171,7 +176,8 @@ export const router = createBrowserRouter([
           { path: "tables/checkout/:id", element: <BookingCheckoutPage /> },
           { path: "bookings", element: <StaffClubPageBooking /> },
           { path: "tournaments", element: <StaffClubPageTournament /> },
-          { path: "reviews", element: <StaffClubReviewListPage /> }
+          { path: "reviews", element: <StaffClubReviewListPage /> },
+          { path: "payment-history", element: <StaffClubPaymentHistoryPage /> },
         ],
       },
       {

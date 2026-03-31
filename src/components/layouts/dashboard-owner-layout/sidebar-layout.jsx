@@ -26,7 +26,8 @@ import {
   FileText,
   Lock,
   PieChart,
-  Star
+  Star,
+  CreditCard
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -83,6 +84,12 @@ export const SidebarOwner = () => {
       href: "/owner/posts",
       icon: FileText,
       roles: ["pro"]
+    },
+    {
+      name: "Lịch sử chuyển khoản",
+      href: "/owner/payment-history",
+      icon: CreditCard,
+      roles: ["free", "basic", "pro"]
     },
     {
       name: "Quản lý đánh giá",

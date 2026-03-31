@@ -4,3 +4,4 @@ export * from './staff-club-page-static'
 export * from './staff-club-page-manager-table'
 export { default as BookingCheckoutPage } from "./booking-checkout-page";
 export * from './staff-club-review-list-page'
+export { default as StaffClubPaymentHistoryPage } from "./staff-club-payment-history-page";

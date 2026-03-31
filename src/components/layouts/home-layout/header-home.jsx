@@ -158,6 +158,19 @@ export const HeaderHome = () => {
           >
             Đặt bàn
           </NavLink>
+
+          <NavLink
+            to="/payment-history"
+            className={({ isActive }) =>
+              `px-4 py-2 font-medium transition-colors ${
+                isActive
+                  ? "text-green-500 border-b-2 border-green-500"
+                  : "text-gray-700 hover:text-green-500"
+              }`
+            }
+          >
+            Lịch sử chuyển khoản
+          </NavLink>
         </nav>
 
         {/* Right Section */}

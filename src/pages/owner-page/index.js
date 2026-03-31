@@ -26,3 +26,4 @@ export { default as OwnerTournamentPlayersPage } from "./owner-tournament-player
 export { default as OwnerReportsPage } from "./owner-reports-page";
 export { default as OwnerReviewListPage } from "./owner-review-list-page";
 export * from "./owner-post-page";
+export { default as OwnerPaymentHistoryPage } from "./owner-payment-history-page";
