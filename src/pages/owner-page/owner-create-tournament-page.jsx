@@ -258,7 +258,7 @@ export default function OwnerCreateTournamentPage() {
             </div>
 
             {/* Auto Bracket Toggle */}
-            <div className="col-span-1 md:col-span-2">
+            {/* <div className="col-span-1 md:col-span-2">
               <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
                 <div className="flex items-center gap-3">
                   <Settings2 className="w-5 h-5 text-slate-400" />
@@ -272,7 +272,7 @@ export default function OwnerCreateTournamentPage() {
                   <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-500/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-orange-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
                 </label>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
 
