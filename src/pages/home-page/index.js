@@ -7,4 +7,5 @@ export * from './payment-page';
 export * from './tournament-payment-page';
 export * from './tournament-players-page';
 export * from './booking-history-page';
-export * from "./profile-page"
+export * from "./profile-page";
+export * from './my-tournaments-page';

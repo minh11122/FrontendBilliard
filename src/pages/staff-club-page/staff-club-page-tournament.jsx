@@ -124,9 +124,24 @@ export const StaffClubPageTournament = () => {
                     >
                       <Play size={16} /> Quản lý trận
                     </button>
+                  ) : t.status === "Completed" ? (
+                    <>
+                      <button 
+                        onClick={() => navigate(`/staff/tournaments/${t._id}/players`)}
+                        className="px-4 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-sm font-semibold flex items-center gap-2 self-start transition"
+                      >
+                        <Users size={16} /> Người chơi
+                      </button>
+                      <button 
+                        onClick={() => navigate(`/staff/tournaments/${t._id}/matches`)}
+                        className="px-4 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-sm font-semibold flex items-center gap-2 self-start transition"
+                      >
+                        <Trophy size={16} /> Xem vòng đấu
+                      </button>
+                    </>
                   ) : (
                     <div className="px-4 py-2 bg-slate-50 text-slate-400 rounded-lg text-sm font-semibold flex items-center gap-2 self-start cursor-not-allowed">
-                      Giải đang ở trạng thái {t.status === "Open" ? "mở đăng ký" : t.status === "Closed" ? "đóng đăng ký, chờ bóc thăm" : t.status === "Completed" ? "đã kết thúc" : t.status}
+                      Giải đang ở trạng thái {t.status === "Open" ? "mở đăng ký" : t.status === "Closed" ? "đóng đăng ký, chờ bóc thăm" : t.status}
                     </div>
                   )}
                 </div>

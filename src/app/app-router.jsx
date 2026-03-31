@@ -68,7 +68,8 @@ import {
   OwnerReportsPage,
   OwnerReviewListPage,
   OwnerTournamentBracketPage,
-  StaffClubReviewListPage
+  StaffClubReviewListPage,
+  MyTournamentsPage
 } from "@/pages";
 
 export const router = createBrowserRouter([
@@ -100,6 +101,14 @@ export const router = createBrowserRouter([
           { path: "/booking/:id", element: <ClubDetailPage /> },
           { path: "/payment/:bookingId", element: <PaymentPage /> },
           { path: "/my-bookings", element: <BookingHistoryPage /> },
+          {
+            path: "/my-tournaments",
+            element: (
+              <ProtectedRoute allowedRoles={["CUSTOMER"]}>
+                <MyTournamentsPage />
+              </ProtectedRoute>
+            ),
+          },
           { path: "/register-owner-account", element: <RegisterOwnerAccount /> },
           { path: "/profile", element: <ProfilePage /> },
         ],
@@ -163,7 +172,11 @@ export const router = createBrowserRouter([
       },
       {
         path: "staff",
-        element: <DashboardStaffClubLayout />,
+        element: (
+          <ProtectedRoute allowedRoles={["STAFF_CLUB"]}>
+            <DashboardStaffClubLayout />
+          </ProtectedRoute>
+        ),
         children: [
           { path: "dashboard", element: <StaffClubPageStatic /> },
           { path: "tables", element: <StaffClubPageManagerTable /> },
@@ -171,6 +184,7 @@ export const router = createBrowserRouter([
           { path: "bookings", element: <StaffClubPageBooking /> },
           { path: "tournaments", element: <StaffClubPageTournament /> },
           { path: "tournaments/:id/matches", element: <StaffClubPageMatchManagement /> },
+          { path: "tournaments/:id/players", element: <TournamentPlayersPage /> },
           { path: "reviews", element: <StaffClubReviewListPage /> }
         ],
       },

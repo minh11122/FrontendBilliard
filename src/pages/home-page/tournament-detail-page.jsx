@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import React, { useContext, useEffect, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { getMyRegisteredTournamentIds, getTournamentById } from "@/services/tournament.service";
 import { TournamentBracket } from "@/components/TournamentBracket";
 import { Calendar, Users, Trophy, MapPin, ArrowLeft, Clock, CheckCircle, Store } from "lucide-react";
 import toast from "react-hot-toast";
+import { AuthContext } from "@/context/AuthContext";
 
 const formatDate = (dateStr) => {
   if (!dateStr) return "Chưa xác định";
@@ -24,6 +25,8 @@ const statusConfig = {
 export default function TournamentDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useContext(AuthContext);
   const [tournament, setTournament] = useState(null);
   const [loading, setLoading] = useState(true);
   const [joined, setJoined] = useState(false);
@@ -83,13 +86,43 @@ export default function TournamentDetailPage() {
   const cfg = statusConfig[tournament.status] || statusConfig.Draft;
   const fallbackImg = "https://images.unsplash.com/photo-1611599537845-1c7aca0091c0?q=80&w=1200";
   const bannerUrl = tournament.banner && tournament.banner.trim().length > 0 ? tournament.banner : fallbackImg;
+  const backPath = location.state?.from === "/my-tournaments" ? "/my-tournaments" : "/tournament";
   const handleRegisterNow = () => {
     const token = localStorage.getItem("token");
     if (!token) {
-      navigate("/auth/login");
+      navigate("/auth/login", {
+        state: {
+          from: {
+            pathname: `/tournament/${tournament._id}`,
+          },
+        },
+      });
       return;
     }
     navigate(`/tournament/${tournament._id}/payment`);
+  };
+
+  const handleViewPlayers = () => {
+    if (!user) {
+      toast("Vui lòng đăng nhập và đăng ký giải đấu để xem danh sách người chơi", {
+        icon: "🔒",
+      });
+      navigate("/auth/login", {
+        state: {
+          from: {
+            pathname: `/tournament/${tournament._id}`,
+          },
+        },
+      });
+      return;
+    }
+
+    if (user.roleName === "CUSTOMER" && !joined) {
+      toast.error("Bạn cần đăng ký giải đấu trước khi xem danh sách người chơi");
+      return;
+    }
+
+    navigate(`/tournament/${tournament._id}/players`);
   };
 
   return (
@@ -97,7 +130,7 @@ export default function TournamentDetailPage() {
       <div className="container mx-auto px-6 py-10 max-w-4xl">
         {/* Back button */}
         <button
-          onClick={() => navigate("/tournament")}
+          onClick={() => navigate(backPath)}
           className="flex items-center gap-2 text-gray-500 hover:text-orange-500 mb-8 transition-colors text-sm font-medium"
         >
           <ArrowLeft size={18} /> Quay lại danh sách giải đấu
@@ -211,16 +244,14 @@ export default function TournamentDetailPage() {
 
             {/* CTA */}
             <button
-              onClick={() => navigate(`/tournament/${tournament._id}/players`)}
-              className="w-full py-3 bg-white hover:bg-slate-50 text-slate-800 font-bold rounded-2xl transition-all border border-slate-200 text-lg"
+              onClick={handleViewPlayers}
+              className="w-full py-3 mb-3 bg-white hover:bg-slate-50 text-slate-800 font-bold rounded-2xl transition-all border border-slate-200 text-lg"
             >
-              Xem chi tiết 🧑‍🤝‍🧑
+              Danh sách người chơi 🧑‍🤝‍🧑
             </button>
-            {tournament.status === "Open" && joined && (
-              <div className="w-full py-3 bg-green-100 text-green-700 font-bold rounded-2xl text-center">
-                Đã tham gia
-              </div>
-            )}
+
+            
+
             {tournament.status === "Open" && !joined && (
               <button
                 onClick={handleRegisterNow}
@@ -229,14 +260,19 @@ export default function TournamentDetailPage() {
                 Đăng ký ngay 🏆
               </button>
             )}
-            {tournament.status === "Closed" && (
+            {tournament.status === "Closed" && !joined && (
               <div className="w-full py-3 bg-gray-100 text-gray-500 font-semibold rounded-2xl text-center">
                 Đã đóng đăng ký
               </div>
             )}
-            {tournament.status === "InProgress" && (
+            {tournament.status === "InProgress" && !joined && (
               <div className="w-full py-3 bg-blue-50 text-blue-600 font-semibold rounded-2xl text-center">
                 Đang diễn ra
+              </div>
+            )}
+            {tournament.status === "Completed" && !joined && (
+              <div className="w-full py-3 bg-gray-100 text-gray-500 font-semibold rounded-2xl text-center">
+                Đã kết thúc
               </div>
             )}
           </div>

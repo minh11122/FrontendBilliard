@@ -1,21 +1,30 @@
 import { useContext } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { AuthContext } from "@/context/AuthContext";
 
 /**
- * ProtectedRoute - Bảo vệ route theo role
- * @param {string[]} allowedRoles - Danh sách role được phép truy cập (VD: ["OWNER", "ADMIN"])
- * @param {ReactNode} children - Component con cần bảo vệ
+ * ProtectedRoute - Bao ve route theo role
+ * @param {string[]} allowedRoles - Danh sach role duoc phep truy cap
+ * @param {ReactNode} children - Component con can bao ve
  */
 export const ProtectedRoute = ({ allowedRoles, children }) => {
-  const { user, isAuthenticated } = useContext(AuthContext);
+  const { user, isAuthenticated, authLoading, initialized } = useContext(AuthContext);
+  const location = useLocation();
 
-  // Chưa đăng nhập → redirect về trang login
-  if (!isAuthenticated) {
-    return <Navigate to="/auth/login" replace />;
+  if (!initialized || authLoading) {
+    return null;
   }
 
-  // Đã đăng nhập nhưng sai role → redirect về trang Forbidden
+  if (!isAuthenticated) {
+    const redirectPath = `${location.pathname}${location.search}${location.hash}`;
+
+    if (redirectPath && redirectPath !== "/auth/login") {
+      sessionStorage.setItem("postLoginRedirect", redirectPath);
+    }
+
+    return <Navigate to="/auth/login" replace state={{ from: location }} />;
+  }
+
   if (allowedRoles && allowedRoles.length > 0) {
     if (!user?.roleName || !allowedRoles.includes(user.roleName)) {
       return <Navigate to="/auth/forbidden" replace />;

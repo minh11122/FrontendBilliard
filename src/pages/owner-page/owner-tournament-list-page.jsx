@@ -1,8 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Trophy, Plus, Search, Users, Brackets, Play, Sparkles, Edit, Calendar } from "lucide-react";
+import { Trophy, Plus, Search, Users, Brackets, Play, Sparkles, Edit, Calendar, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
-import { getTournamentsByClub, openRegistration, closeRegistration, generateBracket, startTournament } from "@/services/tournament.service";
+import { 
+  getTournamentsByClub, 
+  openRegistration, 
+  closeRegistration, 
+  generateBracket, 
+  startTournament, 
+  deleteTournament 
+} from "@/services/tournament.service";
 
 const tabs = [
   { id: "All", label: "Tất cả", statuses: [] },
@@ -22,6 +29,13 @@ const statusBadge = {
   Cancelled: "bg-red-100 text-red-600 border border-red-200"
 };
 
+const statusLabel = {
+  Draft: "Bản nháp", Open: "Mở đăng ký", Closed: "Đóng đăng ký",
+  InProgress: "Đang diễn ra", Completed: "Đã kết thúc", Cancelled: "Đã hủy"
+};
+
+const fallbackBanner = "https://images.unsplash.com/photo-1611599537845-1c7aca0091c0?q=80&w=800";
+
 export default function OwnerTournamentListPage() {
   const navigate = useNavigate();
   const CLUB_ID = localStorage.getItem("selected_club_id") || "";
@@ -29,13 +43,15 @@ export default function OwnerTournamentListPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("All");
+  const [deletingId, setDeletingId] = useState(null);
 
   const fetchData = async () => {
     try {
       setLoading(true);
+      if (!CLUB_ID) return;
       const res = await getTournamentsByClub(CLUB_ID);
       if (res?.success) setTournaments(res.data || []);
-    } catch (e) {
+    } catch {
       toast.error("Không thể tải danh sách giải đấu");
     } finally {
       setLoading(false);
@@ -45,14 +61,16 @@ export default function OwnerTournamentListPage() {
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [CLUB_ID]);
 
   const handleOpen = async (t) => {
     if (!window.confirm(`Mở đăng ký cho "${t.name}"?`)) return;
     try {
       const res = await openRegistration(t._id);
-      if (res?.success) toast.success("Đã mở đăng ký");
-      fetchData();
+      if (res?.success) {
+        toast.success("Đã mở đăng ký");
+        fetchData();
+      }
     } catch (e) {
       toast.error(e?.response?.data?.message || "Lỗi mở đăng ký");
     }
@@ -62,8 +80,10 @@ export default function OwnerTournamentListPage() {
     if (!window.confirm("Chốt đăng ký và tạo bracket tự động?")) return;
     try {
       const res = await closeRegistration(t._id, { auto_generate: true });
-      if (res?.success) toast.success("Đã chốt đăng ký");
-      fetchData();
+      if (res?.success) {
+        toast.success("Đã chốt đăng ký");
+        fetchData();
+      }
     } catch (e) {
       toast.error(e?.response?.data?.message || "Lỗi chốt đăng ký");
     }
@@ -73,8 +93,10 @@ export default function OwnerTournamentListPage() {
     if (!window.confirm("Tạo / ghi đè bracket?")) return;
     try {
       const res = await generateBracket(t._id, {});
-      if (res?.success) toast.success("Đã tạo bracket");
-      fetchData();
+      if (res?.success) {
+        toast.success("Đã tạo bracket");
+        fetchData();
+      }
     } catch (e) {
       toast.error(e?.response?.data?.message || "Lỗi tạo bracket");
     }
@@ -84,15 +106,33 @@ export default function OwnerTournamentListPage() {
     if (!window.confirm("Bắt đầu giải đấu?")) return;
     try {
       const res = await startTournament(t._id);
-      if (res?.success) toast.success("Giải đấu đang diễn ra");
-      fetchData();
+      if (res?.success) {
+        toast.success("Giải đấu đang diễn ra");
+        fetchData();
+      }
     } catch (e) {
       toast.error(e?.response?.data?.message || "Không thể bắt đầu");
     }
   };
 
+  const handleDelete = async (t) => {
+    if (!window.confirm(`Xóa giải đấu "${t.name}"? Hành động này không thể hoàn tác.`)) return;
+    try {
+      setDeletingId(t._id);
+      const res = await deleteTournament(t._id);
+      if (res?.success) {
+        toast.success("Đã xóa giải đấu");
+        fetchData();
+      }
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Không thể xóa giải đấu");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const filtered = tournaments.filter((t) => {
-    const matchSearch = t.name?.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = (t.name || "").toLowerCase().includes(search.toLowerCase());
     const tabObj = tabs.find((tab) => tab.id === activeTab);
     const matchTab = tabObj.statuses.length === 0 || tabObj.statuses.includes(t.status);
     return matchSearch && matchTab;
@@ -122,7 +162,7 @@ export default function OwnerTournamentListPage() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
-                activeTab === tab.id ? "bg-[#D1F2D6] text-[#008f4c]" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                activeTab === tab.id ? "bg-[#D1F2D6] text-[#008f4c]" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
               }`}
             >
               {tab.label}
@@ -155,69 +195,107 @@ export default function OwnerTournamentListPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filtered.map((t) => {
             const badge = statusBadge[t.status] || statusBadge.Draft;
+            const bannerUrl = t.banner?.trim() ? t.banner : fallbackBanner;
+            const canDelete = (t.registered_player || 0) === 0;
             return (
-              <div key={t._id} className="bg-white rounded-[20px] p-4 flex flex-col gap-4 shadow-sm border border-slate-100">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className={`inline-flex px-3 py-1 rounded-full text-xs font-bold ${badge}`}>{t.status}</div>
-                    <h3 className="text-lg font-bold text-slate-900 mt-2">{t.name}</h3>
-                    <p className="text-sm text-slate-500 line-clamp-2">{t.description || ""}</p>
-                  </div>
-                  <div className="text-right text-sm text-slate-500 flex flex-col items-end gap-1">
-                    <span className="inline-flex items-center gap-1"><Users size={14} /> {t.registered_player || 0}/{t.max_players}</span>
-                    {t.play_date && (
-                      <span className="inline-flex items-center gap-1"><Calendar size={14} /> {new Date(t.play_date).toLocaleDateString("vi-VN")}</span>
-                    )}
+              <div key={t._id} className="bg-white rounded-[20px] overflow-hidden shadow-sm border border-slate-100 flex flex-col">
+                <div className="relative h-36 overflow-hidden">
+                  <img src={bannerUrl} alt={t.name} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                  <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between gap-2">
+                    <span className={`inline-flex px-3 py-1 rounded-full text-xs font-bold ${badge}`}>
+                      {statusLabel[t.status] || t.status}
+                    </span>
+                    <div className="flex items-center gap-2 text-white text-xs">
+                      <span className="inline-flex items-center gap-1 bg-black/30 backdrop-blur-sm px-2 py-1 rounded-full">
+                        <Users size={12} /> {t.registered_player || 0}/{t.max_players}
+                      </span>
+                      {t.play_date && (
+                        <span className="inline-flex items-center gap-1 bg-black/30 backdrop-blur-sm px-2 py-1 rounded-full">
+                          <Calendar size={12} /> {new Date(t.play_date).toLocaleDateString("vi-VN")}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  {t.status === "Draft" && (
-                    <>
-                      <button onClick={() => handleOpen(t)} className="px-4 py-2 bg-[#00A65A] text-white rounded-lg text-sm font-semibold flex items-center gap-2">
-                        <Sparkles size={16} /> Mở đăng ký
+                <div className="p-4 flex flex-col gap-3 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900">{t.name}</h3>
+                      {t.description && <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">{t.description}</p>}
+                    </div>
+                    {canDelete && (
+                      <button
+                        onClick={() => handleDelete(t)}
+                        disabled={deletingId === t._id}
+                        className="p-2 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-50 shrink-0"
+                        title="Xóa giải (chưa có người đăng ký)"
+                      >
+                        <Trash2 size={16} />
                       </button>
-                      <button onClick={() => navigate(`/owner/tournaments/edit/${t._id}`)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-semibold flex items-center gap-2">
-                        <Edit size={16} /> Chỉnh sửa
-                      </button>
-                    </>
-                  )}
+                    )}
+                  </div>
 
-                  {t.status === "Open" && (
-                    <>
-                      <button onClick={() => handleClose(t)} className="px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-semibold flex items-center gap-2">
-                        <Brackets size={16} /> Chốt & tạo bracket
-                      </button>
-                      <button onClick={() => navigate(`/owner/tournaments/edit/${t._id}`)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-semibold flex items-center gap-2">
-                        <Edit size={16} /> Chỉnh sửa
-                      </button>
-                    </>
-                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {t.status === "Draft" && (
+                      <>
+                        <button onClick={() => handleOpen(t)} className="px-3 py-1.5 bg-[#00A65A] text-white rounded-lg text-xs font-semibold flex items-center gap-1.5">
+                          <Sparkles size={14} /> Mở đăng ký
+                        </button>
+                        <button onClick={() => navigate(`/owner/tournaments/edit/${t._id}`)} className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5">
+                          <Edit size={14} /> Chỉnh sửa
+                        </button>
+                      </>
+                    )}
 
-                  {t.status === "Closed" && (
-                    <>
-                      <button onClick={() => handleGenerate(t)} className="px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-semibold flex items-center gap-2">
-                        <Brackets size={16} /> Random Bracket
-                      </button>
-                      <button onClick={() => handleStart(t)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold flex items-center gap-2">
-                        <Play size={16} /> Bắt đầu giải
-                      </button>
-                      <button onClick={() => navigate(`/owner/tournaments/${t._id}/players`)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-semibold">Người chơi</button>
-                    </>
-                  )}
+                    {t.status === "Open" && (
+                      <>
+                        <button onClick={() => handleClose(t)} className="px-3 py-1.5 bg-amber-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5">
+                          <Brackets size={14} /> Chốt & tạo bracket
+                        </button>
+                        <button onClick={() => navigate(`/owner/tournaments/edit/${t._id}`)} className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5">
+                          <Edit size={14} /> Chỉnh sửa
+                        </button>
+                      </>
+                    )}
 
-                  {t.status === "InProgress" && (
-                    <>
-                      <button onClick={() => navigate(`/owner/tournaments/${t._id}/players`)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-semibold">Người chơi</button>
-                      <button onClick={() => navigate(`/owner/tournaments/${t._id}/bracket`)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold flex items-center gap-2">
-                        <Trophy size={16} /> Xem sơ đồ/Kết quả
-                      </button>
-                    </>
-                  )}
+                    {t.status === "Closed" && (
+                      <>
+                        <button onClick={() => handleGenerate(t)} className="px-3 py-1.5 bg-slate-800 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5">
+                          <Brackets size={14} /> Random Bracket
+                        </button>
+                        <button onClick={() => handleStart(t)} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5">
+                          <Play size={14} /> Bắt đầu giải
+                        </button>
+                        <button onClick={() => navigate(`/owner/tournaments/${t._id}/players`)} className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold">
+                          Người chơi
+                        </button>
+                      </>
+                    )}
 
-                  {t.status === "Completed" && (
-                    <button onClick={() => navigate(`/owner/tournaments/${t._id}/bracket`)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-semibold flex items-center gap-2"><Trophy size={16}/> Xem kết quả</button>
-                  )}
+                    {t.status === "InProgress" && (
+                      <>
+                        <button onClick={() => navigate(`/owner/tournaments/${t._id}/players`)} className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold">
+                          Người chơi
+                        </button>
+                        <button onClick={() => navigate(`/owner/tournaments/${t._id}/bracket`)} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold flex items-center gap-2">
+                          <Trophy size={14} /> Sơ đồ & Kết quả
+                        </button>
+                      </>
+                    )}
+
+                    {t.status === "Completed" && (
+                      <>
+                        <button onClick={() => navigate(`/owner/tournaments/${t._id}/players`)} className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5">
+                          <Users size={14} /> Người chơi
+                        </button>
+                        <button onClick={() => navigate(`/owner/tournaments/${t._id}/bracket`)} className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5">
+                          <Trophy size={14} /> Xem kết quả
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             );

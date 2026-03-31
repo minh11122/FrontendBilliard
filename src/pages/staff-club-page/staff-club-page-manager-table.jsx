@@ -392,9 +392,13 @@ const TableDetailModal = ({ table, booking, isBookingActive, allTables, onClose,
                     label="Thời gian" 
                     value={`${formatTime(booking.start_time)} – ${formatTime(booking.end_time)}`} 
                   />
-                  <InfoRow icon={<Hash size={14} />} label="Mã booking" value={<span className="font-mono text-gray-700">{booking.code_number}</span>} />
-                  <InfoRow icon={<Circle size={14} />} label="Trạng thái đơn" value={
-                    <span className="font-semibold text-gray-800">{booking.status}</span>
+                  {!booking.note?.includes("TournamentMatch:") && (
+                    <InfoRow icon={<Hash size={14} />} label="Mã booking" value={<span className="font-mono text-gray-700">{booking.code_number}</span>} />
+                  )}
+                  <InfoRow icon={<Circle size={14} />} label="Trạng thái" value={
+                    <span className="font-semibold text-gray-800">
+                      {booking.note?.includes("TournamentMatch:") && booking.status === "Playing" ? "Đang thi đấu" : booking.status}
+                    </span>
                   } />
                   <InfoRow 
                     icon={<BadgeCheck size={14} />} 

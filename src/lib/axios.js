@@ -1,16 +1,13 @@
-// src/api/axiosConfig.js
 import axios from "axios";
 import { loadingEmitter } from "@/utils/loadingEmitter";
 
 const baseURL = import.meta.env.VITE_API_URL || "http://localhost:9999/api";
 
-
 const api = axios.create({
   baseURL,
-  timeout: 15000, // 15 seconds
+  timeout: 15000,
 });
 
-// Request Interceptor
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
@@ -18,53 +15,52 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // Nếu data là FormData (upload file), để Axios tự set Content-Type (multipart/form-data + boundary)
-    // Nếu không, mặc định là application/json
     if (!(config.data instanceof FormData)) {
       config.headers["Content-Type"] = "application/json";
     }
 
-    // Bắt đầu loading
     loadingEmitter.start();
-    console.log('📤 API Request:', config.method.toUpperCase(), config.url);
-    
+    console.log("API Request:", config.method.toUpperCase(), config.url);
+
     return config;
   },
   (error) => {
     loadingEmitter.stop();
-    console.error('❌ Request Error:', error);
+    console.error("Request Error:", error);
     return Promise.reject(error);
-  }
+  },
 );
 
-// Response Interceptor
 api.interceptors.response.use(
   (response) => {
-    // Kết thúc loading
     loadingEmitter.stop();
-    console.log('📥 API Response:', response.config.url, response.status);
+    console.log("API Response:", response.config.url, response.status);
     return response;
   },
   (error) => {
-    // Kết thúc loading ngay cả khi có lỗi
     loadingEmitter.stop();
-    
+
     if (error.response) {
-      console.error('❌ Response Error:', error.response.status, error.response.data);
-      
-      // Xử lý lỗi 401 (Unauthorized)
+      console.error("Response Error:", error.response.status, error.response.data);
+
       if (error.response.status === 401) {
+        const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
+        if (currentPath && currentPath !== "/auth/login") {
+          sessionStorage.setItem("postLoginRedirect", currentPath);
+        }
+
         localStorage.removeItem("token");
         window.location.href = "/auth/login";
       }
     } else if (error.request) {
-      console.error('❌ No Response:', error.message);
+      console.error("No Response:", error.message);
     } else {
-      console.error('❌ Request Setup Error:', error.message);
+      console.error("Request Setup Error:", error.message);
     }
-    
+
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;
