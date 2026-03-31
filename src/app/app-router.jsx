@@ -13,125 +13,80 @@ import {
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PlanProtectedRoute } from "@/components/PlanProtectedRoute";
 
-import {
-  LoginForm,
-  RegisterForm,
-  ForgotPasswordForm,
-  HomePage,
-  TournamentPage,
-  TournamentDetailPage,
-  BookingPage,
-  ClubDetailPage,
-  PaymentPage,
-  TournamentPaymentPage,
-  TournamentPlayersPage,
-  BookingHistoryPage,
-  Forbidden,
-  AccPendingManagement,
-  ShopManagement,
-  AccountManagement,
-  LoginSystem,
-  RegisterOwnerAccount,
-  OwnerSelectClubPage,
-  OwnerTableListPage,
-  OwnerCreateTablePage,
-  OwnerEditTablePage,
-  OwnerServiceListPage,
-  OwnerCreateServicePage,
-  OwnerEditServicePage,
-  OwnerDashboardPage,
-  StaffClubPageManagerTable,
-  StaffClubPageBooking,
-  StaffClubPageStatic,
-  StaffClubPageTournament,
-  BookingCheckoutPage,
-  SystemStaff,
-  SystemStaff1,
-  SystemStaff2,
-  SystemStaff3,
-  SystemStaff4,
-  ProfilePage,
-  AdminSettings,
-  SettingPage,
-  PaymentSuccessPage,
-  OwnerListEmployeePage,
-  OwnerCreateEmployeePage,
-  OwnerUpdateEmployeePage,
-  AmenitiesPage,
-  OwnerResubmitClubPage,
-  OwnerOnboardingPage,
-  OwnerTournamentListPage,
-  OwnerCreateTournamentPage,
-  OwnerEditTournamentPage,
-  OwnerTournamentPlayersPage,
-  OwnerReportsPage,
-  OwnerReviewListPage,
-  StaffClubReviewListPage,
-  PostPage,
-  OwnerPostPage
-} from "@/pages";
+import * as Pages from "@/pages";
 
 export const router = createBrowserRouter([
   {
     path: "/",
     element: <RootLayout />,
     children: [
+
+      // ================= AUTH =================
       {
         path: "auth",
         element: <AuthLayout />,
         children: [
-          { path: "login", element: <LoginForm /> },
-          { path: "register", element: <RegisterForm /> },
-          { path: "forgot-password", element: <ForgotPasswordForm /> },
-          { path: "login-system/adminstration", element: <LoginSystem /> },
-          { path: "forbidden", element: <Forbidden /> },
+          { path: "login", element: <Pages.LoginForm /> },
+          { path: "register", element: <Pages.RegisterForm /> },
+          { path: "forgot-password", element: <Pages.ForgotPasswordForm /> },
+          { path: "login-system/adminstration", element: <Pages.LoginSystem /> },
+          { path: "forbidden", element: <Pages.Forbidden /> },
         ],
       },
+
+      // ================= PUBLIC =================
       {
         path: "",
         element: <HomeMainLayout />,
         children: [
-          { path: "", element: <HomePage /> },
-          { path: "/tournament", element: <TournamentPage /> },
-          { path: "/tournament/:id", element: <TournamentDetailPage /> },
-          { path: "/tournament/:id/payment", element: <TournamentPaymentPage /> },
-          { path: "/tournament/:id/players", element: <TournamentPlayersPage /> },
-          { path: "/booking", element: <BookingPage /> },
-          { path: "/booking/:id", element: <ClubDetailPage /> },
-          { path: "/payment/:bookingId", element: <PaymentPage /> },
-          { path: "/my-bookings", element: <BookingHistoryPage /> },
-          { path: "/register-owner-account", element: <RegisterOwnerAccount /> },
-          { path: "/profile", element: <ProfilePage /> },
-          { path: "/posts", element: <PostPage /> },
+          { index: true, element: <Pages.HomePage /> },
+          { path: "tournament", element: <Pages.TournamentPage /> },
+          { path: "tournament/:id", element: <Pages.TournamentDetailPage /> },
+          { path: "tournament/:id/payment", element: <Pages.TournamentPaymentPage /> },
+          { path: "tournament/:id/players", element: <Pages.TournamentPlayersPage /> },
+          { path: "booking", element: <Pages.BookingPage /> },
+          { path: "booking/:id", element: <Pages.ClubDetailPage /> },
+          { path: "payment/:bookingId", element: <Pages.PaymentPage /> },
+          { path: "posts", element: <Pages.PostPage /> },
+
+          // 🔒 cần login
+          {
+            element: <ProtectedRoute/>,
+            children: [
+              { path: "my-bookings", element: <Pages.BookingHistoryPage /> },
+              { path: "profile", element: <Pages.ProfilePage /> },
+            ],
+          },
         ],
       },
+
+      // ================= OWNER (ngoài dashboard) =================
       {
-        path: "owner/select-club",
-        element: <OwnerSelectClubPage />
+        element: <ProtectedRoute allowedRoles={["OWNER"]} />,
+        children: [
+          { path: "owner/select-club", element: <Pages.OwnerSelectClubPage /> },
+          { path: "owner/resubmit-club/:id", element: <Pages.OwnerResubmitClubPage /> },
+          { path: "owner/onboarding/:clubId", element: <Pages.OwnerOnboardingPage /> },
+        ],
       },
-      {
-        path: "owner/resubmit-club/:id",
-        element: <OwnerResubmitClubPage />
-      },
-      {
-        path: "owner/onboarding/:clubId",
-        element: (
-          <ProtectedRoute allowedRoles={["OWNER"]}>
-            <OwnerOnboardingPage />
-          </ProtectedRoute>
-        )
-      },
+
+      // ================= ADMIN =================
       {
         path: "admin",
-        element: <DashboardMainLayout />,
+        element: (
+          <ProtectedRoute allowedRoles={["ADMIN"]}>
+            <DashboardMainLayout />
+          </ProtectedRoute>
+        ),
         children: [
-          { path: "list-user", element: <AccountManagement /> },
-          { path: "list-acc-pending", element: <AccPendingManagement /> },
-          { path: "list-shop", element: <ShopManagement /> },
-
-          { path: "thongke", element: <AdminSettings /> },
+          { path: "list-user", element: <Pages.AccountManagement /> },
+          { path: "list-acc-pending", element: <Pages.AccPendingManagement /> },
+          { path: "list-shop", element: <Pages.ShopManagement /> },
+          { path: "thongke", element: <Pages.AdminSettings /> },
         ],
       },
+
+      // ================= OWNER DASHBOARD =================
       {
         path: "owner",
         element: (
@@ -140,49 +95,114 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
         children: [
-          { path: "tables", element: <OwnerTableListPage /> },
-          { path: "tables/create", element: <OwnerCreateTablePage /> },
-          { path: "tables/edit/:id", element: <OwnerEditTablePage /> },
-          { path: "services", element: <OwnerServiceListPage /> },
-          { path: "services/create", element: <OwnerCreateServicePage /> },
-          { path: "services/edit/:id", element: <OwnerEditServicePage /> },
-          { path: "dashboard", element: <PlanProtectedRoute allowedPlans={["basic", "pro"]}><OwnerDashboardPage /></PlanProtectedRoute> },
-          { path: "reports", element: <PlanProtectedRoute allowedPlans={["basic", "pro"]}><OwnerReportsPage /></PlanProtectedRoute> },
-          { path: "reviews", element: <OwnerReviewListPage /> },
-          { path: "settings", element: <SettingPage /> },
-          { path: "payment-success", element: <PaymentSuccessPage  /> },
-          { path: "list-employee", element: <OwnerListEmployeePage /> },
-          { path: "employees/create", element: <OwnerCreateEmployeePage /> },
-          { path: "employees/edit/:id", element: <OwnerUpdateEmployeePage /> },
-          { path: "amenities", element: <AmenitiesPage /> },
-          { path: "tournaments", element: <PlanProtectedRoute allowedPlans={["pro"]}><OwnerTournamentListPage /></PlanProtectedRoute> },
-          { path: "tournaments/create", element: <PlanProtectedRoute allowedPlans={["pro"]}><OwnerCreateTournamentPage /></PlanProtectedRoute> },
-          { path: "tournaments/:id/players", element: <PlanProtectedRoute allowedPlans={["pro"]}><OwnerTournamentPlayersPage /></PlanProtectedRoute> },
-          { path: "tournaments/edit/:id", element: <PlanProtectedRoute allowedPlans={["pro"]}><OwnerEditTournamentPage /></PlanProtectedRoute> },
-          { path: "posts", element: <OwnerPostPage /> },
+          { path: "tables", element: <Pages.OwnerTableListPage /> },
+          { path: "tables/create", element: <Pages.OwnerCreateTablePage /> },
+          { path: "tables/edit/:id", element: <Pages.OwnerEditTablePage /> },
+
+          { path: "services", element: <Pages.OwnerServiceListPage /> },
+          { path: "services/create", element: <Pages.OwnerCreateServicePage /> },
+          { path: "services/edit/:id", element: <Pages.OwnerEditServicePage /> },
+
+          {
+            path: "dashboard",
+            element: (
+              <PlanProtectedRoute allowedPlans={["basic", "pro"]}>
+                <Pages.OwnerDashboardPage />
+              </PlanProtectedRoute>
+            ),
+          },
+
+          {
+            path: "reports",
+            element: (
+              <PlanProtectedRoute allowedPlans={["basic", "pro"]}>
+                <Pages.OwnerReportsPage />
+              </PlanProtectedRoute>
+            ),
+          },
+
+          { path: "reviews", element: <Pages.OwnerReviewListPage /> },
+          { path: "settings", element: <Pages.SettingPage /> },
+          { path: "payment-success", element: <Pages.PaymentSuccessPage /> },
+
+          { path: "list-employee", element: <Pages.OwnerListEmployeePage /> },
+          { path: "employees/create", element: <Pages.OwnerCreateEmployeePage /> },
+          { path: "employees/edit/:id", element: <Pages.OwnerUpdateEmployeePage /> },
+
+          { path: "amenities", element: <Pages.AmenitiesPage /> },
+
+          {
+            path: "tournaments",
+            element: (
+              <PlanProtectedRoute allowedPlans={["pro"]}>
+                <Pages.OwnerTournamentListPage />
+              </PlanProtectedRoute>
+            ),
+          },
+
+          {
+            path: "tournaments/create",
+            element: (
+              <PlanProtectedRoute allowedPlans={["pro"]}>
+                <Pages.OwnerCreateTournamentPage />
+              </PlanProtectedRoute>
+            ),
+          },
+
+          {
+            path: "tournaments/:id/players",
+            element: (
+              <PlanProtectedRoute allowedPlans={["pro"]}>
+                <Pages.OwnerTournamentPlayersPage />
+              </PlanProtectedRoute>
+            ),
+          },
+
+          {
+            path: "tournaments/edit/:id",
+            element: (
+              <PlanProtectedRoute allowedPlans={["pro"]}>
+                <Pages.OwnerEditTournamentPage />
+              </PlanProtectedRoute>
+            ),
+          },
+
+          { path: "posts", element: <Pages.OwnerPostPage /> },
         ],
       },
+
+      // ================= STAFF =================
       {
         path: "staff",
-        element: <DashboardStaffClubLayout />,
+        element: (
+          <ProtectedRoute allowedRoles={["STAFF"]}>
+            <DashboardStaffClubLayout />
+          </ProtectedRoute>
+        ),
         children: [
-          { path: "dashboard", element: <StaffClubPageStatic /> },
-          { path: "tables", element: <StaffClubPageManagerTable /> },
-          { path: "tables/checkout/:id", element: <BookingCheckoutPage /> },
-          { path: "bookings", element: <StaffClubPageBooking /> },
-          { path: "tournaments", element: <StaffClubPageTournament /> },
-          { path: "reviews", element: <StaffClubReviewListPage /> }
+          { path: "dashboard", element: <Pages.StaffClubPageStatic /> },
+          { path: "tables", element: <Pages.StaffClubPageManagerTable /> },
+          { path: "tables/checkout/:id", element: <Pages.BookingCheckoutPage /> },
+          { path: "bookings", element: <Pages.StaffClubPageBooking /> },
+          { path: "tournaments", element: <Pages.StaffClubPageTournament /> },
+          { path: "reviews", element: <Pages.StaffClubReviewListPage /> },
         ],
       },
+
+      // ================= SYSTEM STAFF =================
       {
         path: "systemstaff",
-        element: <DashboardStaffSystemLayout />,
+        element: (
+          <ProtectedRoute allowedRoles={["SYSTEM_STAFF"]}>
+            <DashboardStaffSystemLayout />
+          </ProtectedRoute>
+        ),
         children: [
-          { path: "systemstaff1", element: <SystemStaff /> },
-          { path: "systemstaff2", element: <SystemStaff1 /> },
-          { path: "systemstaff3", element: <SystemStaff2 /> },
-          { path: "systemstaff4", element: <SystemStaff3 /> },
-          { path: "systemstaff5", element: <SystemStaff4 /> },
+          { path: "systemstaff1", element: <Pages.SystemStaff /> },
+          { path: "systemstaff2", element: <Pages.SystemStaff1 /> },
+          { path: "systemstaff3", element: <Pages.SystemStaff2 /> },
+          { path: "systemstaff4", element: <Pages.SystemStaff3 /> },
+          { path: "systemstaff5", element: <Pages.SystemStaff4 /> },
         ],
       },
     ],
