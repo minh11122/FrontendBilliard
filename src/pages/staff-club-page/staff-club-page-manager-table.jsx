@@ -1111,7 +1111,7 @@ export const StaffClubPageManagerTable = () => {
                   })}
                </div>
 
-               <div className="flex-1 flex flex-col relative z-0">
+               <div className="flex-1 flex flex-col relative z-0" style={{ minWidth: HOURS.length * HOUR_WIDTH }}>
                   <div className="absolute inset-0 flex pointer-events-none">
                      {HOURS.map(h => <div key={`bg-${h}`} className="shrink-0 border-r border-gray-100/60 h-full" style={{ width: HOUR_WIDTH }} />)}
                   </div>
