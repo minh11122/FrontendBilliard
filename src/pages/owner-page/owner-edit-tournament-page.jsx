@@ -33,6 +33,14 @@ export default function OwnerEditTournamentPage() {
     auto_bracket: true,
   });
 
+  const formatOptions = [
+    { value: "Knockout", label: "Loại trực tiếp", desc: "Thua là loại" },
+    { value: "Double Elimination", label: "Nhánh thắng / thua", desc: "Thua 1 trận xuống nhánh thua" },
+    ...(form.format === "Round Robin"
+      ? [{ value: "Round Robin", label: "Vòng tròn", desc: "Giữ tương thích giải cũ" }]
+      : []),
+  ];
+
   // Fetch existing data
   useEffect(() => {
     const fetchData = async () => {
@@ -100,6 +108,16 @@ export default function OwnerEditTournamentPage() {
       newErrors.prize = "Giải thưởng phải lớn hơn phí tham gia";
     }
 
+    const prizeRaw = String(form.prize_pool ?? "").trim();
+    const strictPrizeNum = Number(prizeRaw);
+    if (!prizeRaw) {
+      newErrors.prize = "Vui lòng nhập tiền thưởng";
+    } else if (!Number.isFinite(strictPrizeNum) || strictPrizeNum <= 0) {
+      newErrors.prize = "Tiền thưởng phải lớn hơn 0";
+    } else if ((Number(form.fee) || 0) > 0 && strictPrizeNum <= (Number(form.fee) || 0)) {
+      newErrors.prize = "Tiền thưởng phải lớn hơn phí tham gia";
+    }
+
     setErrors(newErrors);
   }, [form]);
 
@@ -127,6 +145,11 @@ export default function OwnerEditTournamentPage() {
       return;
     }
 
+    if (!String(form.prize_pool ?? "").trim()) {
+      toast.error("Vui lòng nhập tiền thưởng");
+      return;
+    }
+
     if (Object.keys(errors).length > 0) {
       toast.error("Vui lòng kiểm tra lại thông tin bị lỗi");
       return;
@@ -140,7 +163,7 @@ export default function OwnerEditTournamentPage() {
       formData.append("format", form.format);
       formData.append("max_players", Number(form.max_players));
       formData.append("fee", Number(form.fee) || 0);
-      formData.append("prize_pool", form.prize_pool);
+      formData.append("prize_pool", String(form.prize_pool).trim());
       formData.append("auto_bracket", form.auto_bracket);
       if (form.registration_open) formData.append("registration_open", form.registration_open);
       if (form.registration_deadline) formData.append("registration_deadline", form.registration_deadline);
@@ -234,10 +257,7 @@ export default function OwnerEditTournamentPage() {
             <div>
               <label className={labelClass}>Thể thức thi đấu <span className="text-red-500">*</span></label>
               <div className="flex gap-3">
-                {[
-                  { value: "Knockout", label: "Loại trực tiếp", desc: "Thua là loại" },
-                  { value: "Round Robin", label: "Vòng tròn", desc: "Đấu lần lượt" }
-                ].map(opt => (
+                {formatOptions.map(opt => (
                   <button
                     key={opt.value}
                     type="button"
