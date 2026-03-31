@@ -69,49 +69,49 @@ export const TournamentPage = () => {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="bg-white min-h-screen">
       <div className="container mx-auto px-6 py-8">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-1">
-            Danh sách Giải đấu Công cộng
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2 text-gray-900">
+            Giải đấu Bida
           </h1>
-          <p className="text-gray-500 text-sm">
-            Khám phá, tham gia và tranh tài tại các giải đấu bida chuyên nghiệp.
+          <p className="text-gray-600 text-sm">
+            Khám phá và tham gia các giải đấu bida chuyên nghiệp
           </p>
         </div>
 
         {/* Filter bar */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm mb-8 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
+        <div className="bg-white rounded-2xl p-4 border border-gray-200 mb-8 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
           <div className="relative w-full md:max-w-sm">
             <Search
               size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
             />
             <input
-              placeholder="Tìm kiếm giải đấu theo tên, CLB..."
+              placeholder="Tìm kiếm giải đấu..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all"
             />
           </div>
 
-          <div className="flex flex-wrap gap-2 text-sm items-center">
+          <div className="flex flex-wrap gap-3 text-sm items-center">
             <button 
               onClick={() => setActiveTab("all")}
-              className={`px-3 py-1.5 rounded-lg ${activeTab === "all" ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${activeTab === "all" ? "bg-green-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
               Tất cả
             </button>
             <button 
               onClick={() => setActiveTab("live")}
-              className={`px-3 py-1.5 rounded-lg ${activeTab === "live" ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${activeTab === "live" ? "bg-green-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
               Đang diễn ra
             </button>
-            <div className="h-6 w-[1px] bg-slate-200 mx-2"></div>
+            <div className="h-6 w-px bg-gray-300"></div>
             <select
               value={feeFilter}
               onChange={(e) => setFeeFilter(e.target.value)}
-              className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 outline-none hover:bg-gray-200 cursor-pointer"
+              className="px-4 py-2 rounded-lg bg-gray-100 text-gray-600 border border-gray-300 outline-none hover:bg-gray-200 cursor-pointer transition-all"
             >
               <option value="all">Mọi lệ phí</option>
               <option value="free">Miễn phí</option>
@@ -125,11 +125,11 @@ export const TournamentPage = () => {
         {/* Cards */}
         {loading ? (
           <div className="flex justify-center items-center py-20">
-            <div className="animate-spin w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full"></div>
+            <div className="animate-spin w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full"></div>
           </div>
         ) : tournaments.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-2xl">
-            <p className="text-gray-500">Chưa có giải đấu nào.</p>
+            <p className="text-gray-600">Chưa có giải đấu nào.</p>
           </div>
         ) : (
           <div className="grid md:grid-cols-4 gap-6">
@@ -167,43 +167,43 @@ export const TournamentPage = () => {
               return (
                 <div
                   key={t._id || i}
-                  className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition"
+                  className="bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-lg transition-all group flex flex-col h-full"
                 >
-                  <div className="relative">
-                    <img src={displayImg} className="h-40 w-full object-cover" alt="" />
+                  <div className="relative h-40 overflow-hidden">
+                    <img src={displayImg} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={t.name} />
                     <span
-                      className={`absolute top-3 right-3 text-xs px-2 py-1 rounded-full ${cfg.color}`}
+                      className={`absolute top-3 right-3 text-xs font-semibold px-3 py-1 rounded-lg ${cfg.color}`}
                     >
                       {cfg.label}
                     </span>
                     {isRegistered && (
-                      <span className="absolute top-3 left-3 text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-semibold">
+                      <span className="absolute top-3 left-3 text-xs font-semibold px-3 py-1 rounded-lg bg-green-100 text-green-700 shadow-sm">
                         Đã đăng ký
                       </span>
                     )}
                   </div>
 
-                  <div className="p-4">
-                    <h3 className="font-semibold text-sm mb-3 line-clamp-2">
+                  <div className="p-4 flex flex-col flex-grow">
+                    <h3 className="font-semibold text-sm mb-3 line-clamp-2 text-gray-900">
                       {t.name}
                     </h3>
 
-                    <div className="space-y-1 text-xs text-gray-500 mb-4">
-                      <p className="flex gap-1 items-center">
-                        <Calendar size={12} /> {displayDate}
+                    <div className="space-y-2 text-xs text-gray-600 mb-4 flex-grow">
+                      <p className="flex gap-2 items-start">
+                        <Calendar size={14} className="flex-shrink-0 mt-0.5 text-green-500" /> <span>{displayDate}</span>
                       </p>
-                      <p className="flex gap-1 items-center">
-                        <MapPin size={12} /> {displayClub}
+                      <p className="flex gap-2 items-start">
+                        <MapPin size={14} className="flex-shrink-0 mt-0.5 text-green-500" /> <span>{displayClub}</span>
                       </p>
-                      <p className="flex gap-1 items-center">
-                        <CheckCircle size={12} /> {displayFee}
+                      <p className="flex gap-2 items-start">
+                        <CheckCircle size={14} className="flex-shrink-0 mt-0.5 text-green-500" /> <span className="font-medium">{displayFee}</span>
                       </p>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 mt-auto pt-4 border-t border-gray-200">
                       <button 
                         onClick={() => navigate(`/tournament/${t._id}`)}
-                        className="w-full text-sm font-semibold px-4 py-2.5 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 transition-colors"
+                        className="w-full text-sm font-semibold px-4 py-2.5 rounded-lg bg-green-500 text-white hover:bg-green-600 transition-colors"
                       >
                         Xem chi tiết
                       </button>

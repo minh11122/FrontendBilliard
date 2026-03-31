@@ -189,21 +189,21 @@ export const BookingPage = () => {
         <button
           onClick={() => handlePageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="p-2 border rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-50 disabled:opacity-50"
+          className="p-2 border border-gray-300 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 disabled:opacity-50"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
 
         {pages.map((page, index) => (
           page === "..." ? (
-            <span key={`dots-${index}`} className="text-slate-400 px-2">...</span>
+            <span key={`dots-${index}`} className="text-gray-500 px-2">...</span>
           ) : (
             <button
               key={page}
               onClick={() => handlePageChange(page)}
               className={`w-10 h-10 border rounded-lg font-medium transition-colors ${currentPage === page
-                ? "bg-emerald-500 text-white border-emerald-500"
-                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                ? "bg-green-500 text-white border-green-500"
+                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                 }`}
             >
               {page}
@@ -214,7 +214,7 @@ export const BookingPage = () => {
         <button
           onClick={() => handlePageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="p-2 border rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 disabled:opacity-50"
+          className="p-2 border border-gray-300 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 disabled:opacity-50"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
@@ -223,24 +223,24 @@ export const BookingPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
+    <div className="min-h-screen bg-white text-gray-900 pb-20">
       {/* Search Header Section */}
-      <div className="bg-white border-b sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="container mx-auto px-6 py-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-slate-800">Danh sách Câu lạc bộ</h1>
-              <p className="text-slate-500 text-sm mt-1">Tìm kiếm và đặt bàn tại các câu lạc bộ bida chất lượng nhất</p>
+              <h1 className="text-3xl font-bold text-gray-900">Danh sách Câu lạc bộ</h1>
+              <p className="text-gray-600 text-sm mt-1">Khám phá những CLB uy tín gần bạn</p>
             </div>
           </div>
 
           {/* Filters & Search Row */}
-          <div className="flex flex-col lg:flex-row lg:items-center gap-4 mt-8 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-4 mt-8 bg-gray-50 p-4 rounded-2xl border border-gray-200">
             <div className="flex flex-wrap items-center gap-2 flex-1">
               {/* Province Select */}
               <div className="relative">
                 <select
-                  className="pl-4 pr-10 py-2.5 bg-white hover:border-emerald-500 text-sm font-medium rounded-xl transition-all border border-slate-200 shadow-sm appearance-none outline-none cursor-pointer min-w-[160px]"
+                  className="pl-4 pr-10 py-2.5 bg-white hover:border-green-500 text-sm font-medium rounded-lg transition-all border border-gray-300 shadow-sm appearance-none outline-none cursor-pointer min-w-[160px]"
                   value={selectedProvinceCode}
                   onChange={(e) => setSelectedProvinceCode(e.target.value)}
                 >
@@ -249,7 +249,7 @@ export const BookingPage = () => {
                     <option key={p.code} value={p.code}>{p.name}</option>
                   ))}
                 </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
                   <ChevronRight className="w-4 h-4 rotate-90" />
                 </div>
               </div>
@@ -257,7 +257,7 @@ export const BookingPage = () => {
               {/* District Select */}
               <div className="relative">
                 <select
-                  className="pl-4 pr-10 py-2.5 bg-white hover:border-emerald-500 text-sm font-medium rounded-xl transition-all border border-slate-200 shadow-sm appearance-none outline-none cursor-pointer min-w-[160px] disabled:bg-slate-50 disabled:cursor-not-allowed"
+                  className="pl-4 pr-10 py-2.5 bg-white hover:border-green-500 text-sm font-medium rounded-lg transition-all border border-gray-300 shadow-sm appearance-none outline-none cursor-pointer min-w-[160px] disabled:bg-gray-50 disabled:cursor-not-allowed"
                   value={selectedDistrictCode}
                   onChange={(e) => setSelectedDistrictCode(e.target.value)}
                   disabled={selectedProvinceCode === "all"}
@@ -269,13 +269,13 @@ export const BookingPage = () => {
                     <option key={d.code} value={d.code}>{d.name_with_type || d.name}</option>
                   ))}
                 </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
                   <ChevronRight className="w-4 h-4 rotate-90" />
                 </div>
               </div>
 
               {/* Multi-select type buttons */}
-              <div className="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
+              <div className="flex bg-white p-1 rounded-lg border border-gray-300 shadow-sm">
                 {["Tất cả", "Pool", "3C", "Libre"].map((type) => {
                   const isActive = type === "Tất cả"
                     ? selectedTypes.length === 0
@@ -285,8 +285,8 @@ export const BookingPage = () => {
                       key={type}
                       onClick={() => handleTypeClick(type)}
                       className={`px-4 py-1.5 text-sm font-semibold rounded-lg transition-all ${isActive
-                        ? "bg-emerald-500 text-white shadow-md"
-                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                        ? "bg-green-500 text-white shadow-md"
+                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                         }`}
                     >
                       {type}
@@ -297,7 +297,7 @@ export const BookingPage = () => {
 
               <div className="relative">
                 <select
-                  className="pl-4 pr-10 py-2.5 bg-white hover:border-emerald-500 text-sm font-medium rounded-xl transition-all border border-slate-200 shadow-sm appearance-none outline-none cursor-pointer min-w-[140px]"
+                  className="pl-4 pr-10 py-2.5 bg-white hover:border-green-500 text-sm font-medium rounded-lg transition-all border border-gray-300 shadow-sm appearance-none outline-none cursor-pointer min-w-[140px]"
                   value={filterPrice}
                   onChange={(e) => setFilterPrice(e.target.value)}
                 >
@@ -306,30 +306,30 @@ export const BookingPage = () => {
                   <option value="50to100">50k - 100k/h</option>
                   <option value="over100">Trên 100k/h</option>
                 </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
                   <ChevronRight className="w-4 h-4 rotate-90" />
                 </div>
               </div>
 
               <button
                 onClick={() => setFilterRating(!filterRating)}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl transition-all border shadow-sm ${filterRating
-                  ? "bg-amber-500 text-white border-amber-500 shadow-amber-200"
-                  : "bg-white text-slate-600 hover:bg-slate-50 border-slate-200"
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg transition-all border shadow-sm ${filterRating
+                  ? "bg-yellow-400 text-white border-yellow-400 shadow-yellow-200"
+                  : "bg-white text-gray-600 hover:bg-gray-100 border-gray-300"
                   }`}
               >
-                Top Rating <Star className={`w-4 h-4 ${filterRating ? "fill-white" : "text-amber-500"}`} />
+                Top Rating <Star className={`w-4 h-4 ${filterRating ? "fill-white" : "text-yellow-400"}`} />
               </button>
 
               <button
                 onClick={toggleLocationSorting}
                 disabled={findingLocation}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl transition-all border shadow-sm ${sortByLocation
-                  ? "bg-emerald-500 text-white border-emerald-500 shadow-emerald-200"
-                  : "bg-white text-slate-600 hover:bg-slate-50 border-slate-200"
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg transition-all border shadow-sm ${sortByLocation
+                  ? "bg-green-500 text-white border-green-500 shadow-green-200"
+                  : "bg-white text-gray-600 hover:bg-gray-100 border-gray-300"
                   }`}
               >
-                {findingLocation ? "Định vị..." : "Gần tôi"} <Navigation className={`w-4 h-4 ${sortByLocation ? "fill-white" : "text-emerald-500"}`} />
+                {findingLocation ? "Định vị..." : "Gần tôi"} <Navigation className={`w-4 h-4 ${sortByLocation ? "fill-white" : "text-green-500"}`} />
               </button>
             </div>
 
@@ -337,77 +337,77 @@ export const BookingPage = () => {
               <input
                 type="text"
                 placeholder="Tên club, địa chỉ..."
-                className="w-full pl-11 pr-4 py-2.5 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-sm font-medium"
+                className="w-full pl-11 pr-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all shadow-sm font-medium"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="container mx-auto px-6 py-8">
         {loading ? (
           <div className="flex justify-center items-center h-64">
-            <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-10 h-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : (
           <>
             <div className="flex justify-between items-center mb-6">
-              <span className="text-slate-500 text-sm">Hiển thị {filteredClubs.length} câu lạc bộ</span>
+              <span className="text-gray-600 text-sm">Hiển thị {filteredClubs.length} câu lạc bộ</span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {paginatedClubs.map((club) => (
-                <div key={club._id} className="bg-white border rounded-xl overflow-hidden hover:shadow-lg transition-all group flex flex-col h-full">
-                  <div className="relative h-48 bg-slate-200 overflow-hidden">
+                <div key={club._id} className="bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-lg transition-all group flex flex-col h-full">
+                  <div className="relative h-40 bg-gray-200 overflow-hidden">
                     {club.avatar ? (
                       <img src={club.avatar} alt={club.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-400">Chưa có ảnh</div>
+                      <div className="w-full h-full flex items-center justify-center text-gray-400">Chưa có ảnh</div>
                     )}
-                    <div className="absolute top-3 left-3 bg-emerald-500 text-white text-xs font-bold px-2 py-1 rounded">
-                      PHỔ BIẾN NHẤT
+                    <div className="absolute top-3 left-3 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-lg shadow-sm">
+                      PHỔ BIẾN
                     </div>
                     {club.rating > 0 && (
-                      <div className="absolute top-3 right-3 bg-white/90 backdrop-blur text-slate-800 text-sm font-bold px-2 py-1 rounded-md flex items-center gap-1 shadow-sm">
-                        <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" /> {Number(club.rating).toFixed(1)}
+                      <div className="absolute top-3 right-3 bg-white/95 backdrop-blur text-gray-900 text-sm font-bold px-2 py-1 rounded-lg flex items-center gap-1 shadow-md">
+                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" /> {Number(club.rating).toFixed(1)}
                       </div>
                     )}
                   </div>
 
                   <div className="p-4 flex flex-col flex-grow">
                     <div className="min-h-[72px]">
-                      <h3 className="text-lg font-bold text-slate-900 group-hover:text-emerald-600 transition-colors line-clamp-1">{club.name}</h3>
-                      <p className="text-slate-500 text-sm mt-1 flex items-start gap-1 line-clamp-2">
-                        <MapPin className="w-4 h-4 shrink-0 mt-0.5 text-slate-400" />
-                        {club.address}
+                      <h3 className="text-base font-semibold text-gray-900 group-hover:text-green-600 transition-colors line-clamp-2">{club.name}</h3>
+                      <p className="text-gray-600 text-xs mt-2 flex items-start gap-1 line-clamp-2">
+                        <MapPin className="w-4 h-4 shrink-0 mt-0.5 text-green-500" />
+                        <span>{club.address}</span>
                       </p>
                     </div>
 
                     <div className="mt-4 flex items-center justify-between text-sm">
-                      <div className="text-slate-500">{club.distance}</div>
-                      <div className="font-bold text-emerald-600">Từ {club.priceFrom?.toLocaleString()}đ/h</div>
+                      <div className="text-gray-600 text-xs">{club.distance}</div>
+                      <div className="font-bold text-green-600">Từ {club.priceFrom?.toLocaleString()}đ/h</div>
                     </div>
 
                     <div className="mt-4 flex flex-wrap items-center gap-1 mb-4">
                       {club.tableTypes && [...new Set(club.tableTypes.map(mapTypeToUI))].map((uiType, idx) => (
-                        <span key={idx} className="px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded border">
+                        <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md border border-gray-200">
                           {uiType}
                         </span>
                       ))}
                       {(!club.tableTypes || club.tableTypes.length === 0) && (
-                        <span className="px-2 py-1 bg-slate-100 text-slate-400 text-xs rounded border border-dashed">Chưa có loại bàn</span>
+                        <span className="px-2 py-1 bg-gray-100 text-gray-500 text-xs rounded-md border border-dashed border-gray-300">Chưa có loại bàn</span>
                       )}
                     </div>
 
-                    <div className="mt-auto pt-4 border-t">
+                    <div className="mt-auto pt-4 border-t border-gray-200">
                       <Link
                         to={`/booking/${club._id}`}
-                        className="flex items-center justify-center w-full gap-2 py-2.5 bg-slate-900 hover:bg-emerald-600 text-white font-medium rounded-lg transition-colors"
+                        className="flex items-center justify-center w-full gap-2 py-2.5 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors"
                       >
-                        Đến Đặt Bàn <ChevronRight className="w-4 h-4" />
+                        Đặt bàn <ChevronRight className="w-4 h-4" />
                       </Link>
                     </div>
                   </div>
@@ -416,7 +416,7 @@ export const BookingPage = () => {
             </div>
 
             {filteredClubs.length === 0 && (
-              <div className="text-center py-20 text-slate-500">
+              <div className="text-center py-20 text-gray-600">
                 Không tìm thấy câu lạc bộ nào phù hợp với tìm kiếm của bạn.
               </div>
             )}
