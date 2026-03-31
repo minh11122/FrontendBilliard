@@ -80,7 +80,7 @@ export const SidebarOwner = () => {
     },
     {
       name: "Quản lý Bài đăng",
-      href: "#",
+      href: "/owner/posts",
       icon: FileText,
       roles: ["pro"]
     },

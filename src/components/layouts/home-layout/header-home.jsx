@@ -179,7 +179,7 @@ export const HeaderHome = () => {
 
 
           <NavLink
-            to="/ranking"
+            to="/posts"
             className={({ isActive }) =>
               `px-4 py-2 font-medium transition-colors ${
                 isActive
@@ -188,7 +188,7 @@ export const HeaderHome = () => {
               }`
             }
           >
-            Xếp hạng
+            Bài viết
           </NavLink>
 
           <NavLink

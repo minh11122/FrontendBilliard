@@ -69,7 +69,9 @@ import {
   OwnerReviewListPage,
   OwnerTournamentBracketPage,
   StaffClubReviewListPage,
-  MyTournamentsPage
+  MyTournamentsPage,
+  PostPage,
+  OwnerPostPage
 } from "@/pages";
 
 export const router = createBrowserRouter([
@@ -111,6 +113,7 @@ export const router = createBrowserRouter([
           },
           { path: "/register-owner-account", element: <RegisterOwnerAccount /> },
           { path: "/profile", element: <ProfilePage /> },
+          { path: "/posts", element: <PostPage /> },
         ],
       },
       {
@@ -163,11 +166,11 @@ export const router = createBrowserRouter([
           { path: "employees/create", element: <OwnerCreateEmployeePage /> },
           { path: "employees/edit/:id", element: <OwnerUpdateEmployeePage /> },
           { path: "amenities", element: <AmenitiesPage /> },
-          { path: "tournaments", element: <OwnerTournamentListPage /> },
-          { path: "tournaments/create", element: <OwnerCreateTournamentPage /> },
-          { path: "tournaments/:id/players", element: <OwnerTournamentPlayersPage /> },
-          { path: "tournaments/:id/bracket", element: <OwnerTournamentBracketPage /> },
-          { path: "tournaments/edit/:id", element: <OwnerEditTournamentPage /> },
+          { path: "tournaments", element: <PlanProtectedRoute allowedPlans={["pro"]}><OwnerTournamentListPage /></PlanProtectedRoute> },
+          { path: "tournaments/create", element: <PlanProtectedRoute allowedPlans={["pro"]}><OwnerCreateTournamentPage /></PlanProtectedRoute> },
+          { path: "tournaments/:id/players", element: <PlanProtectedRoute allowedPlans={["pro"]}><OwnerTournamentPlayersPage /></PlanProtectedRoute> },
+          { path: "tournaments/edit/:id", element: <PlanProtectedRoute allowedPlans={["pro"]}><OwnerEditTournamentPage /></PlanProtectedRoute> },
+          { path: "posts", element: <OwnerPostPage /> },
         ],
       },
       {
