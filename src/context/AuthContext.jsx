@@ -28,6 +28,10 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("selected_club_id");
+    localStorage.removeItem("selected_club_name");
+    localStorage.removeItem("selected_club_plan");
+    sessionStorage.removeItem("postLoginRedirect");
     setUser(null);
     setAuthLoading(false);
   };
