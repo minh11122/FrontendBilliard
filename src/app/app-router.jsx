@@ -45,6 +45,7 @@ import {
   StaffClubPageBooking,
   StaffClubPageStatic,
   StaffClubPageTournament,
+  StaffClubPageMatchManagement,
   BookingCheckoutPage,
   SystemStaff,
   SystemStaff1,
@@ -68,7 +69,9 @@ import {
   OwnerReportsPage,
   OwnerReviewListPage,
   OwnerPaymentHistoryPage,
+  OwnerTournamentBracketPage,
   StaffClubReviewListPage,
+  MyTournamentsPage,
   PostPage,
   OwnerPostPage,
   StaffClubPaymentHistoryPage
@@ -104,6 +107,14 @@ export const router = createBrowserRouter([
           { path: "/payment/:bookingId", element: <PaymentPage /> },
           { path: "/my-bookings", element: <BookingHistoryPage /> },
           { path: "/payment-history", element: <PaymentHistoryPage /> },
+          {
+            path: "/my-tournaments",
+            element: (
+              <ProtectedRoute allowedRoles={["CUSTOMER"]}>
+                <MyTournamentsPage />
+              </ProtectedRoute>
+            ),
+          },
           { path: "/register-owner-account", element: <RegisterOwnerAccount /> },
           { path: "/profile", element: <ProfilePage /> },
           { path: "/posts", element: <PostPage /> },
@@ -169,15 +180,21 @@ export const router = createBrowserRouter([
       },
       {
         path: "staff",
-        element: <DashboardStaffClubLayout />,
+        element: (
+          <ProtectedRoute allowedRoles={["STAFF_CLUB"]}>
+            <DashboardStaffClubLayout />
+          </ProtectedRoute>
+        ),
         children: [
           { path: "dashboard", element: <StaffClubPageStatic /> },
           { path: "tables", element: <StaffClubPageManagerTable /> },
           { path: "tables/checkout/:id", element: <BookingCheckoutPage /> },
           { path: "bookings", element: <StaffClubPageBooking /> },
           { path: "tournaments", element: <StaffClubPageTournament /> },
-          { path: "reviews", element: <StaffClubReviewListPage /> },
           { path: "payment-history", element: <StaffClubPaymentHistoryPage /> },
+          { path: "tournaments/:id/matches", element: <StaffClubPageMatchManagement /> },
+          { path: "tournaments/:id/players", element: <TournamentPlayersPage /> },
+          { path: "reviews", element: <StaffClubReviewListPage /> }
         ],
       },
       {

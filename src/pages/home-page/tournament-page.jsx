@@ -135,10 +135,11 @@ export const TournamentPage = () => {
           <div className="grid md:grid-cols-4 gap-6">
             {tournaments
             .filter((t) => {
+              if (t.status === "Completed") return false; // Ẩn giải đã kết thúc
+
               const matchSearch = t.name?.toLowerCase().includes(search.toLowerCase()) || t.club_id?.name?.toLowerCase().includes(search.toLowerCase());
               let uiStatus = "upcoming";
               if (t.status === "InProgress") uiStatus = "live";
-              if (t.status === "Completed") uiStatus = "ended";
 
               const matchTab = activeTab === "all" ? true : activeTab === uiStatus;
               

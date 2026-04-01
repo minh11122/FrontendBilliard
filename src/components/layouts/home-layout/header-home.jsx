@@ -1,6 +1,6 @@
 import { useState, useContext, useEffect } from "react";
-import { Moon, User, LogOut, Bell, ChevronDown } from "lucide-react";
-import { useNavigate, Link, NavLink } from "react-router-dom";
+import { Moon, User, LogOut, Bell, ChevronDown, Trophy } from "lucide-react";
+import { useNavigate, Link, NavLink, useLocation } from "react-router-dom";
 import { AuthContext } from "@/context/AuthContext";
 
 import {
@@ -19,6 +19,7 @@ export const HeaderHome = () => {
   const [unreadCount, setUnreadCount] = useState(0);
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout } = useContext(AuthContext);
 
   const handleLogout = () => {
@@ -120,18 +121,62 @@ export const HeaderHome = () => {
             CLB
           </NavLink>
 
-          <NavLink
-            to="/tournament"
-            className={({ isActive }) =>
-              `px-4 py-2 font-medium transition-colors ${
-                isActive
-                  ? "text-green-500 border-b-2 border-green-500"
-                  : "text-gray-700 hover:text-green-500"
-              }`
-            }
-          >
-            Giải đấu
-          </NavLink>
+
+          {/* Tournament Dropdown */}
+          <div className="relative group ml-1">
+            <button
+              className={`px-4 py-2 font-bold rounded-lg transition-all flex items-center gap-2 border ${
+                location.pathname.startsWith("/tournament") || location.pathname === "/my-tournaments"
+                  ? "text-green-600 bg-green-50 border-green-200"
+                  : "text-gray-700 hover:bg-gray-50 border-transparent"
+              }`}
+            >
+              <Trophy size={16} className={location.pathname.startsWith("/tournament") || location.pathname === "/my-tournaments" ? "text-green-500" : "text-gray-400"} />
+              <span>Giải đấu</span>
+              <ChevronDown size={14} className="transition-transform group-hover:rotate-180 text-gray-400" />
+            </button>
+            
+            <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-[10000] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 translate-y-2 group-hover:translate-y-0">
+              <div className="p-2">
+                <NavLink
+                  to="/tournament"
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+                      isActive ? "bg-green-500 text-white shadow-md shadow-green-200" : "text-gray-700 hover:bg-gray-50"
+                    }`
+                  }
+                >
+                  <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600 shrink-0">
+                    <Trophy size={16} />
+                  </div>
+                  <div className="flex flex-col">
+                    <span>Giải đấu cộng đồng</span>
+                    <span className="text-[10px] opacity-70 font-medium">Khám phá các giải đấu mới</span>
+                  </div>
+                </NavLink>
+
+                <div className="h-px bg-gray-50 my-1 mx-2" />
+
+                <NavLink
+                  to="/my-tournaments"
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+                      isActive ? "bg-green-500 text-white shadow-md shadow-green-200" : "text-gray-700 hover:bg-gray-50"
+                    }`
+                  }
+                >
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+                    <User size={16} />
+                  </div>
+                  <div className="flex flex-col">
+                    <span>Giải của tôi</span>
+                    <span className="text-[10px] opacity-70 font-medium">Lịch sử và tiến trình</span>
+                  </div>
+                </NavLink>
+              </div>
+            </div>
+          </div>
+
 
           <NavLink
             to="/posts"

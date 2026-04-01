@@ -67,6 +67,16 @@ export default function OwnerCreateTournamentPage() {
       newErrors.prize = "Giải thưởng phải lớn hơn phí tham gia";
     }
 
+    const prizeRaw = String(form.prize_pool ?? "").trim();
+    const strictPrizeNum = Number(prizeRaw);
+    if (!prizeRaw) {
+      newErrors.prize = "Vui lòng nhập tiền thưởng";
+    } else if (!Number.isFinite(strictPrizeNum) || strictPrizeNum <= 0) {
+      newErrors.prize = "Tiền thưởng phải lớn hơn 0";
+    } else if ((Number(form.fee) || 0) > 0 && strictPrizeNum <= (Number(form.fee) || 0)) {
+      newErrors.prize = "Tiền thưởng phải lớn hơn phí tham gia";
+    }
+
     setErrors(newErrors);
   }, [form]);
 
@@ -94,6 +104,11 @@ export default function OwnerCreateTournamentPage() {
       return;
     }
 
+    if (!String(form.prize_pool ?? "").trim()) {
+      toast.error("Vui lòng nhập tiền thưởng");
+      return;
+    }
+
     if (Object.keys(errors).length > 0) {
       toast.error("Vui lòng kiểm tra lại thông tin bị lỗi");
       return;
@@ -107,7 +122,7 @@ export default function OwnerCreateTournamentPage() {
       formData.append("format", form.format);
       formData.append("max_players", Number(form.max_players));
       formData.append("fee", Number(form.fee) || 0);
-      formData.append("prize_pool", form.prize_pool.trim());
+      formData.append("prize_pool", String(form.prize_pool).trim());
       formData.append("auto_bracket", form.auto_bracket);
       if (form.registration_open) formData.append("registration_open", form.registration_open);
       if (form.registration_deadline) formData.append("registration_deadline", form.registration_deadline);
@@ -193,9 +208,9 @@ export default function OwnerCreateTournamentPage() {
             <div>
               <label className={labelClass}>Thể thức thi đấu <span className="text-red-500">*</span></label>
               <div className="flex gap-3">
-                {[
+                {[ 
                   { value: "Knockout", label: "Loại trực tiếp", desc: "Thua là loại" },
-                  { value: "Round Robin", label: "Vòng tròn", desc: "Đấu lần lượt" }
+                  { value: "Double Elimination", label: "Nhánh thắng / thua", desc: "Thua 1 trận xuống nhánh thua" }
                 ].map(opt => (
                   <button
                     key={opt.value}
@@ -243,7 +258,7 @@ export default function OwnerCreateTournamentPage() {
             </div>
 
             {/* Auto Bracket Toggle */}
-            <div className="col-span-1 md:col-span-2">
+            {/* <div className="col-span-1 md:col-span-2">
               <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
                 <div className="flex items-center gap-3">
                   <Settings2 className="w-5 h-5 text-slate-400" />
@@ -257,7 +272,7 @@ export default function OwnerCreateTournamentPage() {
                   <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-500/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-orange-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
                 </label>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
 
