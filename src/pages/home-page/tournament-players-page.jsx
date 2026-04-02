@@ -164,20 +164,20 @@ export const TournamentPlayersPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-6 py-10">
+    <div className="min-h-screen bg-white">
+      <div className="container mx-auto px-6 py-8">
         <button
           onClick={handleBack}
-          className="flex items-center gap-2 text-gray-500 hover:text-orange-500 mb-6 transition-colors text-sm font-medium"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium transition-all mb-8"
         >
-          <ArrowLeft size={18} /> Quay lại
+          <ArrowLeft size={16} /> Quay lại
         </button>
 
         <div className="bg-white rounded-2xl shadow-sm border p-6">
           <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
             <div className="min-w-[260px]">
               <h1 className="text-2xl font-extrabold text-slate-800 flex items-center gap-2">
-                <Users className="text-orange-500" size={22} /> Danh sách người chơi
+                <Users className="text-green-500" size={22} /> Danh sách người chơi
               </h1>
               <div className="mt-2 text-sm text-gray-600 space-y-1">
                 <p className="flex items-center gap-2">
@@ -207,7 +207,7 @@ export const TournamentPlayersPage = () => {
                 onClick={() => setTab("players")}
                 className={`px-3 py-2 rounded-lg text-sm font-bold transition-colors ${
                   tab === "players"
-                    ? "bg-white text-orange-600 shadow-sm border"
+                    ? "bg-white text-green-600 shadow-sm border"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
@@ -217,7 +217,7 @@ export const TournamentPlayersPage = () => {
                 onClick={handleMatchesTabClick}
                 className={`px-3 py-2 rounded-lg text-sm font-bold transition-colors ${
                   tab === "matches"
-                    ? "bg-white text-orange-600 shadow-sm border"
+                    ? "bg-white text-green-600 shadow-sm border"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
@@ -230,7 +230,7 @@ export const TournamentPlayersPage = () => {
 
           {loading ? (
             <div className="flex items-center justify-center py-14">
-              <div className="animate-spin w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full" />
+              <div className="animate-spin w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full" />
             </div>
           ) : tab === "players" ? (
             players.length === 0 ? (
@@ -290,7 +290,7 @@ export const TournamentPlayersPage = () => {
             )
           ) : matchesLoading ? (
             <div className="flex items-center justify-center py-14">
-              <div className="animate-spin w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full" />
+              <div className="animate-spin w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full" />
             </div>
           ) : matches.length === 0 ? (
             <div className="py-10 text-center text-slate-500">
@@ -313,7 +313,7 @@ export const TournamentPlayersPage = () => {
                           m.winner_id &&
                           String(m.winner_id?._id || m.winner_id) ===
                             String(m.player1_id?._id || m.player1_id)
-                            ? "text-orange-600"
+                            ? "text-green-600"
                             : "text-slate-800"
                         }`}
                       >
@@ -329,7 +329,7 @@ export const TournamentPlayersPage = () => {
                           m.winner_id &&
                           String(m.winner_id?._id || m.winner_id) ===
                             String(m.player2_id?._id || m.player2_id)
-                            ? "text-orange-600"
+                            ? "text-green-600"
                             : "text-slate-800"
                         }`}
                       >

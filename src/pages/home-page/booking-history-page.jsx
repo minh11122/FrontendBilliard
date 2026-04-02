@@ -136,15 +136,15 @@ export const BookingHistoryPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex justify-center items-center">
-        <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+      <div className="min-h-screen bg-white flex justify-center items-center">
+        <Loader2 className="w-8 h-8 animate-spin text-green-500" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-white text-slate-900">
+      <div className="container mx-auto px-6 py-8">
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-8 gap-4">
@@ -161,7 +161,7 @@ export const BookingHistoryPage = () => {
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all border ${activeTab === tab.key
-                ? "bg-emerald-500 text-white border-emerald-500 shadow-md"
+                ? "bg-green-500 text-white border-green-500 shadow-md"
                 : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
                 }`}
             >
@@ -182,7 +182,7 @@ export const BookingHistoryPage = () => {
             <div className="text-center py-20 bg-white rounded-2xl border">
               <CalendarClock className="w-16 h-16 text-slate-300 mx-auto mb-4" />
               <p className="text-lg text-slate-500 font-medium">Chưa có đơn đặt bàn nào</p>
-              <button onClick={() => navigate("/booking")} className="mt-4 text-emerald-600 font-bold hover:underline">
+              <button onClick={() => navigate("/booking")} className="mt-4 text-green-600 font-bold hover:underline">
                 Đặt bàn ngay →
               </button>
             </div>
@@ -248,7 +248,7 @@ export const BookingHistoryPage = () => {
                 <div className="flex items-center gap-4 flex-shrink-0 sm:flex-col sm:items-end sm:gap-1">
                   <div className="text-right">
                     <p className="text-[10px] text-slate-400 uppercase font-bold">Tổng tiền</p>
-                    <p className="text-lg font-black text-emerald-600">{(booking.total_bill || 0).toLocaleString()}đ</p>
+                    <p className="text-lg font-black text-green-600">{(booking.total_bill || 0).toLocaleString()}đ</p>
                     <p className="text-[11px] text-amber-600 font-semibold">
                       Cọc: {(booking.deposit || 0).toLocaleString()}đ
                     </p>
@@ -468,12 +468,12 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
 
           {/* Completed Banner */}
           {booking.status === "Completed" && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4">
               <div className="flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="font-bold text-emerald-800 text-sm">Buổi chơi đã hoàn thành</p>
-                  <p className="text-xs text-emerald-600 mt-1">
+                  <p className="font-bold text-green-800 text-sm">Buổi chơi đã hoàn thành</p>
+                  <p className="text-xs text-green-600 mt-1">
                     Mã đặt: #{booking.code_number}
                   </p>
                 </div>

@@ -20,7 +20,7 @@ const TYPE_META = {
 const StatusPill = ({ status }) => {
   const map = {
     PENDING: "bg-amber-50 text-amber-800 border-amber-200",
-    SUCCESS: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    SUCCESS: "bg-green-50 text-green-700 border-green-200",
   };
   const cls = map[status] || "bg-gray-50 text-gray-700 border-gray-200";
   const label = status === "SUCCESS" ? "Thành công" : status === "PENDING" ? "Đang xử lý" : status;
@@ -98,8 +98,8 @@ export const PaymentHistoryPage = () => {
   }, [transactions, search]);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-white  text-slate-900">
+      <div className="container mx-auto px-6 py-8">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-black">Lịch sử chuyển khoản</h1>
@@ -122,7 +122,7 @@ export const PaymentHistoryPage = () => {
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-emerald-600" />
+              <CreditCard className="w-5 h-5 text-green-600" />
               <h2 className="font-bold text-slate-800">Giao dịch</h2>
               <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
                 {transactions.length} bản ghi
@@ -146,7 +146,7 @@ export const PaymentHistoryPage = () => {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
-                <thead className="bg-slate-50 border-b border-slate-100">
+                <thead className="bg-white border-b border-slate-100">
                   <tr>
                     <th className="px-6 py-3 text-xs uppercase text-slate-500 font-bold">Thời gian</th>
                     <th className="px-6 py-3 text-xs uppercase text-slate-500 font-bold">Loại</th>
@@ -167,7 +167,7 @@ export const PaymentHistoryPage = () => {
                       <td className="px-6 py-4 text-sm text-slate-700">
                         {getContentLabel(tx)}
                       </td>
-                      <td className="px-6 py-4 text-sm text-right font-bold text-emerald-700">
+                      <td className="px-6 py-4 text-sm text-right font-bold text-green-700">
                         {formatMoney(tx.amount)}
                       </td>
                       <td className="px-6 py-4">

@@ -85,7 +85,7 @@ export default function TournamentDetailPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full" />
+        <div className="animate-spin w-10 h-10 border-4 border-green-500 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -153,13 +153,13 @@ export default function TournamentDetailPage() {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="container mx-auto px-6 py-10 max-w-4xl">
+    <div className="bg-white min-h-screen">
+      <div className="container mx-auto px-6 py-8">
         <button
           onClick={() => navigate(backPath)}
-          className="flex items-center gap-2 text-gray-500 hover:text-orange-500 mb-8 transition-colors text-sm font-medium"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium transition-all mb-8"
         >
-          <ArrowLeft size={18} /> Quay lại danh sách giải đấu
+          <ArrowLeft size={16} /> Quay lại
         </button>
 
         <div className="rounded-2xl overflow-hidden mb-8 shadow-md relative">
@@ -182,7 +182,7 @@ export default function TournamentDetailPage() {
                 onClick={() => setActiveTab("info")}
                 className={`pb-3 px-4 font-bold ${
                   activeTab === "info"
-                    ? "text-orange-500 border-b-2 border-orange-500"
+                    ? "text-green-500 border-b-2 border-green-500"
                     : "text-gray-500 hover:text-gray-700 transition-colors"
                 }`}
               >
@@ -193,7 +193,7 @@ export default function TournamentDetailPage() {
                   onClick={() => setActiveTab("bracket")}
                   className={`pb-3 px-4 font-bold ${
                     activeTab === "bracket"
-                      ? "text-orange-500 border-b-2 border-orange-500"
+                      ? "text-green-500 border-b-2 border-green-500"
                       : "text-gray-500 hover:text-gray-700 transition-colors"
                   }`}
                 >
@@ -215,7 +215,7 @@ export default function TournamentDetailPage() {
 
                 <div className="bg-white rounded-2xl p-6 shadow-sm">
                   <h2 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
-                    <Calendar size={18} className="text-orange-500" /> Lịch đấu
+                    <Calendar size={18} className="text-green-500" /> Lịch đấu
                   </h2>
                   <div className="space-y-3 text-sm">
                     <div className="flex items-center gap-3 text-gray-600">
@@ -225,7 +225,7 @@ export default function TournamentDetailPage() {
                       </span>
                     </div>
                     <div className="flex items-center gap-3 text-gray-600">
-                      <Clock size={16} className="text-orange-400 shrink-0" />
+                      <Clock size={16} className="text-green-500 shrink-0" />
                       <span>
                         <b>Đóng đăng ký:</b> {formatDate(tournament.registration_deadline)}
                       </span>
@@ -252,7 +252,7 @@ export default function TournamentDetailPage() {
             {tournament.club_id && (
               <div className="bg-white rounded-2xl p-5 shadow-sm">
                 <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wide mb-3 flex items-center gap-2">
-                  <Store size={16} className="text-orange-500" /> Quán tổ chức
+                  <Store size={16} className="text-green-500" /> Quán tổ chức
                 </h3>
                 <p className="font-semibold text-gray-800 mb-1">{tournament.club_id.name}</p>
                 {tournament.club_id.address && (
@@ -309,29 +309,29 @@ export default function TournamentDetailPage() {
               onClick={handleViewPlayers}
               className="w-full py-3 mb-3 bg-white hover:bg-slate-50 text-slate-800 font-bold rounded-2xl transition-all border border-slate-200 text-lg"
             >
-              Danh sách người chơi 🧑‍🤝‍🧑
+              Danh sách người chơi
             </button>
 
             {tournament.status === "Open" && !joined && (
               <button
                 onClick={handleRegisterNow}
-                className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-2xl transition-all shadow-md shadow-orange-500/30 text-lg"
+                className="w-full py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-2xl transition-all shadow-md shadow-green-500/30 text-lg"
               >
-                Đăng ký ngay 🏆
+                Đăng ký ngay
               </button>
             )}
             {tournament.status === "Closed" && !joined && (
-              <div className="w-full py-3 bg-gray-100 text-gray-500 font-semibold rounded-2xl text-center">
+              <div className="w-full py-3 bg-gray-100 text-gray-600 font-semibold rounded-2xl text-center">
                 Đã đóng đăng ký
               </div>
             )}
             {tournament.status === "InProgress" && !joined && (
-              <div className="w-full py-3 bg-blue-50 text-blue-600 font-semibold rounded-2xl text-center">
+              <div className="w-full py-3 bg-green-50 text-green-600 font-semibold rounded-2xl text-center">
                 Đang diễn ra
               </div>
             )}
             {tournament.status === "Completed" && !joined && (
-              <div className="w-full py-3 bg-gray-100 text-gray-500 font-semibold rounded-2xl text-center">
+              <div className="w-full py-3 bg-gray-100 text-gray-600 font-semibold rounded-2xl text-center">
                 Đã kết thúc
               </div>
             )}
