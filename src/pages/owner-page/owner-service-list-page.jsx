@@ -101,7 +101,7 @@ export default function OwnerServiceListPage() {
   ];
 
   return (
-    <div className="flex-1 p-6 lg:p-10 max-w-7xl mx-auto w-full min-h-[calc(100vh-80px)]">
+    <div className="flex-1 p-6 lg:p-10 mx-auto w-full min-h-[calc(100vh-80px)]">
       {/* Breadcrumb */}
       <div className="hidden lg:flex items-center gap-2 text-sm mb-6">
         <span className="text-slate-500">Trang chủ</span>

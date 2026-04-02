@@ -205,6 +205,15 @@ export const SidebarOwner = () => {
             <Button
               variant="ghost"
               className="w-full justify-start gap-3 text-muted-foreground hover:bg-accent hover:text-foreground"
+              onClick={() => navigate("/owner/select-club")}
+            >
+              <Building2 className="h-5 w-5" />
+              <span className="text-sm font-medium">Đổi chi nhánh</span>
+            </Button>
+
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 text-muted-foreground hover:bg-accent hover:text-foreground"
               onClick={() => navigate("/owner/settings")}
             >
               <Settings className="h-5 w-5" />

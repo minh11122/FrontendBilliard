@@ -56,6 +56,8 @@ export default function OwnerTableListPage() {
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [selectedTableDetails, setSelectedTableDetails] = useState(null);
     const [isFetchingDetails, setIsFetchingDetails] = useState(false);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [isZoomedImageOpen, setIsZoomedImageOpen] = useState(false);
 
     const CLUB_ID = localStorage.getItem("selected_club_id") || "";
 
@@ -96,7 +98,7 @@ export default function OwnerTableListPage() {
 
     useEffect(() => {
         fetchTables();
-    }, [pagination.currentPage, debouncedSearch, statusFilter, typeFilter]);
+    }, [pagination.currentPage, pagination.limit, debouncedSearch, statusFilter, typeFilter]);
 
     useEffect(() => {
         fetchTableTypes();
@@ -126,6 +128,7 @@ export default function OwnerTableListPage() {
     const handleViewDetails = async (id) => {
         setIsFetchingDetails(true);
         setIsViewModalOpen(true);
+        setCurrentImageIndex(0);
         try {
             const res = await getTableById(id);
             if (res.data.success) {
@@ -197,7 +200,7 @@ export default function OwnerTableListPage() {
     };
 
     return (
-        <div className="p-4 md:p-6 w-full max-w-[1440px] mx-auto bg-white min-h-[calc(100vh-80px)]">
+        <div className="p-4 md:p-6 w-full mx-auto bg-white min-h-[calc(100vh-80px)]">
             {/* Breadcrumbs */}
             <div className="flex flex-wrap items-center gap-2 mb-6 text-sm">
                 <span className="text-gray-500 cursor-pointer hover:text-primary transition-colors">Trang chủ</span>
@@ -396,8 +399,25 @@ export default function OwnerTableListPage() {
                 {/* Pagination */}
                 {tables.length > 0 && (
                     <div className="flex items-center justify-between px-6 py-4 bg-white border-t border-gray-100">
-                        <div className="text-sm text-gray-500">
-                            Hiển thị <span className="font-medium text-gray-900">{(pagination.currentPage - 1) * pagination.limit + 1}</span> đến <span className="font-medium text-gray-900">{Math.min(pagination.currentPage * pagination.limit, pagination.total)}</span> của <span className="font-medium text-gray-900">{pagination.total}</span> bàn
+                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                            <div className="flex items-center gap-2">
+                                <span>Hiển thị</span>
+                                <Select value={pagination.limit.toString()} onValueChange={(val) => setPagination(prev => ({ ...prev, limit: parseInt(val), currentPage: 1 }))}>
+                                    <SelectTrigger className="h-8 w-[70px] text-xs">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="5">5</SelectItem>
+                                        <SelectItem value="10">10</SelectItem>
+                                        <SelectItem value="20">20</SelectItem>
+                                        <SelectItem value="30">30</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <span>/ {pagination.total} bàn</span>
+                            </div>
+                            <span>
+                                ({(pagination.currentPage - 1) * pagination.limit + 1} - {Math.min(pagination.currentPage * pagination.limit, pagination.total)})
+                            </span>
                         </div>
                         <div className="flex items-center gap-2">
                             <button
@@ -433,7 +453,7 @@ export default function OwnerTableListPage() {
             {/* View Details Modal */}
             {isViewModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]">
                         {/* Modal Header */}
                         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
                             <h3 className="text-xl font-bold text-gray-900 tracking-tight">Chi tiết Bàn Bida</h3>
@@ -459,9 +479,9 @@ export default function OwnerTableListPage() {
                                     <p className="text-gray-500 font-medium">Đang tải thông tin bàn...</p>
                                 </div>
                             ) : selectedTableDetails ? (
-                                <div className="flex flex-col md:flex-row gap-6">
+                                <div className="flex flex-col md:flex-row gap-8">
                                     {/* Image Section */}
-                                    <div className="w-full md:w-1/3 flex-shrink-0">
+                                    <div className="w-full md:w-1/2 flex-shrink-0">
                                         {(() => {
                                             const imgs = selectedTableDetails.images?.length > 0
                                                 ? selectedTableDetails.images
@@ -469,26 +489,47 @@ export default function OwnerTableListPage() {
                                                     ? [selectedTableDetails.image_url]
                                                     : [];
                                             return imgs.length > 0 ? (
-                                                <div className="flex flex-col gap-2">
-                                                    <div className="aspect-square rounded-xl bg-gray-100 overflow-hidden border border-gray-200">
+                                                <div className="flex flex-col gap-3">
+                                                    <div className="w-full aspect-video md:aspect-square rounded-xl bg-gray-100 overflow-hidden border border-gray-200 relative group">
                                                         <img
-                                                            src={imgs[0]}
+                                                            src={imgs[currentImageIndex] || imgs[0]}
                                                             alt={selectedTableDetails.table_number}
-                                                            className="w-full h-full object-cover"
+                                                            className="w-full h-full object-cover cursor-zoom-in"
+                                                            onClick={(e) => { e.stopPropagation(); setIsZoomedImageOpen(true); }}
                                                         />
+                                                        {imgs.length > 1 && (
+                                                            <>
+                                                                <button 
+                                                                    onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(prev => prev === 0 ? imgs.length - 1 : prev - 1); }}
+                                                                    className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all hover:bg-black/70 hover:scale-110"
+                                                                >
+                                                                    <ChevronLeft size={20} />
+                                                                </button>
+                                                                <button 
+                                                                    onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(prev => prev === imgs.length - 1 ? 0 : prev + 1); }}
+                                                                    className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all hover:bg-black/70 hover:scale-110"
+                                                                >
+                                                                    <ChevronRight size={20} />
+                                                                </button>
+                                                            </>
+                                                        )}
                                                     </div>
                                                     {imgs.length > 1 && (
-                                                        <div className="grid grid-cols-3 gap-1.5">
-                                                            {imgs.slice(1).map((url, idx) => (
-                                                                <a key={idx} href={url} target="_blank" rel="noreferrer">
-                                                                    <img src={url} alt={`Ảnh ${idx + 2}`} className="w-full aspect-square object-cover rounded-lg border border-gray-200 hover:opacity-80 transition-opacity" />
-                                                                </a>
+                                                        <div className="grid grid-cols-5 gap-2">
+                                                            {imgs.map((url, idx) => (
+                                                                <button
+                                                                    key={idx}
+                                                                    onClick={() => setCurrentImageIndex(idx)}
+                                                                    className={`relative rounded-lg overflow-hidden border-2 aspect-square transition-all ${currentImageIndex === idx ? "border-primary shadow-sm scale-[1.02]" : "border-transparent opacity-60 hover:opacity-100"}`}
+                                                                >
+                                                                    <img src={url} alt={`Ảnh ${idx + 1}`} className="w-full h-full object-cover" />
+                                                                </button>
                                                             ))}
                                                         </div>
                                                     )}
                                                 </div>
                                             ) : (
-                                                <div className="aspect-square rounded-xl bg-gray-100 border border-gray-200 flex flex-col items-center justify-center text-gray-400">
+                                                <div className="w-full aspect-video md:aspect-square rounded-xl bg-gray-100 border border-gray-200 flex flex-col items-center justify-center text-gray-400">
                                                     <LayoutGrid size={40} className="mb-2 opacity-50" />
                                                     <span className="text-sm">Chưa có ảnh</span>
                                                 </div>
@@ -566,6 +607,56 @@ export default function OwnerTableListPage() {
                                 </Button>
                             )}
                         </div>
+                    </div>
+                </div>
+            )}
+            {/* Zoomed Image Modal */}
+            {isZoomedImageOpen && selectedTableDetails && (
+                <div 
+                    className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-200" 
+                    onClick={() => setIsZoomedImageOpen(false)}
+                >
+                    <button
+                        onClick={() => setIsZoomedImageOpen(false)}
+                        className="absolute top-4 right-4 p-2 text-white/70 hover:text-white bg-black/50 hover:bg-black/80 rounded-full transition-colors z-10"
+                    >
+                        <X size={24} />
+                    </button>
+                    
+                    <div className="relative max-w-7xl w-full max-h-[90vh] flex items-center justify-center pointer-events-none">
+                        {(() => {
+                            const imgs = selectedTableDetails.images?.length > 0
+                                ? selectedTableDetails.images
+                                : selectedTableDetails.image_url
+                                    ? [selectedTableDetails.image_url]
+                                    : [];
+                            return (
+                                <>
+                                    <img 
+                                        src={imgs[currentImageIndex] || imgs[0]} 
+                                        alt={selectedTableDetails.table_number} 
+                                        className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl pointer-events-auto cursor-zoom-out"
+                                        onClick={(e) => { e.stopPropagation(); setIsZoomedImageOpen(false); }} 
+                                    />
+                                    {imgs.length > 1 && (
+                                        <>
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(prev => prev === 0 ? imgs.length - 1 : prev - 1); }}
+                                                className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center bg-black/50 text-white rounded-full transition-all hover:bg-black/80 hover:scale-110 pointer-events-auto"
+                                            >
+                                                <ChevronLeft size={24} />
+                                            </button>
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(prev => prev === imgs.length - 1 ? 0 : prev + 1); }}
+                                                className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center bg-black/50 text-white rounded-full transition-all hover:bg-black/80 hover:scale-110 pointer-events-auto"
+                                            >
+                                                <ChevronRight size={24} />
+                                            </button>
+                                        </>
+                                    )}
+                                </>
+                            );
+                        })()}
                     </div>
                 </div>
             )}

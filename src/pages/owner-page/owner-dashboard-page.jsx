@@ -88,7 +88,7 @@ export const OwnerDashboardPage = () => {
   const formatMoney = (val) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
 
   return (
-    <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto font-sans bg-[#F9FAFB] min-h-screen">
+    <div className="p-6 md:p-8 space-y-8 mx-auto font-sans bg-[#F9FAFB] min-h-screen">
       
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
@@ -220,15 +220,11 @@ export const OwnerDashboardPage = () => {
 
                     <div className="space-y-4 pt-6 border-t border-gray-700/50">
                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium text-gray-400 flex items-center gap-2"><CircleDot size={14}/> Lượt phục vụ</span>
-                          <span className="font-bold text-white text-lg">{analyticsData.kpi.totalBookings} <span className="text-xs font-normal opacity-50">khách</span></span>
-                       </div>
-                       <div className="flex justify-between items-center">
                           <span className="text-sm font-medium text-gray-400 flex items-center gap-2"><Clock size={14}/> Giờ chơi trung bình</span>
                           <span className="font-bold text-white text-lg">{analyticsData.kpi.averagePlayMinutes} <span className="text-xs font-normal opacity-50">phút</span></span>
                        </div>
                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium text-gray-400 flex items-center gap-2"><Star size={14}/> Đánh giá dịch vụ</span>
+                          <span className="text-sm font-medium text-gray-400 flex items-center gap-2"><Star size={14}/> Đánh giá</span>
                           <span className="font-bold text-amber-400 text-lg">{analyticsData.feedback.average} <Star size={14} className="inline fill-amber-400 relative -top-[1px] mr-1" /><span className="text-xs font-normal opacity-50 text-white">({analyticsData.feedback.total})</span></span>
                        </div>
                     </div>

@@ -96,7 +96,7 @@ export default function OwnerReportsPage() {
   })).filter(i => i.value > 0);
 
   return (
-    <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto">
+    <div className="p-6 md:p-8 space-y-8 mx-auto">
       {/* Header & Filters */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-6">
         <div>
@@ -122,7 +122,7 @@ export default function OwnerReportsPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Doanh thu */}
         <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-start gap-4">
            <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
@@ -131,16 +131,6 @@ export default function OwnerReportsPage() {
            <div>
              <p className="text-sm font-medium text-gray-500 mb-1">Tổng doanh thu</p>
              <h3 className="text-2xl font-black text-gray-900">{formatMoney(data.kpi.totalRevenue)}</h3>
-           </div>
-        </div>
-        {/* Lượt chơi */}
-        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-start gap-4">
-           <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
-             <Users size={24} />
-           </div>
-           <div>
-             <p className="text-sm font-medium text-gray-500 mb-1">Số lượt phục vụ</p>
-             <h3 className="text-2xl font-black text-gray-900">{data.kpi.totalBookings} <span className="text-sm font-normal text-gray-400">lượt</span></h3>
            </div>
         </div>
         {/* Bill */}
@@ -173,9 +163,9 @@ export default function OwnerReportsPage() {
       )}
 
       {/* Main Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         {/* Line Chart */}
-        <div className="col-span-1 lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
           <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
             <TrendingUp size={18} className="text-blue-500"/> Xu hướng doanh thu
           </h3>
@@ -191,31 +181,6 @@ export default function OwnerReportsPage() {
                 <Line type="monotone" dataKey="Dịch vụ" stroke="#f59e0b" strokeWidth={3} dot={{r: 4}} activeDot={{r: 6}} />
               </LineChart>
             </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Payment Mix Pie Chart */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col">
-          <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
-            <CreditCard size={18} className="text-green-500"/> Thanh toán
-          </h3>
-          <p className="text-xs text-gray-500 mb-4">Cơ cấu phương thức thu tiền</p>
-          <div className="flex-1 min-h-[250px] relative flex flex-col items-center justify-center">
-            {paymentMixData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={paymentMixData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                    {paymentMixData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={index === 0 ? STATUS_COLORS.cash : STATUS_COLORS.bank} />
-                    ))}
-                  </Pie>
-                  <RechartsTooltip formatter={(val) => formatMoney(val)} />
-                  <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{fontSize: 12}} />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-               <div className="text-gray-400 text-sm">Chưa có giao dịch</div>
-            )}
           </div>
         </div>
       </div>
