@@ -8,12 +8,13 @@ import { getDashboardData } from "../../services/staffDashboard.service";
 // ─── Tournament Status Badge ──────────────────────────────────────────────
 const TournamentBadge = ({ status }) => {
     const map = {
-        Opening: "bg-green-100 text-green-700",
-        Playing: "bg-blue-100 text-blue-700",
+        Open: "bg-green-100 text-green-700",
+        InProgress: "bg-blue-100 text-blue-700",
         Closed: "bg-gray-100 text-gray-500",
+        Completed: "bg-purple-100 text-purple-700",
         Cancelled: "bg-red-100 text-red-600",
     };
-    const labels = { Opening: "Đang mở", Playing: "Đang thi đấu", Closed: "Đã kết thúc", Cancelled: "Đã hủy" };
+    const labels = { Open: "Đang mở", InProgress: "Đang thi đấu", Closed: "Đã chốt", Completed: "Hoàn thành", Cancelled: "Đã hủy" };
     return (
         <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${map[status] || "bg-gray-100 text-gray-500"}`}>
             {labels[status] || status}
@@ -70,9 +71,9 @@ export const SystemStaff4 = () => {
     // Tournament stats
     const tStats = {
         total: tournaments.length,
-        opening: tournaments.filter(t => t.status === "Opening").length,
-        playing: tournaments.filter(t => t.status === "Playing").length,
-        closed: tournaments.filter(t => t.status === "Closed").length,
+        opening: tournaments.filter(t => t.status === "Open").length,
+        playing: tournaments.filter(t => t.status === "InProgress").length,
+        closed: tournaments.filter(t => t.status === "Closed" || t.status === "Completed").length,
     };
 
     // Feedback stats
@@ -108,18 +109,15 @@ export const SystemStaff4 = () => {
 
             <div className="p-6 max-w-screen-xl mx-auto">
                 {/* Summary Cards */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                     {[
                         { label: "Tổng giải đấu", value: tStats.total, color: "text-blue-600", bg: "bg-blue-50" },
                         { label: "Đang mở đăng ký", value: tStats.opening, color: "text-green-600", bg: "bg-green-50" },
                         { label: "Đang thi đấu", value: tStats.playing, color: "text-orange-600", bg: "bg-orange-50" },
-                        { label: "Phản hồi chờ trả lời", value: feedbacks.length, color: "text-purple-600", bg: "bg-purple-50" },
                     ].map((card, i) => (
                         <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-sm transition-shadow">
                             <div className={`w-10 h-10 ${card.bg} rounded-lg flex items-center justify-center mb-3`}>
-                                {i < 3
-                                    ? <Trophy className={`w-5 h-5 ${card.color}`} />
-                                    : <MessageSquare className={`w-5 h-5 ${card.color}`} />}
+                                <Trophy className={`w-5 h-5 ${card.color}`} />
                             </div>
                             {loading
                                 ? <div className="h-8 w-12 bg-gray-200 rounded animate-pulse" />
@@ -138,15 +136,6 @@ export const SystemStaff4 = () => {
                         <Trophy className="w-4 h-4" /> Giải đấu
                         <span className={`px-1.5 py-0.5 text-xs rounded-full ${tab === "tournaments" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"}`}>
                             {tStats.total}
-                        </span>
-                    </button>
-                    <button
-                        onClick={() => setTab("feedbacks")}
-                        className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors flex items-center gap-2 ${tab === "feedbacks" ? "bg-purple-600 text-white" : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"}`}
-                    >
-                        <MessageSquare className="w-4 h-4" /> Phản hồi chờ trả lời
-                        <span className={`px-1.5 py-0.5 text-xs rounded-full ${tab === "feedbacks" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"}`}>
-                            {feedbacks.length}
                         </span>
                     </button>
                 </div>
@@ -190,7 +179,7 @@ export const SystemStaff4 = () => {
                                                     <td className="px-5 py-3.5 font-medium text-gray-900">{t.name}</td>
                                                     <td className="px-5 py-3.5"><TournamentBadge status={t.status} /></td>
                                                     <td className="px-5 py-3.5 text-gray-600 text-xs">
-                                                        {t.start_time ? new Date(t.start_time).toLocaleDateString("vi-VN") : "—"}
+                                                        {(t.started_at || t.play_date || t.start_time) ? new Date(t.started_at || t.play_date || t.start_time).toLocaleDateString("vi-VN") : "—"}
                                                     </td>
                                                     <td className="px-5 py-3.5 text-gray-600 text-xs">
                                                         {t.registration_deadline ? new Date(t.registration_deadline).toLocaleDateString("vi-VN") : "—"}
@@ -215,20 +204,15 @@ export const SystemStaff4 = () => {
                                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                                                                 <div>
                                                                     <p className="text-gray-500 text-xs mb-1">Thể lệ</p>
-                                                                    <p className="text-gray-800">{t.rules || "Không có thể lệ"}</p>
+                                                                    <p className="text-gray-800">{t.description || "Không có thể lệ"}</p>
                                                                 </div>
                                                                 <div>
                                                                     <p className="text-gray-500 text-xs mb-1">Giải thưởng</p>
-                                                                    <div className="space-y-1">
-                                                                        {t.prizes?.first ? <p className="text-yellow-700">🥇 Nhất: {t.prizes.first.toLocaleString("vi-VN")} ₫</p> : null}
-                                                                        {t.prizes?.second ? <p className="text-gray-600">🥈 Nhì: {t.prizes.second.toLocaleString("vi-VN")} ₫</p> : null}
-                                                                        {t.prizes?.third ? <p className="text-orange-700">🥉 Ba: {t.prizes.third.toLocaleString("vi-VN")} ₫</p> : null}
-                                                                        {!t.prizes?.first && !t.prizes?.second && !t.prizes?.third && <p className="text-gray-400">Chưa cài đặt giải thưởng</p>}
-                                                                    </div>
+                                                                    <p className="text-gray-800">{t.prize_pool || "Chưa cài đặt giải thưởng"}</p>
                                                                 </div>
                                                                 <div>
                                                                     <p className="text-gray-500 text-xs mb-1">Ngày kết thúc</p>
-                                                                    <p className="text-gray-800">{t.end_time ? new Date(t.end_time).toLocaleDateString("vi-VN") : "—"}</p>
+                                                                    <p className="text-gray-800">{(t.completed_at || t.end_time) ? new Date(t.completed_at || t.end_time).toLocaleDateString("vi-VN") : "—"}</p>
                                                                 </div>
                                                             </div>
                                                         </td>
@@ -243,75 +227,7 @@ export const SystemStaff4 = () => {
                     </div>
                 )}
 
-                {/* Feedbacks Tab */}
-                {tab === "feedbacks" && (
-                    <div>
-                        {feedbacks.length > 0 && (
-                            <div className="bg-white rounded-xl border border-gray-200 p-4 mb-5 flex items-center gap-6">
-                                <div className="text-center">
-                                    <p className="text-4xl font-bold text-yellow-500">{avgRating}</p>
-                                    <StarRating rating={Math.round(parseFloat(avgRating) || 0)} />
-                                    <p className="text-xs text-gray-400 mt-1">Điểm TB chưa trả lời</p>
-                                </div>
-                                <div className="flex-1 space-y-1.5">
-                                    {[5, 4, 3, 2, 1].map(s => {
-                                        const count = feedbacks.filter(f => f.rating === s).length;
-                                        const pct = feedbacks.length ? (count / feedbacks.length) * 100 : 0;
-                                        return (
-                                            <div key={s} className="flex items-center gap-2 text-xs">
-                                                <span className="w-3 text-gray-500">{s}</span>
-                                                <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                                                <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                                                    <div className="h-full bg-yellow-400 rounded-full" style={{ width: `${pct}%` }} />
-                                                </div>
-                                                <span className="w-5 text-gray-500 text-right">{count}</span>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
 
-                        {loading ? (
-                            <div className="space-y-4">
-                                {[1, 2, 3].map(i => <div key={i} className="h-28 bg-white border border-gray-200 rounded-xl animate-pulse" />)}
-                            </div>
-                        ) : feedbacks.length === 0 ? (
-                            <div className="bg-white rounded-xl border border-gray-200 py-16 text-center text-gray-400">
-                                <MessageSquare className="w-10 h-10 mx-auto mb-2 text-gray-200" />
-                                <p>Tất cả phản hồi đã được trả lời!</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                {feedbacks.map(fb => (
-                                    <div key={fb._id} className="bg-white rounded-xl border border-gray-200 p-5 hover:border-purple-200 transition-colors">
-                                        <div className="flex items-start gap-4">
-                                            <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                                                {fb.account_id?.fullname?.[0] || "?"}
-                                            </div>
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2 flex-wrap mb-1">
-                                                    <span className="font-medium text-gray-900 text-sm">{fb.account_id?.fullname || "Ẩn danh"}</span>
-                                                    <span className="text-xs text-gray-400">→</span>
-                                                    <span className="text-xs font-medium text-gray-600">{fb.club_id?.name || "CLB"}</span>
-                                                    <span className="ml-auto text-xs text-gray-400">{formatRelativeTime(fb.created_at)}</span>
-                                                </div>
-                                                <StarRating rating={fb.rating} />
-                                                <p className="text-sm text-gray-700 mt-2">{fb.comment || "(Không có nội dung)"}</p>
-                                            </div>
-                                        </div>
-                                        <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-                                            <span className="px-2 py-0.5 bg-orange-100 text-orange-600 text-xs rounded-full font-medium">Chưa phản hồi</span>
-                                            <button className="px-3 py-1.5 text-xs font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-lg flex items-center gap-1">
-                                                <MessageSquare className="w-3 h-3" /> Trả lời
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )}
             </div>
         </div>
     );

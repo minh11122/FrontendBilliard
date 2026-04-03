@@ -63,11 +63,6 @@ export const SidebarAdmin = () => {
       badge: badges.posts || null,
     },
     {
-      name: "Xử lý khiếu nại",
-      href: "/systemstaff/systemstaff4",
-      icon: Gavel,
-    },
-    {
       name: "Thống kê",
       href: "/systemstaff/systemstaff5",
       icon: BarChart3,
@@ -158,13 +153,6 @@ export const SidebarAdmin = () => {
 
         {/* Footer actions */}
         <div className="border-t border-slate-100 px-3 py-3">
-          <button
-            onClick={() => navigate("/systemstaff/settings")}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition-all hover:bg-slate-50 hover:text-slate-900"
-          >
-            <Settings className="h-4 w-4 text-slate-400" />
-            <span>Cài đặt</span>
-          </button>
           <button
             onClick={handleLogout}
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-red-500 transition-all hover:bg-red-50 hover:text-red-600"
