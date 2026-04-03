@@ -59,8 +59,8 @@ const StatCard = ({ title, value, icon: Icon, subtitle, color = "blue", loading 
 // ─── Activity Icon ────────────────────────────────────────────────────────────
 const activityStyle = (type) => ({
   club: { icon: Building2, bg: "bg-yellow-100", color: "text-yellow-600" },
-  booking: { icon: CalendarCheck, bg: "bg-purple-100", color: "text-purple-600" },
-  feedback: { icon: MessageSquare, bg: "bg-green-100", color: "text-green-600" },
+  post: { icon: MessageSquare, bg: "bg-purple-100", color: "text-purple-600" },
+  subscription: { icon: CheckCircle2, bg: "bg-green-100", color: "text-green-600" },
 }[type] || { icon: Activity, bg: "bg-gray-100", color: "text-gray-600" });
 
 // ─── Tournament Badge ────────────────────────────────────────────────────────
@@ -144,11 +144,10 @@ const StaffDashboard = () => {
 
       <div className="p-6 max-w-screen-xl mx-auto">
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
           <StatCard loading={loading} title="CLB chờ duyệt" value={stats.pendingClubs} icon={Building2} subtitle="Yêu cầu mới" color="yellow" />
           <StatCard loading={loading} title="Giải đấu đang mở" value={stats.openingTournaments} icon={Trophy} subtitle="Đang diễn ra" color="blue" />
-          <StatCard loading={loading} title="Đặt bàn hôm nay" value={stats.todayBookings} icon={CalendarCheck} subtitle={`${stats.pendingBookings ?? 0} chờ xác nhận`} color="green" />
-          <StatCard loading={loading} title="Phản hồi chờ trả lời" value={stats.pendingFeedbacks} icon={MessageSquare} subtitle="Chưa phản hồi" color="purple" />
+          <StatCard loading={loading} title="Bài viết chờ duyệt" value={stats.pendingPosts} icon={MessageSquare} subtitle="Cần xử lý" color="purple" />
         </div>
 
         {/* Priority Tasks + Recent Activity */}
@@ -159,7 +158,7 @@ const StaffDashboard = () => {
               <AlertCircle className="w-5 h-5 text-red-500" />
               <h3 className="font-semibold text-gray-900">Công việc cần xử lý</h3>
               <span className="ml-auto text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
-                {(stats.pendingClubs || 0) + (stats.pendingPosts || 0) + (stats.pendingFeedbacks || 0)} nhiệm vụ
+                {(stats.pendingClubs || 0) + (stats.pendingPosts || 0)} nhiệm vụ
               </span>
             </div>
             {loading ? (
@@ -210,27 +209,7 @@ const StaffDashboard = () => {
                   </div>
                 )}
 
-                {stats.pendingFeedbacks > 0 && (
-                  <div className="border-l-4 border-l-purple-500 bg-purple-50 p-4 rounded-lg">
-                    <div className="flex items-start gap-3">
-                      <MessageSquare className="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <h4 className="font-semibold text-gray-900">Phản hồi đánh giá của khách</h4>
-                        <p className="text-sm text-gray-600 mt-1">
-                          {stats.pendingFeedbacks} đánh giá chưa được phản hồi
-                        </p>
-                        <button
-                          onClick={() => navigate("/systemstaff/systemstaff5")}
-                          className="mt-2 text-sm font-medium text-purple-700 hover:text-purple-900 flex items-center gap-1"
-                        >
-                          Trả lời <ChevronRight className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {!loading && !stats.pendingClubs && !stats.pendingPosts && !stats.pendingFeedbacks && (
+                {!loading && !stats.pendingClubs && !stats.pendingPosts && (
                   <div className="text-center py-10 text-gray-400">
                     <CheckCircle2 className="w-10 h-10 mx-auto mb-2 text-green-400" />
                     <p>Không có công việc nào cần xử lý gấp!</p>
@@ -281,38 +260,8 @@ const StaffDashboard = () => {
           </div>
         </div>
 
-        {/* Chart + Tournaments */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-blue-600" />
-                <h3 className="font-semibold text-gray-900">Thống kê đặt bàn tuần này</h3>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 bg-blue-500 rounded" />
-                <span className="text-xs text-gray-500">Đơn đặt bàn</span>
-              </div>
-            </div>
-            <div className="h-48 flex items-end justify-around gap-3 mt-4">
-              {["T2", "T3", "T4", "T5", "T6", "T7", "CN"].map((day, i) => {
-                const isToday = i === (new Date().getDay() + 6) % 7;
-                const h = isToday
-                  ? Math.max(10, (stats.todayBookings || 0) * 15)
-                  : [30, 55, 40, 70, 50, 80, 45][i];
-                return (
-                  <div key={day} className="flex flex-col items-center flex-1">
-                    <div
-                      className={`w-full rounded-t-lg transition-all ${isToday ? "bg-gradient-to-t from-blue-600 to-blue-400" : "bg-gradient-to-t from-blue-200 to-blue-100"}`}
-                      style={{ height: `${Math.min(h, 100)}%` }}
-                    />
-                    <span className={`text-xs mt-1.5 ${isToday ? "font-bold text-blue-600" : "text-gray-400"}`}>{day}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
+        {/* Tournaments */}
+        <div className="max-w-3xl mx-auto">
           {/* Tournaments preview */}
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <div className="flex items-center justify-between mb-4">
@@ -322,13 +271,13 @@ const StaffDashboard = () => {
               </div>
             </div>
             {loading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map(i => <div key={i} className="h-14 bg-gray-100 rounded-lg animate-pulse" />)}
+              <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
+                {[1, 2, 3, 4].map(i => <div key={i} className="h-14 bg-gray-100 rounded-lg animate-pulse" />)}
               </div>
             ) : (data?.tournaments || []).length === 0 ? (
               <p className="text-sm text-gray-400 text-center py-6">Không có giải đấu nào</p>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
                 {(data?.tournaments || []).slice(0, 4).map((t, i) => (
                   <div key={i} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                     <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -340,9 +289,13 @@ const StaffDashboard = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+            {!loading && (data?.tournaments || []).length > 0 && (
+              <div className="mt-5 border-t border-gray-100 pt-4">
                 <button
                   onClick={() => navigate("/systemstaff/systemstaff5")}
-                  className="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium py-1.5 border-t border-gray-100 flex items-center justify-center gap-1"
+                  className="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center justify-center gap-1"
                 >
                   Xem tất cả <ChevronRight className="w-4 h-4" />
                 </button>

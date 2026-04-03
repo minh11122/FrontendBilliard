@@ -87,6 +87,7 @@ const ClubDetailModal = ({ club, onClose }) => {
               ["Email chủ CLB", club.account_id?.email || "—"],
               ["Họ tên chủ CLB", club.account_id?.fullname || "—"],
               ["Ngày đăng ký", club.created_at ? new Date(club.created_at).toLocaleString("vi-VN") : "—"],
+              ["Gói hệ thống", club.subscription_name ? <span className="text-blue-600 font-semibold">{club.subscription_name}</span> : <span className="text-gray-500 italic">Mặc định</span>]
             ].map(([label, value]) => (
               <div key={label} className="flex gap-2">
                 <span className="text-gray-500 w-28 flex-shrink-0">{label}:</span>
@@ -98,27 +99,31 @@ const ClubDetailModal = ({ club, onClose }) => {
 
         {club.images && club.images.length > 0 ? (
           <div className="mt-6 border-t pt-4">
-            <span className="text-gray-800 font-semibold block mb-3">Tài liệu & Hình ảnh:</span>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {club.images.map((img, idx) => (
-                <div key={idx} className="relative group rounded-lg overflow-hidden border border-gray-200 aspect-video">
-                  <img src={img.image_url} alt={`Hình ảnh ${img.image_type}`} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <span className="text-white text-xs font-medium px-2 py-1 bg-black/60 rounded max-w-[90%] truncate text-center">
-                      {img.image_type}
-                    </span>
+            <span className="text-gray-800 font-semibold block mb-4">Tài liệu & Hình ảnh:</span>
+            <div className="space-y-6">
+              {['Avatar', 'Banner', 'Background', 'legal documents'].map(type => {
+                const groupImgs = club.images.filter(i => i.image_type === type);
+                if (groupImgs.length === 0) return null;
+                const label = type === 'legal documents' ? 'Tài liệu kinh doanh' : type;
+                return (
+                  <div key={type}>
+                    <p className="text-xs font-semibold text-gray-500 uppercase mb-2">{label}</p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {groupImgs.map((img, idx) => (
+                        <div key={idx} className="relative group rounded-lg overflow-hidden border border-gray-200 aspect-video">
+                          <img src={img.image_url} alt={`${label} ${idx + 1}`} className="w-full h-full object-cover" />
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="absolute top-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded md:hidden truncate max-w-[90%]">
-                    {img.image_type}
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         ) : club.legal_document_image ? (
           <div className="mt-6 border-t pt-4">
-            <span className="text-gray-800 font-semibold block mb-3">Tài liệu kinh doanh:</span>
-            <img src={club.legal_document_image} alt="Giấy phép kinh doanh" className="w-full md:w-1/2 h-auto rounded-lg border border-gray-200" />
+            <span className="text-gray-800 font-semibold block mb-2">Tài liệu kinh doanh:</span>
+            <img src={club.legal_document_image} alt="Giấy phép" className="w-full md:w-1/3 h-auto rounded-lg border border-gray-200" />
           </div>
         ) : null}
 

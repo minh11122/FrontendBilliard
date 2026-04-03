@@ -63,7 +63,7 @@ export const SidebarAdmin = () => {
       badge: badges.posts || null,
     },
     {
-      name: "Thống kê",
+      name: "Thống kê giải đấu",
       href: "/systemstaff/systemstaff5",
       icon: BarChart3,
       badge: badges.feedbacks || null,

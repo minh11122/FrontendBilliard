@@ -136,6 +136,35 @@ export const ClubDetailPage = () => {
     }
   }, [timeOptionsStr, selectedStartTime]);
 
+  const maxAllowedDuration = (() => {
+    if (!club || !selectedStartTime) return 24;
+    const [startH, startM] = selectedStartTime.split(":").map(Number);
+    const [openH] = (club.opening_time || "08:00").split(":").map(Number);
+    const [closeH, closeM] = (club.closing_time || "23:30").split(":").map(Number);
+    
+    const openMinutes = openH * 60;
+    const closeMinutes24 = closeH * 60 + closeM;
+    const is24h = openMinutes === closeMinutes24;
+    
+    if (is24h) return 24;
+    
+    const isCrossMidnight = closeH <= openH && !is24h;
+    let effectiveClose = closeMinutes24;
+    if (isCrossMidnight) effectiveClose += 24 * 60;
+    
+    const startMins = startH * 60 + startM;
+    let adjustedStart = startMins;
+    if (isCrossMidnight && startH < openH) adjustedStart += 24 * 60;
+    
+    return Math.max(0.5, (effectiveClose - adjustedStart) / 60);
+  })();
+
+  useEffect(() => {
+    if (club && selectedDuration > maxAllowedDuration) {
+      setSelectedDuration(maxAllowedDuration);
+    }
+  }, [maxAllowedDuration, club]);
+
   const handleBooking = async () => {
     if (!user) {
       toast("Vui lòng đăng nhập để đặt bàn", { icon: "🔒" });
@@ -155,20 +184,7 @@ export const ClubDetailPage = () => {
 
     // Booking validation: handle 24/24, cross-midnight
     const validateBookingTime = () => {
-      const [startH, startM] = selectedStartTime.split(":").map(Number);
-      const [openH] = (club.opening_time || "08:00").split(":").map(Number);
-      const [closeH, closeM] = (club.closing_time || "23:30").split(":").map(Number);
-      const openMinutes = openH * 60;
-      const closeMinutes24 = closeH * 60 + closeM;
-      const is24h = openMinutes === closeMinutes24;
-      if (is24h) return true;
-      const isCrossMidnight = closeH <= openH && !is24h;
-      let effectiveClose = closeMinutes24;
-      if (isCrossMidnight) effectiveClose += 24 * 60;
-      const startMins = startH * 60 + startM;
-      let adjustedStart = startMins;
-      if (isCrossMidnight && startH < openH) adjustedStart += 24 * 60;
-      return adjustedStart + selectedDuration * 60 <= effectiveClose;
+      return selectedDuration <= maxAllowedDuration;
     };
 
     if (!validateBookingTime()) {
@@ -501,7 +517,7 @@ export const ClubDetailPage = () => {
                               value={selectedDuration}
                               onChange={(e) => setSelectedDuration(Number(e.target.value))}
                             >
-                              {Array.from({ length: 48 }, (_, i) => {
+                              {Array.from({ length: Math.min(48, Math.floor(maxAllowedDuration * 2)) }, (_, i) => {
                                 const val = (i + 1) * 0.5;
                                 const h = Math.floor(val);
                                 const m = val % 1 !== 0 ? 30 : 0;
