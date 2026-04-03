@@ -47,7 +47,9 @@ export const SystemStaff4 = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [tab, setTab] = useState("tournaments");
-    const [expandedTournament, setExpandedTournament] = useState(null);
+    const [expandedTournaments, setExpandedTournaments] = useState({});
+
+    const toggleExpand = (id) => setExpandedTournaments(p => ({ ...p, [id]: !p[id] }));
 
     const fetchData = useCallback(async () => {
         try {
@@ -88,8 +90,8 @@ export const SystemStaff4 = () => {
                 <div className="flex items-center gap-3">
                     <BarChart3 className="w-5 h-5 text-blue-600" />
                     <div>
-                        <h2 className="text-xl font-bold text-gray-900">Thống kê</h2>
-                        <p className="text-xs text-gray-500">Giải đấu và phản hồi khách hàng</p>
+                        <h2 className="text-xl font-bold text-gray-900">Thống kê giải đấu</h2>
+                        <p className="text-xs text-gray-500">Quản lý và theo dõi các giải đấu</p>
                     </div>
                 </div>
                 <button onClick={fetchData} disabled={loading}
@@ -127,26 +129,12 @@ export const SystemStaff4 = () => {
                     ))}
                 </div>
 
-                {/* Tabs */}
-                <div className="flex gap-2 mb-5">
-                    <button
-                        onClick={() => setTab("tournaments")}
-                        className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors flex items-center gap-2 ${tab === "tournaments" ? "bg-blue-600 text-white" : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"}`}
-                    >
-                        <Trophy className="w-4 h-4" /> Giải đấu
-                        <span className={`px-1.5 py-0.5 text-xs rounded-full ${tab === "tournaments" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"}`}>
-                            {tStats.total}
-                        </span>
-                    </button>
-                </div>
-
-                {/* Tournaments Tab */}
-                {tab === "tournaments" && (
                     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="text-left text-xs text-gray-500 bg-gray-50 uppercase tracking-wide border-b border-gray-200">
+                                        <th className="px-5 py-3 font-semibold w-24">Hình ảnh</th>
                                         <th className="px-5 py-3 font-semibold">Tên giải đấu</th>
                                         <th className="px-5 py-3 font-semibold">Trạng thái</th>
                                         <th className="px-5 py-3 font-semibold">Ngày bắt đầu</th>
@@ -160,15 +148,15 @@ export const SystemStaff4 = () => {
                                     {loading ? (
                                         [1, 2, 3, 4].map(i => (
                                             <tr key={i}>
-                                                {[1, 2, 3, 4, 5, 6, 7].map(j => (
+                                                {[1, 2, 3, 4, 5, 6, 7, 8].map(j => (
                                                     <td key={j} className="px-5 py-3">
-                                                        <div className="h-4 bg-gray-200 rounded animate-pulse" style={{ width: `${40 + j * 7}%` }} />
+                                                        <div className="h-4 bg-gray-200 rounded animate-pulse" style={{ width: `${40 + j * 5}%` }} />
                                                     </td>
                                                 ))}
                                             </tr>
                                         ))
                                     ) : tournaments.length === 0 ? (
-                                        <tr><td colSpan={7} className="text-center py-16 text-gray-400">
+                                        <tr><td colSpan={8} className="text-center py-16 text-gray-400">
                                             <Trophy className="w-10 h-10 mx-auto mb-2 text-gray-200" />
                                             <p>Chưa có giải đấu nào</p>
                                         </td></tr>
@@ -176,6 +164,11 @@ export const SystemStaff4 = () => {
                                         tournaments.map(t => (
                                             <>
                                                 <tr key={t._id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                                    <td className="px-5 py-3.5">
+                                                        <div className="w-16 h-10 rounded overflow-hidden bg-gray-50 border border-gray-200">
+                                                            {t.banner ? <img src={t.banner} alt={t.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-400"><Trophy className="w-4 h-4"/></div>}
+                                                        </div>
+                                                    </td>
                                                     <td className="px-5 py-3.5 font-medium text-gray-900">{t.name}</td>
                                                     <td className="px-5 py-3.5"><TournamentBadge status={t.status} /></td>
                                                     <td className="px-5 py-3.5 text-gray-600 text-xs">
@@ -190,17 +183,17 @@ export const SystemStaff4 = () => {
                                                     </td>
                                                     <td className="px-5 py-3.5">
                                                         <button
-                                                            onClick={() => setExpandedTournament(expandedTournament === t._id ? null : t._id)}
+                                                            onClick={() => toggleExpand(t._id)}
                                                             className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
                                                         >
-                                                            {expandedTournament === t._id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                                                            {expandedTournament === t._id ? "Thu gọn" : "Xem"}
+                                                            {expandedTournaments[t._id] ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                                                            {expandedTournaments[t._id] ? "Thu gọn" : "Xem"}
                                                         </button>
                                                     </td>
                                                 </tr>
-                                                {expandedTournament === t._id && (
+                                                {expandedTournaments[t._id] && (
                                                     <tr key={`${t._id}-detail`} className="bg-blue-50">
-                                                        <td colSpan={7} className="px-5 py-4">
+                                                        <td colSpan={8} className="px-5 py-4">
                                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                                                                 <div>
                                                                     <p className="text-gray-500 text-xs mb-1">Thể lệ</p>
@@ -225,7 +218,6 @@ export const SystemStaff4 = () => {
                             </table>
                         </div>
                     </div>
-                )}
 
 
             </div>

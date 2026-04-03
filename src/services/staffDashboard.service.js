@@ -7,9 +7,14 @@ function authHeader() {
     return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-export async function getDashboardData() {
+export async function getDashboardData(dateType, specificDate) {
+    const params = {};
+    if (dateType) params.dateType = dateType;
+    if (specificDate) params.specificDate = specificDate;
+    
     const res = await axios.get(`${BASE_URL}/dashboard`, {
-        headers: authHeader()
+        headers: authHeader(),
+        params
     });
     return res.data;
 }
