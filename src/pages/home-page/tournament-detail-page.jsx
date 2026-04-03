@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { getMyRegisteredTournamentIds, getTournamentById } from "@/services/tournament.service";
+import { createPayOSTournamentPayment, getMyRegisteredTournamentIds, getTournamentById } from "@/services/tournament.service";
 import { TournamentBracket } from "@/components/TournamentBracket";
 import {
   Calendar,
@@ -48,6 +48,7 @@ export default function TournamentDetailPage() {
   const [loading, setLoading] = useState(true);
   const [joined, setJoined] = useState(false);
   const [activeTab, setActiveTab] = useState("info");
+  const [registeringNow, setRegisteringNow] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -126,6 +127,36 @@ export default function TournamentDetailPage() {
       });
       return;
     }
+
+    const fee = Number(tournament.fee || 0);
+    if (fee <= 0) {
+      // Phí miễn phí: tham gia ngay, không cần tới trang thanh toán.
+      (async () => {
+        try {
+          setRegisteringNow(true);
+          const res = await createPayOSTournamentPayment(tournament._id);
+          if (!res?.success) throw new Error(res?.message || "Không thể đăng ký giải đấu");
+
+          // Nếu backend trả về checkoutUrl (trường hợp hiếm), vẫn điều hướng PayOS.
+          if (res?.data?.checkoutUrl) {
+            window.location.href = res.data.checkoutUrl;
+            return;
+          }
+
+          toast.success(res.message || "Đăng ký giải đấu thành công!");
+          setJoined(true);
+          // Refresh để cập nhật số lượng đã đăng ký
+          const fresh = await getTournamentById(tournament._id);
+          if (fresh?.success && fresh.data) setTournament(fresh.data);
+        } catch (e) {
+          toast.error(e?.response?.data?.message || e.message || "Không thể đăng ký giải đấu");
+        } finally {
+          setRegisteringNow(false);
+        }
+      })();
+      return;
+    }
+
     navigate(`/tournament/${tournament._id}/payment`);
   };
 
@@ -315,9 +346,10 @@ export default function TournamentDetailPage() {
             {tournament.status === "Open" && !joined && (
               <button
                 onClick={handleRegisterNow}
-                className="w-full py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-2xl transition-all shadow-md shadow-green-500/30 text-lg"
+                disabled={registeringNow}
+                className="w-full py-3 bg-green-500 hover:bg-green-600 disabled:bg-green-300 disabled:cursor-not-allowed text-white font-bold rounded-2xl transition-all shadow-md shadow-green-500/30 text-lg"
               >
-                Đăng ký ngay
+                {registeringNow ? "Đang đăng ký..." : "Đăng ký ngay"}
               </button>
             )}
             {tournament.status === "Closed" && !joined && (

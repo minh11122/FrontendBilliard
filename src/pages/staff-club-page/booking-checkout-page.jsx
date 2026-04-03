@@ -188,7 +188,7 @@ export default function BookingCheckoutPage() {
             <div className="flex justify-between text-sm">
               <span className="text-slate-600">Tiền cọc</span>
               <span className="font-bold text-slate-900">
-                {invoice.deposit.toLocaleString("vi-VN")} VNĐ
+                -{invoice.deposit.toLocaleString("vi-VN")} VNĐ
               </span>
             </div>
             <div className="flex justify-between text-sm font-black pt-1 border-t border-orange-200">

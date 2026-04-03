@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
   Search, Calendar as CalendarIcon, MoreVertical, TrendingUp, Loader2,
@@ -112,6 +113,7 @@ const InfoRow = ({ icon, label, value }) => (
 const BookingDetailModal = ({ table, booking, allTables, onClose, onRefresh }) => {
   if (!booking) return null;
   const displayTable = table || booking.table_id;
+  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
   const [showOrderPanel, setShowOrderPanel] = useState(false);
@@ -228,21 +230,12 @@ const BookingDetailModal = ({ table, booking, allTables, onClose, onRefresh }) =
     }
   };
 
-  const handleCheckout = async () => {
+  const handleCheckout = () => {
+    // Đồng bộ với luồng ở `staff-club-page-manager-table.jsx`:
+    // điều hướng sang trang checkout để chọn PayOS/cash.
     if (!booking) return;
-    try {
-      setLoading(true);
-      const res = await bookingService.checkOutBooking(booking._id);
-      if (res.success) {
-        toast.success("Thanh toán thành công");
-        if (onRefresh) await onRefresh();
-        onClose();
-      }
-    } catch(err) {
-      toast.error("Thanh toán thất bại");
-    } finally {
-      setLoading(false);
-    }
+    onClose?.();
+    navigate(`/staff/tables/checkout/${booking._id}`);
   };
 
   return (

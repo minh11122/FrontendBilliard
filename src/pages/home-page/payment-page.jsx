@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useLocation, useNavigate, useBlocker } from "react-router-dom";
+import { useLocation, useNavigate, useBlocker, useParams } from "react-router-dom";
 import { ChevronLeft, QrCode, Shield, Clock, MapPin, Star, Lock, AlertCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import { createPayOSBookingPayment, cancelHold } from "@/services/booking.service";
@@ -7,7 +7,11 @@ import { createPayOSBookingPayment, cancelHold } from "@/services/booking.servic
 export const PaymentPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const bookingData = location.state;
+  const { bookingId } = useParams();
+
+  const storageKey = bookingId ? `payment-page:booking:${bookingId}` : null;
+  const [bookingData, setBookingData] = useState(location.state);
+  const [restoringBookingData, setRestoringBookingData] = useState(Boolean(bookingId) && !location.state);
 
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
@@ -30,6 +34,38 @@ export const PaymentPage = () => {
     }
   }, [blocker.state]);
 
+  // Đồng bộ bookingData khi điều hướng nội bộ có `location.state`
+  useEffect(() => {
+    if (location.state) {
+      setBookingData(location.state);
+      setRestoringBookingData(false);
+    }
+  }, [location.state]);
+
+  // Khôi phục bookingData khi quay lại từ PayOS (trường hợp `location.state` bị mất)
+  useEffect(() => {
+    if (!storageKey || location.state) return;
+    setRestoringBookingData(true);
+    try {
+      const raw = sessionStorage.getItem(storageKey);
+      if (raw) setBookingData(JSON.parse(raw));
+    } catch {
+      // ignore
+    } finally {
+      setRestoringBookingData(false);
+    }
+  }, [storageKey, location.state]);
+
+  // Persist bookingData để đồng bộ countdown sau khi rời trang ra PayOS
+  useEffect(() => {
+    if (!storageKey || !bookingData) return;
+    try {
+      sessionStorage.setItem(storageKey, JSON.stringify(bookingData));
+    } catch {
+      // ignore storage errors
+    }
+  }, [storageKey, bookingData]);
+
   // Tính thời gian giữ chỗ còn lại
   useEffect(() => {
     if (!bookingData?.heldUntil) return;
@@ -44,6 +80,7 @@ export const PaymentPage = () => {
       if (remaining <= 0) {
         toast.error("Hết thời gian giữ chỗ. Bàn đã được trả về.");
         allowNavRef.current = true;
+        if (storageKey) sessionStorage.removeItem(storageKey);
         navigate("/booking");
       }
     };
@@ -51,17 +88,7 @@ export const PaymentPage = () => {
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [bookingData?.heldUntil, navigate]);
-
-  // Chặn beforeunload (đóng tab/reload)
-  useEffect(() => {
-    const handleBeforeUnload = (e) => {
-      e.preventDefault();
-      e.returnValue = "";
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, []);
+  }, [bookingData?.heldUntil, navigate, storageKey]);
 
   // Xử lý nút quay lại
   const handleBack = useCallback(() => {
@@ -109,12 +136,13 @@ export const PaymentPage = () => {
       const res = await cancelHold(booking._id);
       if (res.success) {
         toast.success("Đã hủy đơn đặt bàn thành công");
+        if (storageKey) sessionStorage.removeItem(storageKey);
         allowNavRef.current = true;
         navigate("/booking");
       } else {
         toast.error(res.message || "Không thể hủy đơn");
       }
-    } catch (error) {
+    } catch {
       toast.error("Lỗi khi hủy đơn");
     } finally {
       setCancelling(false);
@@ -153,6 +181,14 @@ export const PaymentPage = () => {
 
   // Fallback nếu không có dữ liệu
   if (!bookingData) {
+    if (restoringBookingData) {
+      return (
+        <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-4">
+          <div className="w-10 h-10 rounded-full border-4 border-emerald-100 border-t-emerald-500 animate-spin" />
+          <p className="text-slate-500">Đang khôi phục thông tin thanh toán...</p>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-4">
         <p className="text-slate-500">Không có thông tin đặt bàn</p>
