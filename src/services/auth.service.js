@@ -65,3 +65,7 @@ export const getTopFeedbacks = () => {
 export const getLatestPosts = () => {
   return api.get("/posts/latest");
 };
+
+export const checkProfile = () => {
+  return api.get("/profile/check");
+};

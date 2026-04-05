@@ -10,6 +10,8 @@ import {
   markAsRead,
 } from "@/services/notification.service";
 
+import { checkProfile } from "@/services/auth.service";
+
 export const HeaderHome = () => {
   const [openMenu, setOpenMenu] = useState(false);
   const [openUserMenu, setOpenUserMenu] = useState(false);
@@ -21,6 +23,22 @@ export const HeaderHome = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useContext(AuthContext);
+  const [isIncomplete, setIsIncomplete] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchCheck = async () => {
+      try {
+        const res = await checkProfile();
+        setIsIncomplete(!res.data.is_profile_complete);
+      } catch (err) {
+        console.log(err);
+      }
+    };
+
+    fetchCheck();
+  }, [user]);
 
   const handleLogout = () => {
     logout();
@@ -75,6 +93,18 @@ export const HeaderHome = () => {
 
   return (
     <header className="w-full bg-white border-b border-gray-200 shadow-sm relative z-[9999]">
+      {user && isIncomplete && (
+        <div className="bg-yellow-50 border-b border-yellow-200 text-yellow-800 px-6 py-3 text-sm flex items-center justify-between">
+          <span>⚠️ Vui lòng nhập đầy đủ thông tin (tên, số điện thoại)</span>
+
+          <button
+            onClick={() => navigate("/profile")}
+            className="ml-4 px-3 py-1 bg-yellow-500 text-white rounded-lg text-xs"
+          >
+            Cập nhật ngay
+          </button>
+        </div>
+      )}
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="group transition-all">
@@ -121,28 +151,41 @@ export const HeaderHome = () => {
             CLB
           </NavLink>
 
-
           {/* Tournament Dropdown */}
           <div className="relative group ml-1">
             <button
               className={`px-4 py-2 font-bold rounded-lg transition-all flex items-center gap-2 border ${
-                location.pathname.startsWith("/tournament") || location.pathname === "/my-tournaments"
+                location.pathname.startsWith("/tournament") ||
+                location.pathname === "/my-tournaments"
                   ? "text-green-600 bg-green-50 border-green-200"
                   : "text-gray-700 hover:bg-gray-50 border-transparent"
               }`}
             >
-              <Trophy size={16} className={location.pathname.startsWith("/tournament") || location.pathname === "/my-tournaments" ? "text-green-500" : "text-gray-400"} />
+              <Trophy
+                size={16}
+                className={
+                  location.pathname.startsWith("/tournament") ||
+                  location.pathname === "/my-tournaments"
+                    ? "text-green-500"
+                    : "text-gray-400"
+                }
+              />
               <span>Giải đấu</span>
-              <ChevronDown size={14} className="transition-transform group-hover:rotate-180 text-gray-400" />
+              <ChevronDown
+                size={14}
+                className="transition-transform group-hover:rotate-180 text-gray-400"
+              />
             </button>
-            
+
             <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-[10000] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 translate-y-2 group-hover:translate-y-0">
               <div className="p-2">
                 <NavLink
                   to="/tournament"
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-                      isActive ? "bg-green-500 text-white shadow-md shadow-green-200" : "text-gray-700 hover:bg-gray-50"
+                      isActive
+                        ? "bg-green-500 text-white shadow-md shadow-green-200"
+                        : "text-gray-700 hover:bg-gray-50"
                     }`
                   }
                 >
@@ -151,7 +194,9 @@ export const HeaderHome = () => {
                   </div>
                   <div className="flex flex-col">
                     <span>Giải đấu cộng đồng</span>
-                    <span className="text-[10px] opacity-70 font-medium">Khám phá các giải đấu mới</span>
+                    <span className="text-[10px] opacity-70 font-medium">
+                      Khám phá các giải đấu mới
+                    </span>
                   </div>
                 </NavLink>
 
@@ -161,7 +206,9 @@ export const HeaderHome = () => {
                   to="/my-tournaments"
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-                      isActive ? "bg-green-500 text-white shadow-md shadow-green-200" : "text-gray-700 hover:bg-gray-50"
+                      isActive
+                        ? "bg-green-500 text-white shadow-md shadow-green-200"
+                        : "text-gray-700 hover:bg-gray-50"
                     }`
                   }
                 >
@@ -170,13 +217,14 @@ export const HeaderHome = () => {
                   </div>
                   <div className="flex flex-col">
                     <span>Giải của tôi</span>
-                    <span className="text-[10px] opacity-70 font-medium">Lịch sử và tiến trình</span>
+                    <span className="text-[10px] opacity-70 font-medium">
+                      Lịch sử và tiến trình
+                    </span>
                   </div>
                 </NavLink>
               </div>
             </div>
           </div>
-
 
           <NavLink
             to="/posts"

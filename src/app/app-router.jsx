@@ -7,7 +7,7 @@ import {
   DashboardMainLayout,
   DashboardStaffSystemLayout,
   DashboardOwnerLayout,
-  DashboardStaffClubLayout
+  DashboardStaffClubLayout,
 } from "@/components/layouts";
 
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -74,7 +74,8 @@ import {
   MyTournamentsPage,
   PostPage,
   OwnerPostPage,
-  StaffClubPaymentHistoryPage
+  StaffClubPaymentHistoryPage,
+  CreateStaffSystem
 } from "@/pages";
 
 export const router = createBrowserRouter([
@@ -100,8 +101,14 @@ export const router = createBrowserRouter([
           { path: "", element: <HomePage /> },
           { path: "/tournament", element: <TournamentPage /> },
           { path: "/tournament/:id", element: <TournamentDetailPage /> },
-          { path: "/tournament/:id/payment", element: <TournamentPaymentPage /> },
-          { path: "/tournament/:id/players", element: <TournamentPlayersPage /> },
+          {
+            path: "/tournament/:id/payment",
+            element: <TournamentPaymentPage />,
+          },
+          {
+            path: "/tournament/:id/players",
+            element: <TournamentPlayersPage />,
+          },
           { path: "/booking", element: <BookingPage /> },
           { path: "/booking/:id", element: <ClubDetailPage /> },
           { path: "/payment/:bookingId", element: <PaymentPage /> },
@@ -115,18 +122,21 @@ export const router = createBrowserRouter([
               </ProtectedRoute>
             ),
           },
-          { path: "/register-owner-account", element: <RegisterOwnerAccount /> },
+          {
+            path: "/register-owner-account",
+            element: <RegisterOwnerAccount />,
+          },
           { path: "/profile", element: <ProfilePage /> },
           { path: "/posts", element: <PostPage /> },
         ],
       },
       {
         path: "owner/select-club",
-        element: <OwnerSelectClubPage />
+        element: <OwnerSelectClubPage />,
       },
       {
         path: "owner/resubmit-club/:id",
-        element: <OwnerResubmitClubPage />
+        element: <OwnerResubmitClubPage />,
       },
       {
         path: "owner/onboarding/:clubId",
@@ -134,7 +144,7 @@ export const router = createBrowserRouter([
           <ProtectedRoute allowedRoles={["OWNER"]}>
             <OwnerOnboardingPage />
           </ProtectedRoute>
-        )
+        ),
       },
       {
         path: "admin",
@@ -143,7 +153,7 @@ export const router = createBrowserRouter([
           { path: "list-user", element: <AccountManagement /> },
           { path: "list-acc-pending", element: <AccPendingManagement /> },
           { path: "list-shop", element: <ShopManagement /> },
-
+          // { path: "create", element: <CreateStaffSystem /> },
           { path: "thongke", element: <AdminSettings /> },
         ],
       },
@@ -161,20 +171,62 @@ export const router = createBrowserRouter([
           { path: "services", element: <OwnerServiceListPage /> },
           { path: "services/create", element: <OwnerCreateServicePage /> },
           { path: "services/edit/:id", element: <OwnerEditServicePage /> },
-          { path: "dashboard", element: <PlanProtectedRoute allowedPlans={["basic", "pro"]}><OwnerDashboardPage /></PlanProtectedRoute> },
-          { path: "reports", element: <PlanProtectedRoute allowedPlans={["basic", "pro"]}><OwnerReportsPage /></PlanProtectedRoute> },
+          {
+            path: "dashboard",
+            element: (
+              <PlanProtectedRoute allowedPlans={["basic", "pro"]}>
+                <OwnerDashboardPage />
+              </PlanProtectedRoute>
+            ),
+          },
+          {
+            path: "reports",
+            element: (
+              <PlanProtectedRoute allowedPlans={["basic", "pro"]}>
+                <OwnerReportsPage />
+              </PlanProtectedRoute>
+            ),
+          },
           { path: "reviews", element: <OwnerReviewListPage /> },
           { path: "settings", element: <SettingPage /> },
-          { path: "payment-success", element: <PaymentSuccessPage  /> },
+          { path: "payment-success", element: <PaymentSuccessPage /> },
           { path: "payment-history", element: <OwnerPaymentHistoryPage /> },
           { path: "list-employee", element: <OwnerListEmployeePage /> },
           { path: "employees/create", element: <OwnerCreateEmployeePage /> },
           { path: "employees/edit/:id", element: <OwnerUpdateEmployeePage /> },
           { path: "amenities", element: <AmenitiesPage /> },
-          { path: "tournaments", element: <PlanProtectedRoute allowedPlans={["pro"]}><OwnerTournamentListPage /></PlanProtectedRoute> },
-          { path: "tournaments/create", element: <PlanProtectedRoute allowedPlans={["pro"]}><OwnerCreateTournamentPage /></PlanProtectedRoute> },
-          { path: "tournaments/:id/players", element: <PlanProtectedRoute allowedPlans={["pro"]}><OwnerTournamentPlayersPage /></PlanProtectedRoute> },
-          { path: "tournaments/edit/:id", element: <PlanProtectedRoute allowedPlans={["pro"]}><OwnerEditTournamentPage /></PlanProtectedRoute> },
+          {
+            path: "tournaments",
+            element: (
+              <PlanProtectedRoute allowedPlans={["pro"]}>
+                <OwnerTournamentListPage />
+              </PlanProtectedRoute>
+            ),
+          },
+          {
+            path: "tournaments/create",
+            element: (
+              <PlanProtectedRoute allowedPlans={["pro"]}>
+                <OwnerCreateTournamentPage />
+              </PlanProtectedRoute>
+            ),
+          },
+          {
+            path: "tournaments/:id/players",
+            element: (
+              <PlanProtectedRoute allowedPlans={["pro"]}>
+                <OwnerTournamentPlayersPage />
+              </PlanProtectedRoute>
+            ),
+          },
+          {
+            path: "tournaments/edit/:id",
+            element: (
+              <PlanProtectedRoute allowedPlans={["pro"]}>
+                <OwnerEditTournamentPage />
+              </PlanProtectedRoute>
+            ),
+          },
           { path: "posts", element: <OwnerPostPage /> },
         ],
       },
@@ -192,9 +244,15 @@ export const router = createBrowserRouter([
           { path: "bookings", element: <StaffClubPageBooking /> },
           { path: "tournaments", element: <StaffClubPageTournament /> },
           { path: "payment-history", element: <StaffClubPaymentHistoryPage /> },
-          { path: "tournaments/:id/matches", element: <StaffClubPageMatchManagement /> },
-          { path: "tournaments/:id/players", element: <TournamentPlayersPage /> },
-          { path: "reviews", element: <StaffClubReviewListPage /> }
+          {
+            path: "tournaments/:id/matches",
+            element: <StaffClubPageMatchManagement />,
+          },
+          {
+            path: "tournaments/:id/players",
+            element: <TournamentPlayersPage />,
+          },
+          { path: "reviews", element: <StaffClubReviewListPage /> },
         ],
       },
       {

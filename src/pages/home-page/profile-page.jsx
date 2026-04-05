@@ -229,7 +229,7 @@ export const ProfilePage = () => {
               </div>
 
               {/* Address */}
-              <div>
+              {/* <div>
                 <label className="text-sm text-gray-500">Địa chỉ</label>
 
                 <div className="relative mt-1">
@@ -241,7 +241,7 @@ export const ProfilePage = () => {
                     className="pl-9 border rounded-xl w-full px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-600"
                   />
                 </div>
-              </div>
+              </div> */}
             </div>
 
             <button

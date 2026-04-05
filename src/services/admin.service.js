@@ -50,3 +50,7 @@ export const getRevenueWeb = (params) => {
 export const getRevenueWebSummary = (params) => {
   return api.get("/admin/revenue/web/summary", { params });
 };
+
+export const createAccount = (data) => {
+  return api.post("/admin/accounts", data);
+};

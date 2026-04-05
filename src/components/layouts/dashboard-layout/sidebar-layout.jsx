@@ -42,6 +42,11 @@ export const SidebarAdmin = () => {
       href: "/admin/list-shop",
       icon: Store,
     },
+    // {
+    //   name: "Tạo nhân viên hệ thống",
+    //   href: "/admin/create",
+    //   icon: BarChart3,
+    // },
     {
       name: "Thống Kê",
       href: "/admin/thongke",
