@@ -48,3 +48,20 @@ export const updateProfile = (data) => {
 export const updatePassword = (data) => {
   return api.post("/updatepassword", data);
 };
+
+// Lấy 3 giải đấu mới nhất
+export const getLatestTournaments = () => {
+  return api.get("/tournaments/latest");
+};
+
+export const getFeaturedClubs = () => {
+  return api.get("/clubs/featured");
+};
+
+export const getTopFeedbacks = () => {
+  return api.get("/feedbacks/top");
+};
+
+export const getLatestPosts = () => {
+  return api.get("/posts/latest");
+};

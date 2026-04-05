@@ -1,81 +1,99 @@
-import { Star, MapPin, Users, Trophy, Clock, Zap, Gift, TrendingUp, Quote, ArrowRight } from "lucide-react";
+import {
+  Star,
+  MapPin,
+  Users,
+  Trophy,
+  Clock,
+  Zap,
+  Gift,
+  TrendingUp,
+  Quote,
+  ArrowRight,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import {
+  getLatestTournaments,
+  getFeaturedClubs,
+  getTopFeedbacks,
+  getLatestPosts,
+} from "../../services/auth.service";
 export const HomePage = () => {
-  const clubs = [
-    {
-      name: "FPT Billiards Club",
-      address: "Lô E2-7, Đường D1, Khu Công nghệ cao, TP. Thủ Đức",
-      price: "50k/giờ",
-      rating: 4.0,
-      img: "https://images.unsplash.com/photo-1517649763962-0c623066013b?q=80&w=800",
-    },
-    {
-      name: "Galaxy Billiards",
-      address: "123 Nguyễn Văn Linh, Quận 7, TP. HCM",
-      price: "60k/giờ",
-      rating: 4.5,
-      img: "https://images.unsplash.com/photo-1611599537845-1c7aca0091c0?q=80&w=800",
-    },
-    {
-      name: "King's Club Arena",
-      address: "456 Lê Văn Việt, TP. Thủ Đức",
-      price: "45k/giờ",
-      rating: 4.0,
-      img: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=800",
-    },
-    {
-      name: "Victory Billiards",
-      address: "89 Điện Biên Phủ, Quận Bình Thạnh",
-      price: "55k/giờ",
-      rating: 4.2,
-      img: "https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=800",
-    },
+  const navigate = useNavigate();
+  const [tournaments, setTournaments] = useState([]);
+  const [clubs, setClubs] = useState([]);
+  const [testimonials, setTestimonials] = useState([]);
+  const [posts, setPosts] = useState([]);
+
+  const images = [
+    "/img-home/page1.png",
+    "/img-home/page2.png",
+    "/img-home/page3.png",
   ];
 
-  const promotions = [
-    {
-      id: 1,
-      title: "Giảm 30% cho đơn đặt bàn đầu tiên",
-      description: "Sử dụng mã WELCOME30 khi đặt bàn lần đầu",
-      discount: "30%",
-      icon: Gift,
-    },
-    {
-      id: 2,
-      title: "Gói thành viên hàng tháng",
-      description: "Chỉ từ 200k/tháng, không giới hạn lượt chơi",
-      discount: "CHỈ TỪ",
-      icon: Zap,
-    },
-    {
-      id: 3,
-      title: "Giải đấu tháng với giải thưởng",
-      description: "Tham gia và tranh thủ giải thưởng hấp dẫn",
-      discount: "500K+",
-      icon: Trophy,
-    },
-  ];
+  const [index, setIndex] = useState(0);
 
-  const testimonials = [
-    {
-      name: "Nguyễn Minh Anh",
-      role: "Cơ thủ chuyên nghiệp",
-      text: "Ứng dụng thật sự giúp mình quản lý thời gian chơi bida hiệu quả hơn. Giao diện rất thân thiện!",
-      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=400",
-    },
-    {
-      name: "Trần Quốc Khánh",
-      role: "Quản lý câu lạc bộ",
-      text: "Từ khi sử dụng hệ thống này, doanh thu tăng 40%. Quản lý đặt bàn dễ dàng, khách hàng hài lòng.",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400",
-    },
-    {
-      name: "Phạm Thị Hương",
-      role: "Người dùng thường xuyên",
-      text: "Lần đầu tiên tôi dễ dàng tìm được CLB uy tín gần nhất. Hỗ trợ khách hàng cực tuyệt vời!",
-      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=400",
-    },
-  ];
+  // auto chuyển ảnh
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev + 1) % images.length);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await getLatestTournaments();
+        setTournaments(res.data.data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    const fetchClubs = async () => {
+      try {
+        const res = await getFeaturedClubs();
+        setClubs(res.data.data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchClubs();
+  }, []);
+
+  useEffect(() => {
+    const fetchFeedbacks = async () => {
+      try {
+        const res = await getTopFeedbacks();
+        setTestimonials(res.data.data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchFeedbacks();
+  }, []);
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const res = await getLatestPosts();
+        setPosts(res.data.data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchPosts();
+  }, []);
 
   const features = [
     {
@@ -104,8 +122,11 @@ export const HomePage = () => {
           <div className="flex items-center justify-center gap-2 text-sm">
             <Zap size={16} />
             <span>
-              🎉 Ưu đãi mùa hè: Giảm 40% cho gói thành viên 3 tháng. 
-              <button className="ml-2 font-semibold hover:underline">
+              🎉 Nhanh Tay đặt bàn: Tiện ích mọi lúc mọi nơi.
+              <button
+                onClick={() => navigate("/booking")}
+                className="ml-2 font-semibold hover:underline"
+              >
                 Xem chi tiết →
               </button>
             </span>
@@ -115,40 +136,43 @@ export const HomePage = () => {
 
       {/* HERO */}
       <section className="relative overflow-hidden">
-        <div className="container mx-auto px-6 pt-10">
-          <div className="relative rounded-3xl overflow-hidden shadow-lg">
-            <img
-              src="https://images.unsplash.com/photo-1603297631954-df2d0f7f4d7c?q=80&w=1600"
-              className="w-full h-[320px] md:h-[420px] object-cover"
-            />
+        <div className="relative w-full h-[400px] md:h-[520px] lg:h-[600px]">
+          {/* Ảnh */}
+          <img
+            src={images[index]}
+            className="w-full h-full object-cover transition-all duration-700"
+          />
 
-            <div className="absolute inset-0 bg-gradient-to-r from-green-600/90 to-green-500/70" />
+          {/* overlay nhẹ cho dễ đọc chữ */}
+          <div className="absolute inset-0 bg-black/30" />
 
-            <div className="absolute inset-0 p-8 md:p-12 flex flex-col justify-center text-white max-w-2xl">
-              <span className="bg-green-500/90 w-fit px-3 py-1 rounded-full text-sm mb-4">
-                Sắp diễn ra
-              </span>
+          {/* nội dung */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white px-4">
+            <h1 className="text-3xl md:text-5xl font-bold mb-4">
+              Đặt bàn Bida nhanh chóng
+            </h1>
+            <p className="text-white/80 mb-6 text-sm md:text-lg">
+              Tìm kiếm & đặt bàn dễ dàng chỉ trong vài giây
+            </p>
 
-              <h1 className="text-3xl md:text-5xl font-bold leading-tight mb-4">
-                Giải đấu Bida Sinh viên
-                <br />
-                <span className="text-green-300">Mở rộng 2024</span>
-              </h1>
+            <button
+              onClick={() => navigate("/booking")}
+              className="bg-green-500 hover:bg-green-600 px-6 py-3 rounded-xl font-semibold transition-all"
+            >
+              Đặt bàn ngay
+            </button>
+          </div>
 
-              <p className="text-white/90 mb-6">
-                Tham gia tranh tài cùng các cơ thủ hàng đầu từ các trường đại
-                học trên toàn quốc.
-              </p>
-
-              <div className="flex gap-3">
-                <button className="bg-green-500 hover:bg-green-600 px-5 py-3 rounded-xl font-semibold transition-all">
-                  Đăng ký tham gia ngay
-                </button>
-                <button className="bg-white/20 hover:bg-white/30 px-5 py-3 rounded-xl transition-all">
-                  Xem chi tiết
-                </button>
-              </div>
-            </div>
+          {/* dots */}
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+            {images.map((_, i) => (
+              <div
+                key={i}
+                className={`w-3 h-3 rounded-full ${
+                  i === index ? "bg-white" : "bg-white/40"
+                }`}
+              />
+            ))}
           </div>
         </div>
       </section>
@@ -180,52 +204,96 @@ export const HomePage = () => {
       </section>
 
       {/* PROMOTIONS */}
-      <section className="container mx-auto px-6 py-14">
-        <h2 className="text-2xl md:text-3xl font-bold mb-10 text-center">Các ưu đãi hấp dẫn cho bạn</h2>
+      <section className="container mx-auto px-6 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+            Giải đấu mới nhất
+          </h2>
+          <p className="text-gray-600 mt-2">
+            Tham gia các giải đấu hấp dẫn đang diễn ra
+          </p>
+        </div>
+
         <div className="grid md:grid-cols-3 gap-6">
-          {promotions.map((promo) => {
-            const IconComponent = promo.icon;
-            return (
-              <div
-                key={promo.id}
-                className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 hover:shadow-lg transition-all border border-green-200"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center text-white">
-                    <IconComponent size={24} />
-                  </div>
-                  <span className="bg-red-500 text-white text-sm font-bold px-3 py-1 rounded-full">
-                    {promo.discount}
-                  </span>
+          {tournaments.map((tour) => (
+            <div
+              key={tour._id}
+              className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all"
+            >
+              <img
+                src={tour.banner || "/img-home/page1.png"}
+                className="w-full h-44 object-cover"
+              />
+
+              <div className="p-5">
+                <h3 className="font-semibold text-lg text-gray-900 mb-2">
+                  {tour.name}
+                </h3>
+
+                <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+                  {tour.description || "Chưa có mô tả"}
+                </p>
+
+                <div className="text-xs text-gray-500 space-y-1 mb-4">
+                  <p>
+                    📅{" "}
+                    {tour.play_date
+                      ? new Date(tour.play_date).toLocaleDateString()
+                      : "Chưa có ngày"}
+                  </p>
+                  <p>
+                    👥 {tour.registered_player}/{tour.max_players}
+                  </p>
                 </div>
-                <h3 className="font-bold text-lg mb-2 text-gray-900">{promo.title}</h3>
-                <p className="text-gray-700 text-sm mb-4">{promo.description}</p>
-                <button className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-2 rounded-lg transition-all">
+
+                <button
+                  onClick={() => navigate(`/tournament/${tour._id}`)}
+                  className="w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded-xl font-semibold"
+                >
                   Xem chi tiết
                 </button>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </section>
 
       {/* FEATURES */}
-      <section className="bg-gray-50 py-14">
+      <section className="bg-gray-50 py-16">
         <div className="container mx-auto px-6">
-          <h2 className="text-2xl md:text-3xl font-bold mb-4 text-center">Tại sao chọn BilliarMaster?</h2>
-          <p className="text-center text-gray-600 mb-10 max-w-2xl mx-auto">
-            Nền tảng quản lý bida toàn diện dành cho cơ thủ và chủ CLB
-          </p>
-          <div className="grid md:grid-cols-2 gap-6">
+          {/* title */}
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+              Tại sao chọn{" "}
+              <span className="text-green-500">BilliarMaster?</span>
+            </h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Nền tảng quản lý bida toàn diện dành cho cơ thủ và chủ CLB
+            </p>
+          </div>
+
+          {/* grid */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature, idx) => (
-              <div key={idx} className="bg-white rounded-xl p-6 flex gap-4 border border-gray-200">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <TrendingUp className="text-green-500" size={24} />
+              <div
+                key={idx}
+                className="group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+              >
+                {/* icon */}
+                <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-green-500 transition-all">
+                  <TrendingUp
+                    className="text-green-500 group-hover:text-white transition-all"
+                    size={26}
+                  />
                 </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">{feature.title}</h3>
-                  <p className="text-sm text-gray-600">{feature.description}</p>
-                </div>
+
+                {/* content */}
+                <h3 className="font-semibold text-gray-900 mb-2 text-lg">
+                  {feature.title}
+                </h3>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  {feature.description}
+                </p>
               </div>
             ))}
           </div>
@@ -233,45 +301,65 @@ export const HomePage = () => {
       </section>
 
       {/* CLUBS */}
-      <section className="container mx-auto px-6 py-14">
-        <div className="flex justify-between items-center mb-8">
+      <section className="container mx-auto px-6 py-16">
+        <div className="flex justify-between items-end mb-10">
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold">Câu lạc bộ nổi bật</h2>
-            <p className="text-gray-600 text-sm mt-1">Khám phá những CLB uy tín gần bạn</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+              Câu lạc bộ nổi bật
+            </h2>
+            <p className="text-gray-600 mt-2">
+              Khám phá những CLB uy tín gần bạn
+            </p>
           </div>
-          <button className="text-green-500 hover:text-green-600 font-semibold text-sm flex items-center gap-1">
+
+          <button
+            onClick={() => navigate("/booking")}
+            className="text-green-500 hover:text-green-600 font-semibold flex items-center gap-1"
+          >
             Xem tất cả <ArrowRight size={16} />
           </button>
         </div>
 
         <div className="grid md:grid-cols-4 gap-6">
-          {clubs.map((club, i) => (
+          {clubs.map((club) => (
             <div
-              key={i}
-              className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all border border-gray-100"
+              key={club._id}
+              className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all"
             >
-              <div className="relative h-40 overflow-hidden">
+              <div className="relative h-44">
                 <img
-                  src={club.img}
-                  className="w-full h-full object-cover hover:scale-105 transition-transform"
+                  src={
+                    club.avatar ||
+                    `https://source.unsplash.com/400x300/?billiards&sig=${club._id}`
+                  }
+                  className="w-full h-full object-cover"
                 />
-                <span className="absolute top-3 right-3 flex items-center gap-1 text-xs bg-white text-green-600 px-2 py-1 rounded-lg font-semibold shadow">
-                  <Star size={12} fill="currentColor" />
-                  {club.rating}
+
+                <span className="absolute top-3 right-3 text-xs bg-white text-green-600 px-2 py-1 rounded-lg font-semibold shadow">
+                  Approved
                 </span>
               </div>
 
               <div className="p-4">
-                <h3 className="font-semibold text-sm text-gray-900 mb-1">{club.name}</h3>
-                <p className="text-gray-600 text-xs flex gap-1 mb-4">
-                  <MapPin size={14} className="flex-shrink-0 text-green-500" /> 
-                  <span>{club.address}</span>
+                <h3 className="font-semibold text-gray-900 mb-1">
+                  {club.name}
+                </h3>
+
+                <p className="text-gray-600 text-sm flex gap-1 mb-4">
+                  <MapPin size={14} className="text-green-500" />
+                  {club.district_name || club.address}
                 </p>
 
-                <div className="flex justify-between items-center pt-3 border-t border-gray-100">
-                  <span className="font-bold text-green-600">{club.price}</span>
-                  <button className="bg-green-500 hover:bg-green-600 text-white text-xs px-3 py-1.5 rounded-lg font-semibold transition-all">
-                    Đặt bàn
+                <div className="flex justify-between items-center pt-3 border-t">
+                  <span className="text-green-600 font-semibold text-sm">
+                    {club.opening_time} - {club.closing_time}
+                  </span>
+
+                  <button
+                    onClick={() => navigate(`/booking/${club._id}`)}
+                    className="bg-green-500 hover:bg-green-600 text-white text-xs px-3 py-1.5 rounded-lg"
+                  >
+                    Xem
                   </button>
                 </div>
               </div>
@@ -281,31 +369,45 @@ export const HomePage = () => {
       </section>
 
       {/* TESTIMONIALS */}
-      <section className="bg-gray-50 py-14">
+      <section className="bg-gray-50 py-16">
         <div className="container mx-auto px-6">
-          <h2 className="text-2xl md:text-3xl font-bold mb-4 text-center">Khách hàng nói gì về chúng tôi</h2>
-          <p className="text-center text-gray-600 mb-10">Hàng ngàn người tin tưởng BilliarMaster hàng ngày</p>
-          
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+              Khách hàng nói gì
+            </h2>
+            <p className="text-gray-600 mt-2">
+              Trải nghiệm thực tế từ người dùng
+            </p>
+          </div>
+
           <div className="grid md:grid-cols-3 gap-6">
-            {testimonials.map((testimonial, idx) => (
-              <div key={idx} className="bg-white rounded-2xl p-6 border border-gray-200 hover:shadow-md transition-all">
-                <div className="flex items-center gap-1 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} size={16} className="text-yellow-400 fill-yellow-400" />
+            {testimonials.map((item) => (
+              <div
+                key={item._id}
+                className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition"
+              >
+                <div className="flex mb-3">
+                  {[...Array(item.rating)].map((_, i) => (
+                    <Star
+                      key={i}
+                      size={16}
+                      className="text-yellow-400 fill-yellow-400"
+                    />
                   ))}
                 </div>
-                
-                <div className="mb-4 flex items-start">
-                  <Quote size={20} className="text-green-500 flex-shrink-0" />
-                </div>
-                
-                <p className="text-gray-700 mb-6 italic">"{testimonial.text}"</p>
-                
+
+                <p className="text-gray-700 italic mb-6">
+                  "{item.comment || "Rất hài lòng!"}"
+                </p>
+
                 <div className="flex items-center gap-3">
-                  <img src={testimonial.avatar} alt={testimonial.name} className="w-10 h-10 rounded-full object-cover" />
+                  <img
+                    src={item.user_avatar}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
                   <div>
-                    <p className="font-semibold text-gray-900 text-sm">{testimonial.name}</p>
-                    <p className="text-gray-600 text-xs">{testimonial.role}</p>
+                    <p className="font-semibold text-sm">{item.user_name}</p>
+                    <p className="text-gray-500 text-xs">Khách hàng</p>
                   </div>
                 </div>
               </div>
@@ -316,48 +418,60 @@ export const HomePage = () => {
 
       {/* SPECIAL OFFER BANNER */}
       <section className="container mx-auto px-6 py-14">
-        <div className="relative bg-gradient-to-r from-green-600 via-green-500 to-emerald-500 rounded-3xl overflow-hidden">
+        <div className="relative bg-gradient-to-r from-gray-800 via-gray-700 to-gray-900 rounded-3xl overflow-hidden">
+          {/* hiệu ứng nền */}
           <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -mr-32 -mt-32" />
           <div className="absolute bottom-0 left-0 w-80 h-80 bg-white/5 rounded-full -ml-20 -mb-20" />
-          
+
           <div className="relative p-10 md:p-16 text-white flex flex-col md:flex-row items-center justify-between gap-8">
+            {/* content */}
             <div className="max-w-xl">
-              <span className="inline-block bg-white/20 px-4 py-1 rounded-full text-sm font-semibold mb-4">
-                ⏰ Ưu đãi hạn chế
+              <span className="inline-block bg-yellow-400/20 text-yellow-300 px-4 py-1 rounded-full text-sm font-semibold mb-4">
+                🚧 Sắp ra mắt
               </span>
+
               <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                Trở thành Hội viên VIP ngay hôm nay
+                Tính năng Hội viên đang được phát triển
               </h2>
-              <p className="text-white/90 text-lg mb-6">
-                Tiếp cận không giới hạn tất cả CLB, ưu tiên đặt bàn, và nhận phần thưởng riêng biệt
+
+              <p className="text-white/80 text-lg mb-6">
+                Chúng tôi đang xây dựng hệ thống hội viên với nhiều ưu đãi hấp
+                dẫn dành riêng cho bạn. Hãy chờ bản cập nhật sắp tới!
               </p>
+
               <ul className="space-y-3 mb-6">
-                <li className="flex items-center gap-3">
-                  <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-bold">✓</span>
-                  </div>
-                  <span>Giảm 50% phí dịch vụ</span>
+                <li className="flex items-center gap-3 text-white/80">
+                  <span className="text-yellow-300">•</span>
+                  Giảm giá khi đặt bàn
                 </li>
-                <li className="flex items-center gap-3">
-                  <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-bold">✓</span>
-                  </div>
-                  <span>Đặt bàn ưu tiên 24 giờ trước</span>
+                <li className="flex items-center gap-3 text-white/80">
+                  <span className="text-yellow-300">•</span>
+                  Ưu tiên giờ chơi đẹp
                 </li>
-                <li className="flex items-center gap-3">
-                  <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-bold">✓</span>
-                  </div>
-                  <span>Hỗ trợ khách hàng 24/7</span>
+                <li className="flex items-center gap-3 text-white/80">
+                  <span className="text-yellow-300">•</span>
+                  Tích điểm & nhận quà
                 </li>
               </ul>
-              <button className="bg-white text-green-600 font-semibold px-8 py-3 rounded-xl hover:bg-gray-100 transition-all">
-                Nâng cấp lên VIP
+
+              {/* button disabled */}
+              <button
+                disabled
+                className="bg-white/20 text-white font-semibold px-8 py-3 rounded-xl cursor-not-allowed"
+              >
+                Sắp ra mắt
               </button>
             </div>
+
+            {/* icon */}
             <div className="flex-shrink-0">
-              <div className="w-48 h-48 md:w-64 md:h-64 bg-white/10 rounded-2xl flex items-center justify-center">
+              <div className="w-48 h-48 md:w-64 md:h-64 bg-white/10 rounded-2xl flex items-center justify-center relative">
                 <Trophy className="w-24 h-24 text-white/30" />
+
+                {/* badge coming soon */}
+                <span className="absolute top-3 right-3 bg-yellow-400 text-black text-xs px-2 py-1 rounded-md font-bold">
+                  Coming Soon
+                </span>
               </div>
             </div>
           </div>
@@ -365,33 +479,55 @@ export const HomePage = () => {
       </section>
 
       {/* BLOG SECTION */}
-      <section className="bg-gray-50 py-14">
+      <section className="bg-gray-50 py-16">
         <div className="container mx-auto px-6">
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex justify-between items-end mb-10">
             <div>
-              <h2 className="text-2xl md:text-3xl font-bold">Bài viết mới nhất</h2>
-              <p className="text-gray-600 text-sm mt-1">Tips, trik, và tin tức về bida</p>
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+                Bài viết mới nhất
+              </h2>
+              <p className="text-gray-600 mt-2">Tin tức & mẹo chơi bida</p>
             </div>
-            <button className="text-green-500 hover:text-green-600 font-semibold text-sm flex items-center gap-1">
+
+            <button
+              onClick={() => navigate("/posts")}
+              className="text-green-500 hover:text-green-600 font-semibold flex items-center gap-1"
+            >
               Xem tất cả <ArrowRight size={16} />
             </button>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
-            {[1, 2, 3].map((_, idx) => (
-              <div key={idx} className="bg-white rounded-xl overflow-hidden hover:shadow-md transition-all border border-gray-200">
-                <div className="h-40 bg-gradient-to-br from-green-400 to-green-600" />
+            {posts.map((post) => (
+              <div
+                key={post._id}
+                className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition"
+              >
+                <img
+                  src={
+                    post.image ||
+                    `https://source.unsplash.com/400x300/?billiards&sig=${post._id}`
+                  }
+                  className="w-full h-44 object-cover"
+                />
+
                 <div className="p-5">
                   <span className="text-xs font-semibold text-green-600 bg-green-100 px-2 py-1 rounded">
-                    {['Mẹo chơi', 'Tin tức', 'Hướng dẫn'][idx]}
+                    {post.club_name}
                   </span>
-                  <h3 className="font-bold text-lg mt-3 mb-2 text-gray-900">
-                    {['Kỹ thuật chảy cơ cơ bản cho người mới', 'Giải đấu mùa hè sắp khai mạc', 'Cách chọn cơ bida phù hợp'][idx]}
+
+                  <h3 className="font-semibold text-lg mt-3 mb-2 line-clamp-2">
+                    {post.title}
                   </h3>
-                  <p className="text-gray-600 text-sm mb-4">
-                    Tìm hiểu các mẹo và kỹ thuật quan trọng để cải thiện trình độ chơi bida của bạn...
+
+                  <p className="text-gray-600 text-sm line-clamp-3 mb-4">
+                    {post.content}
                   </p>
-                  <button className="text-green-500 hover:text-green-600 font-semibold text-sm flex items-center gap-1">
+
+                  <button
+                    onClick={() => navigate("/posts")}
+                    className="text-green-500 hover:text-green-600 font-semibold text-sm flex items-center gap-1"
+                  >
                     Đọc tiếp <ArrowRight size={14} />
                   </button>
                 </div>
@@ -412,7 +548,8 @@ export const HomePage = () => {
               Mở rộng kinh doanh cùng chúng tôi
             </h3>
             <p className="text-white/90 text-lg mb-6 max-w-lg">
-              Trở thành đối tác của BilliarMaster để tiếp cận hàng ngàn khách hàng tiềm năng và quản lý CLB hiệu quả hơn.
+              Trở thành đối tác của BilliarMaster để tiếp cận hàng ngàn khách
+              hàng tiềm năng và quản lý CLB hiệu quả hơn.
             </p>
             <div className="flex gap-4">
               <Link to="/register-owner-account">
