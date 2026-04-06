@@ -5,7 +5,7 @@ const baseURL = import.meta.env.VITE_API_URL || "https://backendbilliard.onrende
 
 const api = axios.create({
   baseURL,
-  timeout: 15000,
+  timeout: 30000,
 });
 
 api.interceptors.request.use(
