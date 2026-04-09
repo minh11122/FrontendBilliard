@@ -175,8 +175,8 @@ export default function OwnerTournamentPlayersPage() {
                           </span>
                         </td>
                         <td className="py-3 px-4 font-bold text-slate-800">
-                          {Number(p.fee_ammount || 0) > 0
-                            ? `${Number(p.fee_ammount).toLocaleString("vi-VN")} VNĐ`
+                          {Number(p.fee_amount || 0) > 0
+                            ? `${Number(p.fee_amount).toLocaleString("vi-VN")} VNĐ`
                             : "Miễn phí"}
                         </td>
                         <td className="py-3 px-4 text-slate-600">{formatDateTime(p.register_date)}</td>
