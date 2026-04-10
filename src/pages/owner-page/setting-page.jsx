@@ -296,6 +296,28 @@ export function SettingPage() {
     }
   };
 
+  const getSubscriptionFromCurrent = (current) => {
+    if (!current) return null;
+    return typeof current.subscription_id === "object" ? current.subscription_id : null;
+  };
+
+  const getSubscriptionStatusLabel = (status) => {
+    const normalized = String(status || "").toLowerCase();
+    if (normalized === "active") return "Hoạt động";
+    if (normalized === "expired") return "Hết hạn";
+    if (normalized === "cancelled") return "Đã hủy";
+    return "Không xác định";
+  };
+
+  const getSubscriptionPeriodLabel = (durationDays) => {
+    const days = Number(durationDays) || 30;
+    if (days % 30 === 0) {
+      const months = days / 30;
+      return `${months} tháng`;
+    }
+    return `${days} ngày`;
+  };
+
 
   if (loading) {
     return (
@@ -721,10 +743,17 @@ export function SettingPage() {
                 </div>
 
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  {(() => {
+                    const currentSub = getSubscriptionFromCurrent(currentSubscription);
+                    const currentName = currentSub?.name || "Gói hiện tại";
+                    const currentDesc = currentSub?.description || "Gói dịch vụ đang sử dụng.";
+                    const statusText = getSubscriptionStatusLabel(currentSubscription.status);
+                    return (
+                      <>
                   <div className="space-y-2">
                     <span className="bg-white/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Gói đang sử dụng</span>
-                    <h3 className="text-3xl font-black">{currentSubscription.subscription_id.name}</h3>
-                    <p className="opacity-90 max-w-3xl">{currentSubscription.subscription_id.description}</p>
+                    <h3 className="text-3xl font-black">{currentName}</h3>
+                    <p className="opacity-90 max-w-3xl">{currentDesc}</p>
                   </div>
 
                   <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20 space-y-3 min-w-[240px]">
@@ -738,9 +767,12 @@ export function SettingPage() {
                     </div>
                     <div className="pt-3 border-t border-white/10 flex items-center gap-2">
                        <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                       <span className="text-xs font-bold">Trạng thái: Hoạt động</span>
+                       <span className="text-xs font-bold">Trạng thái: {statusText}</span>
                     </div>
                   </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             )}
@@ -752,8 +784,18 @@ export function SettingPage() {
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
               {subscriptions.map((sub) => {
-                const price = sub.price.toLocaleString("vi-VN");
-                const isCurrent = currentSubscription?.subscription_id?._id === sub._id;
+                const basePrice = Number(sub.price) || 0;
+                const discountPercent = Number(sub.discount_percent) || 0;
+                const finalPrice = Math.max(0, basePrice - (basePrice * discountPercent) / 100);
+                const price = finalPrice.toLocaleString("vi-VN");
+                const periodLabel = getSubscriptionPeriodLabel(sub.duration_days);
+                const featureRows = [
+                  `Đăng tối đa ${sub.post_limit || 0} bài`,
+                  sub.features?.allow_priority_post ? "Bài đăng ưu tiên" : null,
+                  sub.features?.allow_highlight ? "Làm nổi bật bài đăng" : null,
+                  sub.features?.allow_pin_post ? "Ghim bài đăng" : null
+                ].filter(Boolean);
+                const isCurrent = getSubscriptionFromCurrent(currentSubscription)?._id === sub._id;
 
                 return (
                   <div
@@ -774,20 +816,23 @@ export function SettingPage() {
                       <h3 className="text-xl font-black mb-1">{sub.name}</h3>
                       <div className="flex items-baseline gap-1 mb-6">
                          <span className="text-4xl font-black text-gray-900">{price}đ</span>
-                         <span className="text-gray-400 font-medium">/tháng</span>
+                         <span className="text-gray-400 font-medium">/{periodLabel}</span>
                       </div>
+                      {discountPercent > 0 && (
+                        <p className="text-xs text-emerald-600 font-semibold mb-4">
+                          Giảm {discountPercent}% từ {basePrice.toLocaleString("vi-VN")}đ
+                        </p>
+                      )}
 
                       <div className="space-y-4 mb-8">
                          <p className="text-gray-500 text-sm leading-relaxed">{sub.description}</p>
                          <ul className="space-y-3">
-                            <li className="flex items-center gap-3 text-sm text-gray-600">
-                               <div className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
-                               Tính năng quản lý bàn nâng cao
+                          {featureRows.map((item) => (
+                            <li key={item} className="flex items-center gap-3 text-sm text-gray-600">
+                              <div className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
+                              {item}
                             </li>
-                            <li className="flex items-center gap-3 text-sm text-gray-600">
-                               <div className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
-                               Báo cáo doanh thu chi tiết
-                            </li>
+                          ))}
                          </ul>
                       </div>
                     </div>
