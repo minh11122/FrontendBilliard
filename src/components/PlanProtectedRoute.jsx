@@ -3,7 +3,14 @@ import { Navigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
 export const PlanProtectedRoute = ({ allowedPlans, children }) => {
-  const currentPlan = localStorage.getItem("selected_club_plan") || "free";
+  const normalizePlanType = (rawPlan) => {
+    const value = String(rawPlan || "").toLowerCase().trim();
+    if (value.includes("pro")) return "pro";
+    if (value.includes("basic")) return "basic";
+    return "free";
+  };
+
+  const currentPlan = normalizePlanType(localStorage.getItem("selected_club_plan"));
   const selectedClubId = localStorage.getItem("selected_club_id");
   const isAllowed = allowedPlans.includes(currentPlan);
 

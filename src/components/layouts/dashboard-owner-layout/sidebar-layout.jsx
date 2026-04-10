@@ -40,7 +40,14 @@ export const SidebarOwner = () => {
   const userFullname = localStorage.getItem("user_fullname") || "Chủ quán";
   const clubName = localStorage.getItem("selected_club_name") || "Billiard Club";
 
-  const planType = localStorage.getItem("selected_club_plan") || "free";
+  const normalizePlanType = (rawPlan) => {
+    const value = String(rawPlan || "").toLowerCase().trim();
+    if (value.includes("pro")) return "pro";
+    if (value.includes("basic")) return "basic";
+    return "free";
+  };
+
+  const planType = normalizePlanType(localStorage.getItem("selected_club_plan"));
 
   const navigation = [
     {

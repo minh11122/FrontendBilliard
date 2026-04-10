@@ -121,6 +121,12 @@ export function SettingPage() {
       setCurrentSubscription(current);
       setProvinces(provinceRes || []);
 
+      if (current?.subscription_id?.name) {
+        const planName = String(current.subscription_id.name).toLowerCase();
+        if (planName.includes("pro")) localStorage.setItem("selected_club_plan", "pro");
+        else if (planName.includes("basic")) localStorage.setItem("selected_club_plan", "basic");
+      }
+
       if (clubRes?.data) {
         const club = clubRes.data;
         const avatarImg = club.images?.find(img => img.image_type === "Avatar")?.image_url || "";
