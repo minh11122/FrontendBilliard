@@ -83,7 +83,11 @@ export function LoginForm() {
     onSubmit: async (values, { setSubmitting }) => {
       try {
         const res = await login(values);
-        const { token, role } = res.data;
+        const { token, role, fullname } = res.data;
+
+        if (fullname) {
+          localStorage.setItem("user_fullname", fullname);
+        }
 
         await loginContext(token, role);
 
@@ -108,7 +112,11 @@ export function LoginForm() {
     try {
       const tokenId = credentialResponse.credential;
       const res = await loginGoogle(tokenId);
-      const { token, role } = res.data;
+      const { token, role, fullname } = res.data;
+
+      if (fullname) {
+        localStorage.setItem("user_fullname", fullname);
+      }
 
       await loginContext(token, role);
       handleRoleNavigation(role);

@@ -62,12 +62,6 @@ export const SidebarAdmin = () => {
       icon: FileText,
       badge: badges.posts || null,
     },
-    {
-      name: "Thống kê giải đấu",
-      href: "/systemstaff/systemstaff5",
-      icon: BarChart3,
-      badge: badges.feedbacks || null,
-    },
   ];
 
   return (
@@ -100,7 +94,10 @@ export const SidebarAdmin = () => {
               <p className="text-sm font-bold leading-tight text-slate-900">
                 BilliardsMaster
               </p>
-              <p className="text-[11px] text-slate-400">System Staff</p>
+              <p className="text-[11px] text-slate-400 font-medium">System Staff</p>
+              <p className="text-[11px] font-medium text-slate-600 mt-0.5 truncate max-w-[160px]">
+                {localStorage.getItem("user_fullname") || "Nhân viên hệ thống"}
+              </p>
             </div>
           </div>
           <button

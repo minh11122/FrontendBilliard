@@ -32,6 +32,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("selected_club_name");
     localStorage.removeItem("selected_club_plan");
     sessionStorage.removeItem("postLoginRedirect");
+    localStorage.removeItem("user_fullname");
     setUser(null);
     setAuthLoading(false);
   };

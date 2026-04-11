@@ -259,50 +259,6 @@ const StaffDashboard = () => {
             )}
           </div>
         </div>
-
-        {/* Tournaments */}
-        <div className="max-w-3xl mx-auto">
-          {/* Tournaments preview */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-blue-600" />
-                <h3 className="font-semibold text-gray-900">Giải đấu gần đây</h3>
-              </div>
-            </div>
-            {loading ? (
-              <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
-                {[1, 2, 3, 4].map(i => <div key={i} className="h-14 bg-gray-100 rounded-lg animate-pulse" />)}
-              </div>
-            ) : (data?.tournaments || []).length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-6">Không có giải đấu nào</p>
-            ) : (
-              <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
-                {(data?.tournaments || []).slice(0, 4).map((t, i) => (
-                  <div key={i} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Trophy className="w-4 h-4 text-blue-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-800 truncate">{t.name}</p>
-                      <TournamentBadge status={t.status} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            {!loading && (data?.tournaments || []).length > 0 && (
-              <div className="mt-5 border-t border-gray-100 pt-4">
-                <button
-                  onClick={() => navigate("/systemstaff/systemstaff5")}
-                  className="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center justify-center gap-1"
-                >
-                  Xem tất cả <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
     </div>
   );
