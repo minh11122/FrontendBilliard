@@ -89,7 +89,7 @@ export function LoginForm() {
           localStorage.setItem("user_fullname", fullname);
         }
 
-        await loginContext(token, role);
+        const resolvedUser = await loginContext(token, role);
 
         if (values.rememberMe) {
           Cookies.set("rememberedEmail", values.email, { expires: 7 });
@@ -99,7 +99,7 @@ export function LoginForm() {
           Cookies.remove("rememberedPassword");
         }
 
-        handleRoleNavigation(role);
+        handleRoleNavigation(resolvedUser?.roleName || role);
       } catch (error) {
         toast.error(error.response?.data?.message || "Đăng nhập thất bại");
       } finally {
@@ -118,8 +118,8 @@ export function LoginForm() {
         localStorage.setItem("user_fullname", fullname);
       }
 
-      await loginContext(token, role);
-      handleRoleNavigation(role);
+      const resolvedUser = await loginContext(token, role);
+      handleRoleNavigation(resolvedUser?.roleName || role);
     } catch (error) {
       toast.error(error.response?.data?.message || "Đăng nhập Google thất bại");
     }
