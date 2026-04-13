@@ -10,7 +10,8 @@ const buildUserFromToken = (token, roleName = null) => {
   return {
     id: decoded.accountId,
     roleId: decoded.roleId,
-    roleName,
+    roleName: roleName || decoded.role || null,
+    fullname: localStorage.getItem("user_fullname") || null,
   };
 };
 
@@ -56,13 +57,18 @@ export const AuthProvider = ({ children }) => {
         setAuthLoading(true);
 
         const baseUser = buildUserFromToken(token);
-        const response = await getRoleNameById({ id: baseUser.roleId });
-        const roleName = response.data.name;
 
-        setUser({
-          ...baseUser,
-          roleName,
-        });
+        if (baseUser.roleName) {
+          setUser(baseUser);
+        } else {
+          const response = await getRoleNameById({ id: baseUser.roleId });
+          const roleName = response.data.name;
+
+          setUser({
+            ...baseUser,
+            roleName,
+          });
+        }
       } catch (error) {
         console.error("Token decode failed:", error);
         logout();
@@ -88,7 +94,7 @@ export const AuthProvider = ({ children }) => {
 
       const baseUser = buildUserFromToken(token, roleNameFromServer);
 
-      if (roleNameFromServer) {
+      if (baseUser.roleName) {
         setUser(baseUser);
         return baseUser;
       }
