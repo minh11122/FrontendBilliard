@@ -164,13 +164,13 @@ export function RegisterForm() {
               <GoogleLogin
                 onSuccess={async (res) => {
                   try {
-                    await registerGoogle({
-                      tokenId: res.credential,
-                    });
+                    await registerGoogle(res.credential);
                     toast.success("Đăng ký Google thành công!");
                     navigate("/auth/login");
                   } catch (error) {
-                    toast.error("Đăng ký Google thất bại");
+                    toast.error(
+                      error.response?.data?.message || "Đăng ký Google thất bại",
+                    );
                   }
                 }}
                 onError={() => toast.error("Đăng ký Google thất bại")}
