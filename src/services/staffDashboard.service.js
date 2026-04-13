@@ -56,6 +56,15 @@ export async function unlockClub(id) {
     return res.data;
 }
 
+export async function getPosts(status) {
+    const params = status ? { status } : {};
+    const res = await axios.get(`${BASE_URL}/posts`, {
+        headers: authHeader(),
+        params,
+    });
+    return res.data;
+}
+
 export async function approvePost(id) {
     const res = await axios.patch(`${BASE_URL}/posts/${id}/approve`, {}, {
         headers: authHeader()

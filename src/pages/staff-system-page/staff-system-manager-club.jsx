@@ -49,10 +49,25 @@ const SkeletonRow = () => (
   </tr>
 );
 
+// ─── Image Viewer Modal ──────────────────────────────────────────────────────
+const ImageViewerModal = ({ src, onClose }) => {
+  if (!src) return null;
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4" onClick={onClose}>
+      <button onClick={onClose} className="absolute top-4 right-4 p-2 text-white/70 hover:text-white bg-black/40 hover:bg-black/60 rounded-full transition-colors z-[70]">
+        <X className="w-6 h-6" />
+      </button>
+      <img src={src} alt="Toàn màn hình" className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl" onClick={e => e.stopPropagation()} />
+    </div>
+  );
+};
+
 // ─── Detail Modal ──────────────────────────────────────────────────────────
 const ClubDetailModal = ({ club, onClose }) => {
+  const [viewImage, setViewImage] = useState(null);
   if (!club) return null;
   return (
+    <>
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
@@ -110,7 +125,7 @@ const ClubDetailModal = ({ club, onClose }) => {
                     <p className="text-xs font-semibold text-gray-500 uppercase mb-2">{label}</p>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       {groupImgs.map((img, idx) => (
-                        <div key={idx} className="relative group rounded-lg overflow-hidden border border-gray-200 aspect-video">
+                        <div key={idx} className="relative group rounded-lg overflow-hidden border border-gray-200 aspect-video cursor-pointer hover:opacity-90 transition-opacity" onClick={() => setViewImage(img.image_url)}>
                           <img src={img.image_url} alt={`${label} ${idx + 1}`} className="w-full h-full object-cover" />
                         </div>
                       ))}
@@ -123,7 +138,7 @@ const ClubDetailModal = ({ club, onClose }) => {
         ) : club.legal_document_image ? (
           <div className="mt-6 border-t pt-4">
             <span className="text-gray-800 font-semibold block mb-2">Tài liệu kinh doanh:</span>
-            <img src={club.legal_document_image} alt="Giấy phép" className="w-full md:w-1/3 h-auto rounded-lg border border-gray-200" />
+            <img src={club.legal_document_image} alt="Giấy phép" className="w-full md:w-1/3 h-auto rounded-lg border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity" onClick={() => setViewImage(club.legal_document_image)} />
           </div>
         ) : null}
 
@@ -133,6 +148,8 @@ const ClubDetailModal = ({ club, onClose }) => {
         </button>
       </div>
     </div>
+    {viewImage && <ImageViewerModal src={viewImage} onClose={() => setViewImage(null)} />}
+    </>
   );
 };
 
