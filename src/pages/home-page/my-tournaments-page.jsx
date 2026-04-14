@@ -125,9 +125,19 @@ export const MyTournamentsPage = () => {
               Tất cả
             </button>
             <button 
+              onClick={() => setActiveTab("upcoming")}
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${activeTab === "upcoming" ? "bg-green-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
+              Sắp diễn ra
+            </button>
+            <button 
               onClick={() => setActiveTab("live")}
               className={`px-4 py-2 rounded-lg font-medium transition-all ${activeTab === "live" ? "bg-green-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
               Đang diễn ra
+            </button>
+            <button 
+              onClick={() => setActiveTab("ended")}
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${activeTab === "ended" ? "bg-green-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
+              Đã kết thúc
             </button>
           </div>
         </div>

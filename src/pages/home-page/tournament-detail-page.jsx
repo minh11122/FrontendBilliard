@@ -352,21 +352,44 @@ export default function TournamentDetailPage() {
                 {registeringNow ? "Đang đăng ký..." : "Đăng ký ngay"}
               </button>
             )}
-            {tournament.status === "Closed" && !joined && (
-              <div className="w-full py-3 bg-gray-100 text-gray-600 font-semibold rounded-2xl text-center">
-                Đã đóng đăng ký
-              </div>
-            )}
-            {tournament.status === "InProgress" && !joined && (
-              <div className="w-full py-3 bg-green-50 text-green-600 font-semibold rounded-2xl text-center">
-                Đang diễn ra
-              </div>
-            )}
-            {tournament.status === "Completed" && !joined && (
-              <div className="w-full py-3 bg-gray-100 text-gray-600 font-semibold rounded-2xl text-center">
-                Đã kết thúc
-              </div>
-            )}
+
+            {/* Trạng thái nếu đã tham gia hoặc giải đã đóng/kết thúc */}
+            <div className="flex flex-col gap-3">
+              {(tournament.status === "Open" || tournament.status === "Closed" || tournament.status === "Draft") && joined && (
+                <div className="w-full py-3 bg-green-50 text-green-600 font-semibold rounded-2xl text-center border border-green-100 flex items-center justify-center gap-2">
+                  <CheckCircle size={18} /> Bạn đã đăng ký tham gia
+                </div>
+              )}
+              {tournament.status === "Closed" && !joined && (
+                <div className="w-full py-3 bg-gray-100 text-gray-600 font-semibold rounded-2xl text-center">
+                  Đã đóng đăng ký
+                </div>
+              )}
+              {tournament.status === "InProgress" && (
+                <div className="w-full py-3 bg-blue-50 text-blue-600 font-semibold rounded-2xl text-center border border-blue-100">
+                  {joined ? "Giải đấu đang diễn ra - Chúc bạn thi đấu tốt!" : "Giải đấu đang diễn ra"}
+                </div>
+              )}
+              {tournament.status === "Completed" && (
+                <div className="w-full py-3 bg-gray-100 text-gray-600 font-semibold rounded-2xl text-center">
+                  Giải đấu đã kết thúc
+                </div>
+              )}
+
+              {/* Banner Vô địch */}
+              {tournament.status === "Completed" && 
+               user && 
+               (tournament.champion_account_id === user.id || tournament.champion_account_id?._id === user.id) && (
+                <div className="w-full relative overflow-hidden bg-gradient-to-br from-yellow-400 to-yellow-600 p-4 rounded-2xl shadow-lg shadow-yellow-500/30 text-center animate-fade-in-up mt-2">
+                  <div className="absolute top-0 right-0 -mt-4 -mr-4 text-white opacity-20">
+                    <Trophy size={80} />
+                  </div>
+                  <Trophy size={32} className="mx-auto text-yellow-100 mb-2" />
+                  <p className="text-yellow-100 text-sm font-medium uppercase tracking-widest mb-1">Chúc mừng</p>
+                  <h3 className="text-white text-xl font-black drop-shadow-md">BẠN LÀ NHÀ VÔ ĐỊCH!</h3>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
