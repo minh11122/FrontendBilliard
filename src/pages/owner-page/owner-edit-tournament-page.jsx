@@ -101,20 +101,21 @@ export default function OwnerEditTournamentPage() {
       }
     }
 
-    // Prize > Fee validation
-    const feeNum = Number(form.fee) || 0;
-    const prizeNum = Number(form.prize_pool) || 0;
-    if (feeNum > 0 && prizeNum > 0 && prizeNum <= feeNum) {
-      newErrors.prize = "Giải thưởng phải lớn hơn phí tham gia";
+    // Fee validation
+    const feeRaw = String(form.fee ?? "").trim();
+    const feeNum = Number(feeRaw);
+    if (feeRaw && (Number.isFinite(feeNum) && feeNum < 0)) {
+      newErrors.fee = "Phí tham gia không được là số âm";
     }
 
+    // Prize validation
     const prizeRaw = String(form.prize_pool ?? "").trim();
     const strictPrizeNum = Number(prizeRaw);
     if (!prizeRaw) {
       newErrors.prize = "Vui lòng nhập tiền thưởng";
     } else if (!Number.isFinite(strictPrizeNum) || strictPrizeNum <= 0) {
       newErrors.prize = "Tiền thưởng phải lớn hơn 0";
-    } else if ((Number(form.fee) || 0) > 0 && strictPrizeNum <= (Number(form.fee) || 0)) {
+    } else if ((feeNum || 0) > 0 && strictPrizeNum <= (feeNum || 0)) {
       newErrors.prize = "Tiền thưởng phải lớn hơn phí tham gia";
     }
 
@@ -289,8 +290,9 @@ export default function OwnerEditTournamentPage() {
               <div className="relative">
                 <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input type="number" name="fee" value={form.fee} onChange={handleChange}
-                  placeholder="0 = Miễn phí" min="0" className={`${inputClass} pl-10`} />
+                  placeholder="0 = Miễn phí" min="0" className={`${inputClass} pl-10 ${errors.fee ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`} />
               </div>
+              {errors.fee && <p className="text-red-500 text-xs mt-1.5 font-medium">{errors.fee}</p>}
             </div>
 
             <div>
