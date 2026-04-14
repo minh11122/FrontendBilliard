@@ -1,9 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { getTournamentBracket, getLeaderboard } from "@/services/tournament.service";
 import { Trophy, Users, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 
-const MatchNode = ({ match }) => {
+const MATCH_CARD_WIDTH = 192; // w-48 = 12rem = 192px
+const ROUND_GAP = 48; // gap-12 = 3rem = 48px
+const CONNECTOR_COLOR = "#94a3b8"; // slate-400
+const CONNECTOR_COLOR_FINISHED = "#22c55e"; // green-500
+const CONNECTOR_WIDTH = 2;
+
+const MatchNode = React.forwardRef(({ match }, ref) => {
   const p1 = match.player1_id;
   const p2 = match.player2_id;
 
@@ -12,6 +18,8 @@ const MatchNode = ({ match }) => {
 
   return (
     <div
+      ref={ref}
+      data-match-id={match._id}
       className={`relative flex flex-col bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm w-48 text-sm ${
         match.status === "Playing" ? "ring-2 ring-orange-400" : ""
       }`}
@@ -56,26 +64,213 @@ const MatchNode = ({ match }) => {
       </div>
     </div>
   );
+});
+
+MatchNode.displayName = "MatchNode";
+
+/**
+ * Check if a match should be hidden from bracket display:
+ * - BYE matches (auto-advance, one player against nobody)
+ * - Empty matches (both players are TBD/null — placeholder slots)
+ */
+const isHiddenMatch = (match) => {
+  // Explicit BYE result
+  if (match.result === "BYE") return true;
+
+  // Finished with only 1 player (auto-advance)
+  if (match.status === "Finished" && (!match.player1_id || !match.player2_id)) return true;
+
+  // Both players are null/TBD (empty placeholder match)
+  if (!match.player1_id && !match.player2_id) return true;
+
+  return false;
 };
 
-const RoundColumns = ({ rounds }) => (
-  <div className="overflow-x-auto p-4 bg-slate-50 rounded-xl border border-slate-200 custom-scrollbar">
-    <div className="flex gap-12 min-w-max pb-8 relative">
-      {rounds.map((round) => (
-        <div key={round._id} className="flex flex-col gap-6 w-56 relative z-10 shrink-0">
-          <h3 className="font-bold text-center text-slate-700 bg-white border border-slate-200 py-2 rounded-lg shadow-sm">
-            {round.display_name || round.name || `Vòng ${round.round_number}`}
-          </h3>
-          <div className="flex flex-col gap-8 flex-1 justify-around">
-            {(round.matches || []).map((match) => (
-              <MatchNode key={match._id} match={match} />
-            ))}
+/**
+ * Build a lookup: matchId -> { nextMatchId, nextSlot } from match data
+ * Only includes non-BYE matches that are actually rendered
+ */
+const buildConnectorMap = (rounds, visibleMatchIds) => {
+  const map = {};
+  for (const round of rounds) {
+    for (const match of round.matches || []) {
+      if (!visibleMatchIds.has(match._id)) continue;
+      const nextId = match.winner_next_match_id || match.next_match_id;
+      const nextSlot = match.winner_next_slot || match.next_slot;
+      if (nextId && visibleMatchIds.has(nextId)) {
+        map[match._id] = { nextMatchId: nextId, nextSlot, status: match.status };
+      }
+    }
+  }
+  return map;
+};
+
+/**
+ * Pre-process rounds: filter out BYE matches, then filter out empty rounds.
+ */
+const filterRounds = (rounds) => {
+  // Collect all visible (non-BYE) match IDs
+  const visibleMatchIds = new Set();
+  const filteredRounds = [];
+
+  for (const round of rounds) {
+    const visibleMatches = (round.matches || []).filter((m) => !isHiddenMatch(m));
+    if (visibleMatches.length > 0) {
+      filteredRounds.push({ ...round, matches: visibleMatches });
+      visibleMatches.forEach((m) => visibleMatchIds.add(m._id));
+    }
+  }
+
+  return { filteredRounds, visibleMatchIds };
+};
+
+const RoundColumns = ({ rounds }) => {
+  const containerRef = useRef(null);
+  const matchRefs = useRef({});
+  const [connectors, setConnectors] = useState([]);
+
+  const { filteredRounds, visibleMatchIds } = React.useMemo(
+    () => filterRounds(rounds),
+    [rounds]
+  );
+
+  const setMatchRef = useCallback((matchId, el) => {
+    if (el) {
+      matchRefs.current[matchId] = el;
+    }
+  }, []);
+
+  // Calculate connector lines after render
+  useEffect(() => {
+    const calculateConnectors = () => {
+      const container = containerRef.current;
+      if (!container) return;
+
+      const connectorMap = buildConnectorMap(rounds, visibleMatchIds);
+      const containerRect = container.getBoundingClientRect();
+      const lines = [];
+
+      for (const [matchId, { nextMatchId, nextSlot, status }] of Object.entries(connectorMap)) {
+        const sourceEl = matchRefs.current[matchId];
+        const targetEl = matchRefs.current[nextMatchId];
+
+        if (!sourceEl || !targetEl) continue;
+
+        const sourceRect = sourceEl.getBoundingClientRect();
+        const targetRect = targetEl.getBoundingClientRect();
+
+        // Source: right-center of the match card
+        const startX = sourceRect.right - containerRect.left;
+        const startY = sourceRect.top + sourceRect.height / 2 - containerRect.top;
+
+        // Target: left-center of the next match card
+        const endX = targetRect.left - containerRect.left;
+        const endY = targetRect.top + targetRect.height / 2 - containerRect.top;
+
+        const isFinished = status === "Finished";
+
+        lines.push({
+          id: `${matchId}-${nextMatchId}`,
+          startX,
+          startY,
+          endX,
+          endY,
+          isFinished,
+        });
+      }
+
+      setConnectors(lines);
+    };
+
+    // Small delay to let layout settle
+    const timer = setTimeout(calculateConnectors, 100);
+
+    // Recalculate on resize
+    const resizeObserver = new ResizeObserver(() => {
+      setTimeout(calculateConnectors, 50);
+    });
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    return () => {
+      clearTimeout(timer);
+      resizeObserver.disconnect();
+    };
+  }, [rounds, filteredRounds, visibleMatchIds]);
+
+  return (
+    <div className="overflow-x-auto p-4 bg-slate-50 rounded-xl border border-slate-200 custom-scrollbar">
+      <div ref={containerRef} className="flex gap-12 min-w-max pb-8 relative">
+        {/* SVG connector lines layer */}
+        {connectors.length > 0 && (
+          <svg
+            className="absolute inset-0 pointer-events-none"
+            style={{ width: "100%", height: "100%", overflow: "visible", zIndex: 1 }}
+          >
+            {connectors.map(({ id, startX, startY, endX, endY, isFinished }) => {
+              const midX = (startX + endX) / 2;
+              const color = isFinished ? CONNECTOR_COLOR_FINISHED : CONNECTOR_COLOR;
+
+              return (
+                <g key={id}>
+                  {/* Horizontal line from source to midpoint */}
+                  <line
+                    x1={startX}
+                    y1={startY}
+                    x2={midX}
+                    y2={startY}
+                    stroke={color}
+                    strokeWidth={CONNECTOR_WIDTH}
+                    strokeLinecap="round"
+                  />
+                  {/* Vertical line at midpoint */}
+                  <line
+                    x1={midX}
+                    y1={startY}
+                    x2={midX}
+                    y2={endY}
+                    stroke={color}
+                    strokeWidth={CONNECTOR_WIDTH}
+                    strokeLinecap="round"
+                  />
+                  {/* Horizontal line from midpoint to target */}
+                  <line
+                    x1={midX}
+                    y1={endY}
+                    x2={endX}
+                    y2={endY}
+                    stroke={color}
+                    strokeWidth={CONNECTOR_WIDTH}
+                    strokeLinecap="round"
+                  />
+                </g>
+              );
+            })}
+          </svg>
+        )}
+
+        {/* Round columns — only rounds with non-BYE matches */}
+        {filteredRounds.map((round) => (
+          <div key={round._id} className="flex flex-col gap-6 w-56 relative z-10 shrink-0">
+            <h3 className="font-bold text-center text-slate-700 bg-white border border-slate-200 py-2 rounded-lg shadow-sm">
+              {round.display_name || round.name || `Vòng ${round.round_number}`}
+            </h3>
+            <div className="flex flex-col gap-8 flex-1 justify-around">
+              {(round.matches || []).map((match) => (
+                <MatchNode
+                  key={match._id}
+                  match={match}
+                  ref={(el) => setMatchRef(match._id, el)}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const Section = ({ title, rounds }) => {
   if (!rounds.length) return null;
