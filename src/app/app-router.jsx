@@ -74,7 +74,8 @@ import {
   PostPage,
   OwnerPostPage,
   StaffClubPaymentHistoryPage,
-  CreateStaffSystem
+  CreateStaffSystem,
+  OwnerTournamentDetailPage
 } from "@/pages";
 
 export const router = createBrowserRouter([
@@ -240,6 +241,14 @@ export const router = createBrowserRouter([
             ),
           },
           {
+            path: "tournaments/:id/detail",
+            element: (
+              <PlanProtectedRoute allowedPlans={["pro"]}>
+                <OwnerTournamentDetailPage />
+              </PlanProtectedRoute>
+            ),
+          },
+          {
             path: "tournaments/edit/:id",
             element: (
               <PlanProtectedRoute allowedPlans={["pro"]}>
@@ -279,6 +288,10 @@ export const router = createBrowserRouter([
           {
             path: "tournaments/:id/players",
             element: <TournamentPlayersPage />,
+          },
+          {
+            path: "tournaments/:id/detail",
+            element: <OwnerTournamentDetailPage />,
           },
           { path: "reviews", element: <StaffClubReviewListPage /> },
         ],

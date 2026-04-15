@@ -83,9 +83,8 @@ export const SidebarAdmin = () => {
 
             <div>
               <p className="text-sm font-bold text-slate-900">
-                sMaster
+                Admin
               </p>
-              <p className="text-[11px] text-slate-400 font-medium">Admin Panel</p>
               <p className="text-[11px] font-medium text-slate-600 mt-0.5 truncate max-w-[160px]">
                 {localStorage.getItem("user_fullname") || "Quản trị viên"}
               </p>
@@ -117,8 +116,8 @@ export const SidebarAdmin = () => {
                     to={item.href}
                     onClick={() => setSidebarOpen(false)}
                     className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${isActive
-                        ? "bg-emerald-50 text-emerald-600"
-                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                      ? "bg-emerald-50 text-emerald-600"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                       }`}
                   >
                     <Icon

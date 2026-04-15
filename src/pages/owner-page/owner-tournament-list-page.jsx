@@ -18,7 +18,8 @@ const tabs = [
   { id: "Open", label: "Mở đăng ký", statuses: ["Open"] },
   { id: "Closed", label: "Đóng đăng ký", statuses: ["Closed"] },
   { id: "InProgress", label: "Đang diễn ra", statuses: ["InProgress"] },
-  { id: "Completed", label: "Đã kết thúc", statuses: ["Completed"] }
+  { id: "Completed", label: "Đã kết thúc", statuses: ["Completed"] },
+  { id: "Cancelled", label: "Đã hủy", statuses: ["Cancelled"] }
 ];
 
 const statusBadge = {
@@ -260,6 +261,9 @@ export default function OwnerTournamentListPage() {
                   <div className="flex flex-wrap gap-2">
                     {t.status === "Draft" && (
                       <>
+                        <button onClick={() => navigate(`/owner/tournaments/${t._id}/detail`)} className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:bg-slate-200 transition">
+                          <Info size={14} /> Xem chi tiết
+                        </button>
                         <button onClick={() => handleOpen(t)} className="px-3 py-1.5 bg-[#00A65A] text-white rounded-lg text-xs font-semibold flex items-center gap-1.5">
                           <Sparkles size={14} /> Mở đăng ký
                         </button>
@@ -281,8 +285,11 @@ export default function OwnerTournamentListPage() {
 
                     {t.status === "Open" && (
                       <>
+                        <button onClick={() => navigate(`/owner/tournaments/${t._id}/detail`)} className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:bg-slate-200 transition">
+                          <Info size={14} /> Xem chi tiết
+                        </button>
                         <button onClick={() => handleClose(t)} className="px-3 py-1.5 bg-amber-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5">
-                          <Brackets size={14} /> Chốt & tạo bracket
+                          <Brackets size={14} /> Chốt &amp; tạo bracket
                         </button>
                         {t.registered_player === 0 && (
                           <button onClick={() => navigate(`/owner/tournaments/edit/${t._id}`)} className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5">
@@ -302,6 +309,9 @@ export default function OwnerTournamentListPage() {
 
                     {t.status === "Closed" && (
                       <>
+                        <button onClick={() => navigate(`/owner/tournaments/${t._id}/detail`)} className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:bg-slate-200 transition">
+                          <Info size={14} /> Xem chi tiết
+                        </button>
                         <button onClick={() => handleGenerate(t)} className="px-3 py-1.5 bg-slate-800 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5">
                           <Brackets size={14} /> Random Bracket
                         </button>
@@ -321,6 +331,9 @@ export default function OwnerTournamentListPage() {
 
                     {t.status === "InProgress" && (
                       <>
+                        <button onClick={() => navigate(`/owner/tournaments/${t._id}/detail`)} className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:bg-slate-200 transition">
+                          <Info size={14} /> Xem chi tiết
+                        </button>
                         <button onClick={() => navigate(`/owner/tournaments/${t._id}/bracket`)} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold flex items-center gap-2">
                           <Trophy size={14} /> Sơ đồ & Kết quả
                         </button>
@@ -337,11 +350,25 @@ export default function OwnerTournamentListPage() {
 
                     {t.status === "Completed" && (
                       <>
+                        <button onClick={() => navigate(`/owner/tournaments/${t._id}/detail`)} className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:bg-slate-200 transition">
+                          <Info size={14} /> Xem chi tiết
+                        </button>
                         <button onClick={() => navigate(`/owner/tournaments/${t._id}/players`)} className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5">
                           <Users size={14} /> Người chơi
                         </button>
                         <button onClick={() => navigate(`/owner/tournaments/${t._id}/bracket`)} className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5">
                           <Trophy size={14} /> Xem kết quả
+                        </button>
+                      </>
+                    )}
+
+                    {t.status === "Cancelled" && (
+                      <>
+                        <button onClick={() => navigate(`/owner/tournaments/${t._id}/detail`)} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:bg-red-100 transition">
+                          <Info size={14} /> Xem chi tiết
+                        </button>
+                        <button onClick={() => navigate(`/owner/tournaments/${t._id}/players`)} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:bg-red-100 transition">
+                          <Users size={14} /> Người đăng ký
                         </button>
                       </>
                     )}
