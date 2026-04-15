@@ -20,11 +20,13 @@ import {
   createAccount,
 } from "@/services/admin.service";
 
+
 const STATUS_STYLE = {
   ACTIVE: "bg-emerald-100 text-emerald-700 border border-emerald-200",
   BANNED: "bg-rose-100 text-rose-700 border border-rose-200",
   PENDING: "bg-amber-100 text-amber-700 border border-amber-200",
 };
+
 
 const ROLE_COLORS = [
   "bg-violet-100 text-violet-700",
@@ -32,6 +34,7 @@ const ROLE_COLORS = [
   "bg-teal-100 text-teal-700",
   "bg-orange-100 text-orange-700",
 ];
+
 
 const roleColorMap = {};
 let roleColorIdx = 0;
@@ -43,6 +46,7 @@ const getRoleColor = (role) => {
   }
   return roleColorMap[role];
 };
+
 
 const Avatar = ({ src, name, size = "sm" }) => {
   const dim = size === "lg" ? "w-14 h-14 text-xl" : "w-9 h-9 text-sm";
@@ -61,11 +65,14 @@ const Avatar = ({ src, name, size = "sm" }) => {
   );
 };
 
+
 export const AccountManagement = () => {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState("ALL");
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [showModal, setShowModal] = useState(false);
+
 
   const [accounts, setAccounts] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -82,6 +89,7 @@ export const AccountManagement = () => {
   });
   const [loading, setLoading] = useState(false);
 
+
   const fetchAccounts = async (page = 1) => {
     try {
       setLoading(true);
@@ -90,6 +98,7 @@ export const AccountManagement = () => {
         limit: 10,
         search,
         role: roleFilter,
+        status: statusFilter,
       });
       setAccounts(res.data.data);
       setPagination(res.data.pagination);
@@ -100,9 +109,11 @@ export const AccountManagement = () => {
     }
   };
 
+
   useEffect(() => {
     fetchAccounts(1);
   }, []);
+
 
   const handleBan = async (id, status) => {
     try {
@@ -115,6 +126,7 @@ export const AccountManagement = () => {
       toast.error("Có lỗi xảy ra!");
     }
   };
+
 
   const handleDelete = (id) => {
     toast(
@@ -152,8 +164,10 @@ export const AccountManagement = () => {
     );
   };
 
+
   const totalPages = pagination.totalPages || 1;
   const currentPage = pagination.page || 1;
+
 
   const pageNumbers = (() => {
     const pages = [];
@@ -168,6 +182,7 @@ export const AccountManagement = () => {
     return pages;
   })();
 
+
   const handleCreate = async () => {
     try {
       const res = await createAccount({
@@ -177,7 +192,9 @@ export const AccountManagement = () => {
         phone: form.phone,
       });
 
+
       toast.success(res.data.message || "Tạo nhân viên thành công");
+
 
       setShowCreateModal(false);
       setForm({ fullname: "", email: "", password: "", phone: "" });
@@ -185,9 +202,11 @@ export const AccountManagement = () => {
     } catch (error) {
       console.log(error); // 👈 debug
 
+
       toast.error(error?.response?.data?.message || "Tạo thất bại");
     }
   };
+
 
   return (
     <div className="min-h-screen bg-gray-50/60 p-8">
@@ -203,6 +222,7 @@ export const AccountManagement = () => {
       `}</style>
       <Toaster position="top-right" />
 
+
       <div className="acc-root max-w-6xl mx-auto space-y-6">
         {/* ── Header ── */}
         <div className="flex items-center justify-between">
@@ -215,6 +235,7 @@ export const AccountManagement = () => {
             </h1>
           </div>
 
+
           <button
             onClick={() => setShowCreateModal(true)}
             className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-emerald-200 transition-all"
@@ -222,6 +243,7 @@ export const AccountManagement = () => {
             + Tạo nhân viên
           </button>
         </div>
+
 
         {/* ── Stats strip ── */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -252,6 +274,7 @@ export const AccountManagement = () => {
           ))}
         </div>
 
+
         {/* ── Filters ── */}
         <div className="bg-white border border-gray-100 rounded-2xl px-5 py-4 shadow-sm flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
           <div className="relative w-full sm:w-80">
@@ -266,7 +289,8 @@ export const AccountManagement = () => {
             />
           </div>
 
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-2 flex-wrap">
             <Filter className="h-4 w-4 text-gray-400 shrink-0" />
             <select
               value={roleFilter}
@@ -275,10 +299,22 @@ export const AccountManagement = () => {
             >
               <option value="ALL">Tất cả vai trò</option>
               <option value="CUSTOMER">Customer</option>
-              <option value="STAFF_SYSTEM">Staff System</option>
               <option value="STAFF_CLUB">Staff Club</option>
               <option value="OWNER">Owner</option>
             </select>
+
+
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="acc-input border border-gray-200 bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-700 transition-all"
+            >
+              <option value="ALL">Tat ca trang thai</option>
+              <option value="ACTIVE">Active</option>
+              <option value="BANNED">Banned</option>
+              <option value="PENDING">Pending</option>
+            </select>
+
 
             <button
               onClick={() => fetchAccounts(1)}
@@ -288,6 +324,7 @@ export const AccountManagement = () => {
             </button>
           </div>
         </div>
+
 
         {/* ── Table ── */}
         <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
@@ -310,6 +347,7 @@ export const AccountManagement = () => {
                 ))}
               </tr>
             </thead>
+
 
             <tbody className="divide-y divide-gray-50">
               {loading
@@ -347,6 +385,7 @@ export const AccountManagement = () => {
                         </div>
                       </td>
 
+
                       {/* Role */}
                       <td className="px-5 py-3.5">
                         <span
@@ -357,6 +396,7 @@ export const AccountManagement = () => {
                         </span>
                       </td>
 
+
                       {/* Status */}
                       <td className="px-5 py-3.5">
                         <span
@@ -366,10 +406,12 @@ export const AccountManagement = () => {
                         </span>
                       </td>
 
+
                       {/* Date */}
                       <td className="px-5 py-3.5 text-gray-500 text-xs">
                         {new Date(acc.created_at).toLocaleDateString("vi-VN")}
                       </td>
+
 
                       {/* Actions */}
                       <td className="px-5 py-3.5 text-right">
@@ -393,6 +435,7 @@ export const AccountManagement = () => {
                             {acc.status === "BANNED" ? "Bỏ ban" : "Ban"}
                           </button>
 
+
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -409,6 +452,7 @@ export const AccountManagement = () => {
             </tbody>
           </table>
 
+
           {!loading && accounts.length === 0 && (
             <div className="flex flex-col items-center justify-center py-20 text-gray-400 gap-2">
               <User className="w-10 h-10 opacity-30" />
@@ -416,6 +460,7 @@ export const AccountManagement = () => {
             </div>
           )}
         </div>
+
 
         {/* ── Pagination ── */}
         <div className="bg-white border border-gray-100 rounded-2xl px-5 py-3 shadow-sm flex items-center justify-between">
@@ -427,6 +472,7 @@ export const AccountManagement = () => {
             </span>
           </p>
 
+
           <div className="flex items-center gap-1.5">
             <button
               disabled={currentPage === 1}
@@ -435,6 +481,7 @@ export const AccountManagement = () => {
             >
               <ChevronLeft className="w-4 h-4" /> Trước
             </button>
+
 
             {pageNumbers.map((n) => (
               <button
@@ -450,6 +497,7 @@ export const AccountManagement = () => {
               </button>
             ))}
 
+
             <button
               disabled={currentPage === totalPages}
               onClick={() => fetchAccounts(currentPage + 1)}
@@ -460,6 +508,7 @@ export const AccountManagement = () => {
           </div>
         </div>
       </div>
+
 
       {/* ══ DETAIL MODAL ══ */}
       {showModal && selectedAccount && (
@@ -501,6 +550,7 @@ export const AccountManagement = () => {
               </div>
             </div>
 
+
             {/* Body */}
             <div className="px-6 py-5 space-y-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
@@ -516,6 +566,7 @@ export const AccountManagement = () => {
                   </span>
                 </div>
 
+
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
                     Trạng thái
@@ -527,6 +578,7 @@ export const AccountManagement = () => {
                   </span>
                 </div>
 
+
                 <div className="col-span-2">
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
                     Số điện thoại
@@ -535,6 +587,7 @@ export const AccountManagement = () => {
                     {selectedAccount.phone || "Không có"}
                   </p>
                 </div>
+
 
                 <div className="col-span-2">
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
@@ -548,6 +601,7 @@ export const AccountManagement = () => {
                 </div>
               </div>
             </div>
+
 
             <div className="px-6 pb-5">
               <button
@@ -588,6 +642,7 @@ export const AccountManagement = () => {
                   </div>
                 </div>
 
+
                 <button
                   onClick={() => setShowCreateModal(false)}
                   className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 transition-colors text-white"
@@ -596,6 +651,7 @@ export const AccountManagement = () => {
                 </button>
               </div>
             </div>
+
 
             {/* Body giống DETAIL nhưng là INPUT */}
             <div className="px-6 py-5 space-y-4">
@@ -615,6 +671,7 @@ export const AccountManagement = () => {
                   />
                 </div>
 
+
                 {/* EMAIL */}
                 <div className="col-span-2">
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
@@ -630,6 +687,7 @@ export const AccountManagement = () => {
                   />
                 </div>
 
+
                 {/* PHONE */}
                 <div className="col-span-2">
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
@@ -644,6 +702,7 @@ export const AccountManagement = () => {
                     placeholder="Nhập số điện thoại..."
                   />
                 </div>
+
 
                 {/* PASSWORD */}
                 <div className="col-span-2">
@@ -661,6 +720,7 @@ export const AccountManagement = () => {
                   />
                 </div>
 
+
                 {/* ROLE FIXED */}
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
@@ -671,6 +731,7 @@ export const AccountManagement = () => {
                     STAFF_SYSTEM
                   </span>
                 </div>
+
 
                 {/* STATUS */}
                 <div>
@@ -684,6 +745,7 @@ export const AccountManagement = () => {
               </div>
             </div>
 
+
             {/* Footer giống DETAIL */}
             <div className="px-6 pb-5 flex gap-2">
               <button
@@ -692,6 +754,7 @@ export const AccountManagement = () => {
               >
                 Hủy
               </button>
+
 
               <button
                 onClick={handleCreate}
@@ -706,3 +769,6 @@ export const AccountManagement = () => {
     </div>
   );
 };
+
+
+

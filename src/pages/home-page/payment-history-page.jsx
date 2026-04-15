@@ -1,13 +1,16 @@
 import { useContext, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Clock, CreditCard, Search } from "lucide-react";
+import { Clock, CreditCard, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import toast from "react-hot-toast";
+
 
 import { AuthContext } from "@/context/AuthContext";
 import { transactionService } from "@/services/transaction.service";
 
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+
 
 const TYPE_META = {
   BOOKING_DEPOSIT: "Cọc đặt bàn",
@@ -16,6 +19,7 @@ const TYPE_META = {
   TOURNAMENT_FEE: "Phí tham gia giải đấu",
   SUBSCRIPTION: "Thanh toán gói subscription",
 };
+
 
 const StatusPill = ({ status }) => {
   const map = {
@@ -31,16 +35,19 @@ const StatusPill = ({ status }) => {
   );
 };
 
+
 const formatMoney = (n) => {
   if (n === null || n === undefined) return "0đ";
   const num = Number(n) || 0;
   return `${num.toLocaleString("vi-VN")}đ`;
 };
 
+
 const formatDateTime = (d) => {
   if (!d) return "—";
   return new Date(d).toLocaleString("vi-VN");
 };
+
 
 const getContentLabel = (tx) => {
   if (tx.booking?.code_number) {
@@ -52,14 +59,19 @@ const getContentLabel = (tx) => {
   return "—";
 };
 
+
 export const PaymentHistoryPage = () => {
+  const ITEMS_PER_PAGE = 15;
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
+
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [transactions, setTransactions] = useState([]);
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+
 
   useEffect(() => {
     if (!user?.id) {
@@ -67,6 +79,7 @@ export const PaymentHistoryPage = () => {
       navigate("/auth/login");
       return;
     }
+
 
     const fetchData = async () => {
       try {
@@ -85,8 +98,10 @@ export const PaymentHistoryPage = () => {
       }
     };
 
+
     fetchData();
   }, [user?.id, navigate]);
+
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -96,6 +111,30 @@ export const PaymentHistoryPage = () => {
       return text.includes(q);
     });
   }, [transactions, search]);
+
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const paginatedTransactions = useMemo(
+    () =>
+      filtered.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE,
+      ),
+    [filtered, currentPage],
+  );
+
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
 
   return (
     <div className="min-h-screen bg-white  text-slate-900">
@@ -108,16 +147,21 @@ export const PaymentHistoryPage = () => {
             </p>
           </div>
 
+
           <div className="relative w-full sm:w-[320px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
               className="w-full pl-9 h-11 rounded-xl bg-white border-slate-200"
               placeholder="Tìm theo mô tả hoặc loại giao dịch..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
             />
           </div>
         </div>
+
 
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
@@ -129,6 +173,7 @@ export const PaymentHistoryPage = () => {
               </span>
             </div>
           </div>
+
 
           {loading ? (
             <div className="p-8 text-center text-slate-500">Đang tải...</div>
@@ -156,7 +201,7 @@ export const PaymentHistoryPage = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filtered.map((tx) => (
+                  {paginatedTransactions.map((tx) => (
                     <tr key={tx._id} className="hover:bg-slate-50/70 transition-colors">
                       <td className="px-6 py-4 text-sm text-slate-600">
                         {formatDateTime(tx.transaction_time)}
@@ -181,6 +226,40 @@ export const PaymentHistoryPage = () => {
           )}
         </div>
 
+
+        {filtered.length > 0 && (
+          <div className="mt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <p className="text-sm text-slate-500">
+              Trang <span className="font-bold text-slate-900">{currentPage}</span> / {totalPages}
+            </p>
+
+
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                className="rounded-xl"
+              >
+                <ChevronLeft className="w-4 h-4" /> Truoc
+              </Button>
+
+
+              <Button
+                type="button"
+                variant="outline"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                className="rounded-xl"
+              >
+                Sau <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+
         <div className="mt-5 text-xs text-slate-500">
           Lưu ý: một số giao dịch chưa hoàn tất có thể hiển thị trạng thái “Đang xử lý”.
         </div>
@@ -189,5 +268,10 @@ export const PaymentHistoryPage = () => {
   );
 };
 
+
 export default PaymentHistoryPage;
+
+
+
+
 

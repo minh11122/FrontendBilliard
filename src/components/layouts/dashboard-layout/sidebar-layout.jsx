@@ -15,16 +15,19 @@ import {
 } from "lucide-react";
 import { AuthContext } from "@/context/AuthContext";
 
+
 export const SidebarAdmin = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useContext(AuthContext);
 
+
   const handleLogout = () => {
     logout();
     navigate("/");
   };
+
 
   const navigation = [
     {
@@ -54,6 +57,7 @@ export const SidebarAdmin = () => {
     },
   ];
 
+
   return (
     <>
       {/* Overlay mobile */}
@@ -63,6 +67,7 @@ export const SidebarAdmin = () => {
           onClick={() => setSidebarOpen(false)}
         />
       )}
+
 
       {/* Sidebar */}
       <aside
@@ -81,15 +86,18 @@ export const SidebarAdmin = () => {
               <Shield className="h-5 w-5 text-white" />
             </div>
 
+
             <div>
               <p className="text-sm font-bold text-slate-900">
-                Admin
+                BilliardsMaster
               </p>
+              <p className="text-[11px] text-slate-400 font-medium">Admin Panel</p>
               <p className="text-[11px] font-medium text-slate-600 mt-0.5 truncate max-w-[160px]">
                 {localStorage.getItem("user_fullname") || "Quản trị viên"}
               </p>
             </div>
           </div>
+
 
           <button
             className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 lg:hidden"
@@ -99,33 +107,40 @@ export const SidebarAdmin = () => {
           </button>
         </div>
 
+
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto px-3 py-4">
           <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
             Quản trị
           </p>
 
+
           <ul className="space-y-0.5">
             {navigation.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.href;
+
 
               return (
                 <li key={item.name}>
                   <NavLink
                     to={item.href}
                     onClick={() => setSidebarOpen(false)}
-                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${isActive
-                      ? "bg-emerald-50 text-emerald-600"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                      }`}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
+                      isActive
+                        ? "bg-emerald-50 text-emerald-600"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    }`}
                   >
                     <Icon
-                      className={`h-4 w-4 shrink-0 ${isActive ? "text-emerald-500" : "text-slate-400"
-                        }`}
+                      className={`h-4 w-4 shrink-0 ${
+                        isActive ? "text-emerald-500" : "text-slate-400"
+                      }`}
                     />
 
+
                     <span className="flex-1">{item.name}</span>
+
 
                     {isActive && (
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
@@ -137,16 +152,20 @@ export const SidebarAdmin = () => {
           </ul>
         </nav>
 
+
         {/* Footer */}
         <div className="border-t border-slate-100 px-3 py-3">
 
-          <button
+
+         
+{/* <button
             onClick={() => navigate("/admin/settings")}
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
           >
             <Settings className="h-4 w-4 text-slate-400" />
             <span>Cài đặt</span>
-          </button>
+          </button> */}
+
 
           <button
             onClick={handleLogout}
@@ -156,8 +175,10 @@ export const SidebarAdmin = () => {
             <span>Đăng xuất</span>
           </button>
 
+
         </div>
       </aside>
+
 
       {/* Mobile menu */}
       <Button
@@ -171,3 +192,4 @@ export const SidebarAdmin = () => {
     </>
   );
 };
+
