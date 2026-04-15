@@ -153,6 +153,7 @@ export default function OwnerTournamentPlayersPage() {
                   <tr className="text-left text-slate-500">
                     <th className="py-3 px-4 font-bold">Người chơi</th>
                     <th className="py-3 px-4 font-bold">SĐT</th>
+                    <th className="py-3 px-4 font-bold">Email</th>
                     <th className="py-3 px-4 font-bold">Trạng thái</th>
                     <th className="py-3 px-4 font-bold">Lệ phí</th>
                     <th className="py-3 px-4 font-bold">Thời điểm</th>
@@ -165,6 +166,7 @@ export default function OwnerTournamentPlayersPage() {
                       <tr key={p._id || `${idx}-${acc.fullname || "player"}`} className="border-t border-slate-100">
                         <td className="py-3 px-4 font-semibold text-slate-800">{acc.fullname || "—"}</td>
                         <td className="py-3 px-4 text-slate-700">{acc.phone || "—"}</td>
+                        <td className="py-3 px-4 text-slate-700 font-medium">{acc.email || "—"}</td>
                         <td className="py-3 px-4">
                           <span
                             className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${statusBadge(
@@ -175,8 +177,8 @@ export default function OwnerTournamentPlayersPage() {
                           </span>
                         </td>
                         <td className="py-3 px-4 font-bold text-slate-800">
-                          {Number(p.fee_ammount || 0) > 0
-                            ? `${Number(p.fee_ammount).toLocaleString("vi-VN")} VNĐ`
+                          {Number(p.fee_amount || 0) > 0
+                            ? `${Number(p.fee_amount).toLocaleString("vi-VN")} VNĐ`
                             : "Miễn phí"}
                         </td>
                         <td className="py-3 px-4 text-slate-600">{formatDateTime(p.register_date)}</td>

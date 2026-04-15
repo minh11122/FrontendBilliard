@@ -94,11 +94,14 @@ export const SidebarClub = () => {
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500">
                 <Store className="h-5 w-5 text-white" />
               </div>
-              <div>
-                <span className="text-lg font-semibold text-foreground">
+              <div className="min-w-0">
+                <span className="text-lg font-semibold text-foreground block truncate">
                   Staff Club
                 </span>
-                <p className="text-xs text-muted-foreground">Nhân viên</p>
+                <p className="text-[11px] text-muted-foreground font-medium">Nhân viên</p>
+                <p className="text-[11px] font-medium text-slate-600 mt-0.5 truncate max-w-[160px]">
+                  {localStorage.getItem("user_fullname") || "Tài khoản"}
+                </p>
               </div>
             </div>
             <Button

@@ -51,7 +51,6 @@ import {
   SystemStaff1,
   SystemStaff2,
   SystemStaff3,
-  SystemStaff4,
   ProfilePage,
   AdminSettings,
   SettingPage,
@@ -112,8 +111,22 @@ export const router = createBrowserRouter([
           { path: "/booking", element: <BookingPage /> },
           { path: "/booking/:id", element: <ClubDetailPage /> },
           { path: "/payment/:bookingId", element: <PaymentPage /> },
-          { path: "/my-bookings", element: <BookingHistoryPage /> },
-          { path: "/payment-history", element: <PaymentHistoryPage /> },
+          {
+            path: "/my-bookings",
+            element: (
+              <ProtectedRoute allowedRoles={["CUSTOMER"]}>
+                <BookingHistoryPage />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "/payment-history",
+            element: (
+              <ProtectedRoute allowedRoles={["CUSTOMER"]}>
+                <PaymentHistoryPage />
+              </ProtectedRoute>
+            ),
+          },
           {
             path: "/my-tournaments",
             element: (
@@ -126,7 +139,14 @@ export const router = createBrowserRouter([
             path: "/register-owner-account",
             element: <RegisterOwnerAccount />,
           },
-          { path: "/profile", element: <ProfilePage /> },
+          {
+            path: "/profile",
+            element: (
+              <ProtectedRoute allowedRoles={["CUSTOMER"]}>
+                <ProfilePage />
+              </ProtectedRoute>
+            ),
+          },
           { path: "/posts", element: <PostPage /> },
         ],
       },
@@ -263,7 +283,6 @@ export const router = createBrowserRouter([
           { path: "systemstaff2", element: <SystemStaff1 /> },
           { path: "systemstaff3", element: <SystemStaff2 /> },
           { path: "systemstaff4", element: <SystemStaff3 /> },
-          { path: "systemstaff5", element: <SystemStaff4 /> },
         ],
       },
     ],

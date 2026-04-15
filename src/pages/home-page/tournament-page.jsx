@@ -60,11 +60,13 @@ export const TournamentPage = () => {
       button: "Xem trực tiếp",
       buttonStyle: "bg-blue-600 hover:bg-blue-700 text-white",
     },
-    ended: {
-      label: "Đã kết thúc",
-      color: "bg-gray-200 text-gray-600",
-      button: "Xem kết quả",
       buttonStyle: "bg-gray-200 text-gray-500 cursor-not-allowed",
+    },
+    cancelled: {
+      label: "Đã hủy",
+      color: "bg-red-100 text-red-600",
+      button: "Xem chi tiết",
+      buttonStyle: "bg-red-50 text-red-600 hover:bg-red-100",
     },
   };
 
@@ -156,6 +158,7 @@ export const TournamentPage = () => {
               // Map db status to ui status
               let uiStatus = "upcoming";
               if (t.status === "InProgress") uiStatus = "live";
+              if (t.status === "Cancelled") uiStatus = "cancelled";
               if (t.status === "Completed") uiStatus = "ended";
 
               const cfg = statusConfig[uiStatus];

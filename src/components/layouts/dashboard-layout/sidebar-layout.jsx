@@ -85,7 +85,10 @@ export const SidebarAdmin = () => {
               <p className="text-sm font-bold text-slate-900">
                 BilliardsMaster
               </p>
-              <p className="text-[11px] text-slate-400">Admin Panel</p>
+              <p className="text-[11px] text-slate-400 font-medium">Admin Panel</p>
+              <p className="text-[11px] font-medium text-slate-600 mt-0.5 truncate max-w-[160px]">
+                {localStorage.getItem("user_fullname") || "Quản trị viên"}
+              </p>
             </div>
           </div>
 

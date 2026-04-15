@@ -1,37 +1,53 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback, useContext } from "react";
 import { getTournamentBracket, getLeaderboard } from "@/services/tournament.service";
 import { Trophy, Users, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
+import { AuthContext } from "@/context/AuthContext";
 
-const MatchNode = ({ match }) => {
+const MATCH_CARD_WIDTH = 192; // w-48 = 12rem = 192px
+const ROUND_GAP = 48; // gap-12 = 3rem = 48px
+const CONNECTOR_COLOR = "#94a3b8"; // slate-400
+const CONNECTOR_COLOR_FINISHED = "#22c55e"; // green-500
+const CONNECTOR_WIDTH = 2;
+
+const MatchNode = React.forwardRef(({ match, currentUserId }, ref) => {
   const p1 = match.player1_id;
   const p2 = match.player2_id;
 
   const p1Winner = match.winner_id?._id === p1?._id || match.winner_id === p1?._id;
   const p2Winner = match.winner_id?._id === p2?._id || match.winner_id === p2?._id;
 
+  const p1IsMe = currentUserId && p1 && (p1._id === currentUserId || p1.account_id === currentUserId);
+  const p2IsMe = currentUserId && p2 && (p2._id === currentUserId || p2.account_id === currentUserId);
+  const hasMe = p1IsMe || p2IsMe;
+
   return (
     <div
-      className={`relative flex flex-col bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm w-48 text-sm ${
-        match.status === "Playing" ? "ring-2 ring-orange-400" : ""
+      ref={ref}
+      data-match-id={match._id}
+      className={`relative flex flex-col bg-white border rounded-lg overflow-hidden shadow-sm w-48 text-sm transition-all ${
+        hasMe ? "border-orange-300 ring-1 ring-orange-300 shadow-orange-100 shadow-md" : "border-slate-200"
+      } ${
+        match.status === "Playing" ? "ring-2 ring-orange-500" : ""
       }`}
     >
-      <div className="bg-slate-50 border-b border-slate-200 px-2 py-1 flex justify-between items-center text-[10px] font-bold text-slate-500 uppercase">
+      <div className={`border-b px-2 py-1 flex justify-between items-center text-[10px] font-bold uppercase ${hasMe ? "bg-orange-50/50 border-orange-100 text-orange-600" : "bg-slate-50 border-slate-200 text-slate-500"}`}>
         <span>{match.status}</span>
         {match.race_to > 0 && <span>Chạm {match.race_to}</span>}
       </div>
 
       <div
-        className={`flex justify-between items-center px-3 py-2 border-b border-slate-100 ${
-          p1Winner ? "bg-green-50" : ""
+        className={`flex justify-between items-center px-3 py-2 border-b ${
+          p1Winner ? (p1IsMe ? "bg-green-100 border-green-200" : "bg-green-50 border-slate-100") : (p1IsMe ? "bg-orange-50 border-orange-100" : "border-slate-100")
         }`}
       >
         <span
-          className={`truncate font-medium ${
-            p1Winner ? "text-green-700 font-bold" : "text-slate-800"
+          className={`truncate font-medium flex items-center gap-1 ${
+            p1Winner ? "text-green-700 font-bold" : p1IsMe ? "text-orange-700 font-bold" : "text-slate-800"
           }`}
         >
           {p1 ? p1.fullname : <span className="text-slate-400 italic">TBD</span>}
+          {p1IsMe && <span className="text-[9px] bg-orange-200 text-orange-800 px-1.5 py-0.5 rounded-full inline-block leading-none">BẠN</span>}
         </span>
         <span className="font-bold text-slate-900 ml-2">
           {match.player1_score > 0 || match.status === "Finished" ? match.player1_score : "-"}
@@ -40,15 +56,16 @@ const MatchNode = ({ match }) => {
 
       <div
         className={`flex justify-between items-center px-3 py-2 ${
-          p2Winner ? "bg-green-50" : ""
+          p2Winner ? (p2IsMe ? "bg-green-100" : "bg-green-50") : (p2IsMe ? "bg-orange-50" : "")
         }`}
       >
         <span
-          className={`truncate font-medium ${
-            p2Winner ? "text-green-700 font-bold" : "text-slate-800"
+          className={`truncate font-medium flex items-center gap-1 ${
+            p2Winner ? "text-green-700 font-bold" : p2IsMe ? "text-orange-700 font-bold" : "text-slate-800"
           }`}
         >
           {p2 ? p2.fullname : <span className="text-slate-400 italic">TBD</span>}
+          {p2IsMe && <span className="text-[9px] bg-orange-200 text-orange-800 px-1.5 py-0.5 rounded-full inline-block leading-none">BẠN</span>}
         </span>
         <span className="font-bold text-slate-900 ml-2">
           {match.player2_score > 0 || match.status === "Finished" ? match.player2_score : "-"}
@@ -56,28 +73,216 @@ const MatchNode = ({ match }) => {
       </div>
     </div>
   );
+});
+
+MatchNode.displayName = "MatchNode";
+
+/**
+ * Check if a match should be hidden from bracket display:
+ * - BYE matches (auto-advance, one player against nobody)
+ * - Empty matches (both players are TBD/null — placeholder slots)
+ */
+const isHiddenMatch = (match) => {
+  // Explicit BYE result
+  if (match.result === "BYE") return true;
+
+  // Finished with only 1 player (auto-advance)
+  if (match.status === "Finished" && (!match.player1_id || !match.player2_id)) return true;
+
+  // Both players are null/TBD (empty placeholder match)
+  if (!match.player1_id && !match.player2_id) return true;
+
+  return false;
 };
 
-const RoundColumns = ({ rounds }) => (
-  <div className="overflow-x-auto p-4 bg-slate-50 rounded-xl border border-slate-200 custom-scrollbar">
-    <div className="flex gap-12 min-w-max pb-8 relative">
-      {rounds.map((round) => (
-        <div key={round._id} className="flex flex-col gap-6 w-56 relative z-10 shrink-0">
-          <h3 className="font-bold text-center text-slate-700 bg-white border border-slate-200 py-2 rounded-lg shadow-sm">
-            {round.display_name || round.name || `Vòng ${round.round_number}`}
-          </h3>
-          <div className="flex flex-col gap-8 flex-1 justify-around">
-            {(round.matches || []).map((match) => (
-              <MatchNode key={match._id} match={match} />
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-);
+/**
+ * Build a lookup: matchId -> { nextMatchId, nextSlot } from match data
+ * Only includes non-BYE matches that are actually rendered
+ */
+const buildConnectorMap = (rounds, visibleMatchIds) => {
+  const map = {};
+  for (const round of rounds) {
+    for (const match of round.matches || []) {
+      if (!visibleMatchIds.has(match._id)) continue;
+      const nextId = match.winner_next_match_id || match.next_match_id;
+      const nextSlot = match.winner_next_slot || match.next_slot;
+      if (nextId && visibleMatchIds.has(nextId)) {
+        map[match._id] = { nextMatchId: nextId, nextSlot, status: match.status };
+      }
+    }
+  }
+  return map;
+};
 
-const Section = ({ title, rounds }) => {
+/**
+ * Pre-process rounds: filter out BYE matches, then filter out empty rounds.
+ */
+const filterRounds = (rounds) => {
+  // Collect all visible (non-BYE) match IDs
+  const visibleMatchIds = new Set();
+  const filteredRounds = [];
+
+  for (const round of rounds) {
+    const visibleMatches = (round.matches || []).filter((m) => !isHiddenMatch(m));
+    if (visibleMatches.length > 0) {
+      filteredRounds.push({ ...round, matches: visibleMatches });
+      visibleMatches.forEach((m) => visibleMatchIds.add(m._id));
+    }
+  }
+
+  return { filteredRounds, visibleMatchIds };
+};
+
+const RoundColumns = ({ rounds, currentUserId }) => {
+  const containerRef = useRef(null);
+  const matchRefs = useRef({});
+  const [connectors, setConnectors] = useState([]);
+
+  const { filteredRounds, visibleMatchIds } = React.useMemo(
+    () => filterRounds(rounds),
+    [rounds]
+  );
+
+  const setMatchRef = useCallback((matchId, el) => {
+    if (el) {
+      matchRefs.current[matchId] = el;
+    }
+  }, []);
+
+  // Calculate connector lines after render
+  useEffect(() => {
+    const calculateConnectors = () => {
+      const container = containerRef.current;
+      if (!container) return;
+
+      const connectorMap = buildConnectorMap(rounds, visibleMatchIds);
+      const containerRect = container.getBoundingClientRect();
+      const lines = [];
+
+      for (const [matchId, { nextMatchId, nextSlot, status }] of Object.entries(connectorMap)) {
+        const sourceEl = matchRefs.current[matchId];
+        const targetEl = matchRefs.current[nextMatchId];
+
+        if (!sourceEl || !targetEl) continue;
+
+        const sourceRect = sourceEl.getBoundingClientRect();
+        const targetRect = targetEl.getBoundingClientRect();
+
+        // Source: right-center of the match card
+        const startX = sourceRect.right - containerRect.left;
+        const startY = sourceRect.top + sourceRect.height / 2 - containerRect.top;
+
+        // Target: left-center of the next match card
+        const endX = targetRect.left - containerRect.left;
+        const endY = targetRect.top + targetRect.height / 2 - containerRect.top;
+
+        const isFinished = status === "Finished";
+
+        lines.push({
+          id: `${matchId}-${nextMatchId}`,
+          startX,
+          startY,
+          endX,
+          endY,
+          isFinished,
+        });
+      }
+
+      setConnectors(lines);
+    };
+
+    // Small delay to let layout settle
+    const timer = setTimeout(calculateConnectors, 100);
+
+    // Recalculate on resize
+    const resizeObserver = new ResizeObserver(() => {
+      setTimeout(calculateConnectors, 50);
+    });
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    return () => {
+      clearTimeout(timer);
+      resizeObserver.disconnect();
+    };
+  }, [rounds, filteredRounds, visibleMatchIds]);
+
+  return (
+    <div className="overflow-x-auto p-4 bg-slate-50 rounded-xl border border-slate-200 custom-scrollbar">
+      <div ref={containerRef} className="flex gap-12 min-w-max pb-8 relative">
+        {/* SVG connector lines layer */}
+        {connectors.length > 0 && (
+          <svg
+            className="absolute inset-0 pointer-events-none"
+            style={{ width: "100%", height: "100%", overflow: "visible", zIndex: 1 }}
+          >
+            {connectors.map(({ id, startX, startY, endX, endY, isFinished }) => {
+              const midX = (startX + endX) / 2;
+              const color = isFinished ? CONNECTOR_COLOR_FINISHED : CONNECTOR_COLOR;
+
+              return (
+                <g key={id}>
+                  {/* Horizontal line from source to midpoint */}
+                  <line
+                    x1={startX}
+                    y1={startY}
+                    x2={midX}
+                    y2={startY}
+                    stroke={color}
+                    strokeWidth={CONNECTOR_WIDTH}
+                    strokeLinecap="round"
+                  />
+                  {/* Vertical line at midpoint */}
+                  <line
+                    x1={midX}
+                    y1={startY}
+                    x2={midX}
+                    y2={endY}
+                    stroke={color}
+                    strokeWidth={CONNECTOR_WIDTH}
+                    strokeLinecap="round"
+                  />
+                  {/* Horizontal line from midpoint to target */}
+                  <line
+                    x1={midX}
+                    y1={endY}
+                    x2={endX}
+                    y2={endY}
+                    stroke={color}
+                    strokeWidth={CONNECTOR_WIDTH}
+                    strokeLinecap="round"
+                  />
+                </g>
+              );
+            })}
+          </svg>
+        )}
+
+        {/* Round columns — only rounds with non-BYE matches */}
+        {filteredRounds.map((round) => (
+          <div key={round._id} className="flex flex-col gap-6 w-56 relative z-10 shrink-0">
+            <h3 className="font-bold text-center text-slate-700 bg-white border border-slate-200 py-2 rounded-lg shadow-sm">
+              {round.display_name || round.name || `Vòng ${round.round_number}`}
+            </h3>
+            <div className="flex flex-col gap-8 flex-1 justify-around">
+              {(round.matches || []).map((match) => (
+                <MatchNode
+                  key={match._id}
+                  match={match}
+                  currentUserId={currentUserId}
+                  ref={(el) => setMatchRef(match._id, el)}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const Section = ({ title, rounds, currentUserId }) => {
   if (!rounds.length) return null;
 
   return (
@@ -87,12 +292,13 @@ const Section = ({ title, rounds }) => {
         <h3 className="text-sm font-black uppercase tracking-[0.2em] text-slate-500">{title}</h3>
         <div className="h-px flex-1 bg-slate-200" />
       </div>
-      <RoundColumns rounds={rounds} />
+      <RoundColumns rounds={rounds} currentUserId={currentUserId} />
     </div>
   );
 };
 
 export const TournamentBracket = ({ tournamentId, format }) => {
+  const { user } = useContext(AuthContext);
   const [bracketData, setBracketData] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -141,7 +347,7 @@ export const TournamentBracket = ({ tournamentId, format }) => {
   }
 
   if (format === "Knockout") {
-    return <RoundColumns rounds={bracketData} />;
+    return <RoundColumns rounds={bracketData} currentUserId={user?.id} />;
   }
 
   if (format === "Double Elimination") {
@@ -151,9 +357,9 @@ export const TournamentBracket = ({ tournamentId, format }) => {
 
     return (
       <div className="space-y-8">
-        <Section title="Nhánh thắng" rounds={winnersRounds} />
-        <Section title="Nhánh thua" rounds={losersRounds} />
-        <Section title="Chung kết" rounds={grandFinalRounds} />
+        <Section title="Nhánh thắng" rounds={winnersRounds} currentUserId={user?.id} />
+        <Section title="Nhánh thua" rounds={losersRounds} currentUserId={user?.id} />
+        <Section title="Chung kết" rounds={grandFinalRounds} currentUserId={user?.id} />
       </div>
     );
   }
@@ -190,16 +396,19 @@ export const TournamentBracket = ({ tournamentId, format }) => {
                   leaderboard
                     .flat()
                     .sort((a, b) => a.rank - b.rank)
-                    .map((player, idx) => (
+                    .map((player, idx) => {
+                      const isMe = user?.id && (player.account_id === user.id || player._id === user.id);
+                      return (
                       <tr
                         key={`${player.account_id || idx}-${player.group_key || "A"}`}
-                        className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors"
+                        className={`border-b hover:bg-slate-50/50 transition-colors ${isMe ? "bg-orange-50/70 border-orange-100" : "border-slate-50"}`}
                       >
                         <td className="py-3 px-3 font-semibold text-slate-700">
                           {player.rank || idx + 1}
                         </td>
-                        <td className="py-3 px-3 font-bold text-slate-900">
+                        <td className={`py-3 px-3 font-bold flex items-center gap-1 ${isMe ? "text-orange-700" : "text-slate-900"}`}>
                           {player.name || player.fullname || "N/A"}
+                          {isMe && <span className="text-[9px] bg-orange-200 text-orange-800 px-1.5 py-0.5 rounded-full inline-block leading-none mt-0.5">BẠN</span>}
                         </td>
                         <td className="py-3 px-3 text-center font-medium text-blue-600">
                           {player.group_key || "A"}
@@ -212,7 +421,8 @@ export const TournamentBracket = ({ tournamentId, format }) => {
                           {player.points}
                         </td>
                       </tr>
-                    ))
+                      );
+                    })
                 )}
               </tbody>
             </table>
@@ -229,41 +439,52 @@ export const TournamentBracket = ({ tournamentId, format }) => {
               const p2 = match.player2_id;
               const p1Winner =
                 match.winner_id?._id === p1?._id || match.winner_id === p1?._id;
-              const p2Winner =
-                match.winner_id?._id === p2?._id || match.winner_id === p2?._id;
+              const p2Winner = match.winner_id?._id === p2?._id || match.winner_id === p2?._id;
+              
+              const p1IsMe = user?.id && p1 && (p1._id === user.id || p1.account_id === user.id);
+              const p2IsMe = user?.id && p2 && (p2._id === user.id || p2.account_id === user.id);
+              const hasMe = p1IsMe || p2IsMe;
 
               return (
                 <div
                   key={match._id}
-                  className="border border-slate-200 rounded-xl p-4 bg-white shadow-sm flex flex-col gap-3"
+                  className={`border rounded-xl p-4 bg-white shadow-sm flex flex-col gap-3 transition-colors ${
+                    hasMe ? "border-orange-300 ring-1 ring-orange-200" : "border-slate-200"
+                  }`}
                 >
                   <div className="flex justify-between items-center text-xs text-slate-500 font-medium">
-                    <span className="bg-slate-100 px-2 py-1 rounded border border-slate-200">
+                    <span className={`px-2 py-1 rounded border ${hasMe ? "bg-orange-50 border-orange-200 text-orange-600 font-bold" : "bg-slate-100 border-slate-200"}`}>
                       {match.status}
                     </span>
                     <span>Chạm {match.race_to || 7}</span>
                   </div>
                   <div className="flex items-center gap-4 pt-1">
                     <div
-                      className={`flex-1 p-3 rounded-lg text-sm text-center truncate ${
+                      className={`flex-1 p-3 rounded-lg text-sm text-center truncate relative ${
                         p1Winner
                           ? "bg-green-50 text-green-700 font-bold border border-green-200"
+                          : p1IsMe
+                          ? "bg-orange-50 text-orange-700 font-bold border border-orange-200"
                           : "bg-slate-50 border border-slate-100 font-medium text-slate-700"
                       }`}
                     >
                       {p1?.fullname || "TBD"}
+                      {p1IsMe && <span className="absolute -top-2 right-2 text-[9px] bg-orange-500 text-white px-1.5 py-0.5 rounded-full font-bold">BẠN</span>}
                     </div>
                     <div className="font-black text-lg text-slate-800 tracking-widest shrink-0 w-20 text-center">
                       {match.player1_score} - {match.player2_score}
                     </div>
                     <div
-                      className={`flex-1 p-3 rounded-lg text-sm text-center truncate ${
+                      className={`flex-1 p-3 rounded-lg text-sm text-center truncate relative ${
                         p2Winner
                           ? "bg-green-50 text-green-700 font-bold border border-green-200"
+                          : p2IsMe
+                          ? "bg-orange-50 text-orange-700 font-bold border border-orange-200"
                           : "bg-slate-50 border border-slate-100 font-medium text-slate-700"
                       }`}
                     >
                       {p2?.fullname || "TBD"}
+                      {p2IsMe && <span className="absolute -top-2 left-2 text-[9px] bg-orange-500 text-white px-1.5 py-0.5 rounded-full font-bold">BẠN</span>}
                     </div>
                   </div>
                 </div>

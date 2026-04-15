@@ -26,7 +26,7 @@ export const HeaderHome = () => {
   const [isIncomplete, setIsIncomplete] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || user.roleName !== "CUSTOMER") return;
 
     const fetchCheck = async () => {
       try {
@@ -48,7 +48,7 @@ export const HeaderHome = () => {
 
   // 🔥 load noti khi login
   useEffect(() => {
-    if (!user) return;
+    if (!user || user.roleName !== "CUSTOMER") return;
 
     fetchNotifications();
     fetchUnread();
@@ -375,7 +375,7 @@ export const HeaderHome = () => {
               >
                 <User size={18} />
                 <span className="hidden sm:inline text-sm">
-                  {user.name || "Tài khoản"}
+                  {user.fullname || "Tài khoản"}
                 </span>
                 <ChevronDown
                   size={16}

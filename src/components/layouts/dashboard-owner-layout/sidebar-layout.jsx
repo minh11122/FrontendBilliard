@@ -40,7 +40,14 @@ export const SidebarOwner = () => {
   const userFullname = localStorage.getItem("user_fullname") || "Chủ quán";
   const clubName = localStorage.getItem("selected_club_name") || "Billiard Club";
 
-  const planType = localStorage.getItem("selected_club_plan") || "free";
+  const normalizePlanType = (rawPlan) => {
+    const value = String(rawPlan || "").toLowerCase().trim();
+    if (value.includes("pro")) return "pro";
+    if (value.includes("basic")) return "basic";
+    return "free";
+  };
+
+  const planType = normalizePlanType(localStorage.getItem("selected_club_plan"));
 
   const navigation = [
     {
@@ -139,11 +146,12 @@ export const SidebarOwner = () => {
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500">
                 <Store className="h-5 w-5 text-white" />
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 <span className="text-lg font-semibold text-foreground truncate block max-w-[160px]">
                   {clubName}
                 </span>
-                <p className="text-xs text-muted-foreground truncate max-w-[160px]">{userFullname}</p>
+                <p className="text-[11px] text-muted-foreground font-medium">Chủ quán</p>
+                <p className="text-[11px] text-slate-600 font-medium mt-0.5 truncate max-w-[160px]">{userFullname}</p>
               </div>
             </div>
             <Button

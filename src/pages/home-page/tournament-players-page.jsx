@@ -274,8 +274,8 @@ export const TournamentPlayersPage = () => {
                             </span>
                           </td>
                           <td className="py-3 px-3 text-slate-800 font-bold">
-                            {Number(p.fee_ammount || 0) > 0
-                              ? `${Number(p.fee_ammount).toLocaleString("vi-VN")} VNĐ`
+                            {Number(p.fee_amount || 0) > 0
+                              ? `${Number(p.fee_amount).toLocaleString("vi-VN")} VNĐ`
                               : "Miễn phí"}
                           </td>
                           <td className="py-3 px-3 text-slate-600">

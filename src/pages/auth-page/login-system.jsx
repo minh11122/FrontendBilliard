@@ -36,7 +36,11 @@ export function LoginSystem() {
       try {
         const res = await login(values);
 
-        const { token, role } = res.data;
+        const { token, role, fullname } = res.data;
+
+        if (fullname) {
+          localStorage.setItem("user_fullname", fullname);
+        }
 
         loginContext(token);
 

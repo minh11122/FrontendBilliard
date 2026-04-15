@@ -83,9 +83,13 @@ export function LoginForm() {
     onSubmit: async (values, { setSubmitting }) => {
       try {
         const res = await login(values);
-        const { token, role } = res.data;
+        const { token, role, fullname } = res.data;
 
-        await loginContext(token, role);
+        if (fullname) {
+          localStorage.setItem("user_fullname", fullname);
+        }
+
+        const resolvedUser = await loginContext(token, role);
 
         if (values.rememberMe) {
           Cookies.set("rememberedEmail", values.email, { expires: 7 });
@@ -95,7 +99,7 @@ export function LoginForm() {
           Cookies.remove("rememberedPassword");
         }
 
-        handleRoleNavigation(role);
+        handleRoleNavigation(resolvedUser?.roleName || role);
       } catch (error) {
         toast.error(error.response?.data?.message || "Đăng nhập thất bại");
       } finally {
@@ -108,10 +112,14 @@ export function LoginForm() {
     try {
       const tokenId = credentialResponse.credential;
       const res = await loginGoogle(tokenId);
-      const { token, role } = res.data;
+      const { token, role, fullname } = res.data;
 
-      await loginContext(token, role);
-      handleRoleNavigation(role);
+      if (fullname) {
+        localStorage.setItem("user_fullname", fullname);
+      }
+
+      const resolvedUser = await loginContext(token, role);
+      handleRoleNavigation(resolvedUser?.roleName || role);
     } catch (error) {
       toast.error(error.response?.data?.message || "Đăng nhập Google thất bại");
     }
