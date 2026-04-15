@@ -398,7 +398,7 @@ export const BookingPage = () => {
                         </span>
                       ))}
                       {(!club.tableTypes || club.tableTypes.length === 0) && (
-                        <span className="px-2 py-1 bg-gray-100 text-gray-500 text-xs rounded-md border border-dashed border-gray-300">Chưa có loại bàn</span>
+                        <span className="px-2 py-1 bg-gray-100 text-gray-500 text-xs rounded-md border border-dashed border-gray-300">Chưa có bàn</span>
                       )}
                     </div>
 
