@@ -18,6 +18,10 @@ const statusConfig = {
     label: "Đã kết thúc",
     color: "bg-gray-200 text-gray-600",
   },
+  cancelled: {
+    label: "Đã hủy",
+    color: "bg-red-100 text-red-600",
+  },
 };
 
 export const MyTournamentsPage = () => {
@@ -58,6 +62,7 @@ export const MyTournamentsPage = () => {
       // Map status to UI status
       let uiStatus = "upcoming";
       if (tournament.status === "InProgress") uiStatus = "live";
+      if (tournament.status === "Cancelled") uiStatus = "cancelled";
       if (tournament.status === "Completed") uiStatus = "ended";
 
       // Filter by tab
@@ -125,9 +130,19 @@ export const MyTournamentsPage = () => {
               Tất cả
             </button>
             <button 
+              onClick={() => setActiveTab("upcoming")}
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${activeTab === "upcoming" ? "bg-green-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
+              Sắp diễn ra
+            </button>
+            <button 
               onClick={() => setActiveTab("live")}
               className={`px-4 py-2 rounded-lg font-medium transition-all ${activeTab === "live" ? "bg-green-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
               Đang diễn ra
+            </button>
+            <button 
+              onClick={() => setActiveTab("ended")}
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${activeTab === "ended" ? "bg-green-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
+              Đã kết thúc
             </button>
           </div>
         </div>
@@ -151,6 +166,7 @@ export const MyTournamentsPage = () => {
               // Map db status to ui status
               let uiStatus = "upcoming";
               if (tournament.status === "InProgress") uiStatus = "live";
+              if (tournament.status === "Cancelled") uiStatus = "cancelled";
               if (tournament.status === "Completed") uiStatus = "ended";
 
               const cfg = statusConfig[uiStatus];

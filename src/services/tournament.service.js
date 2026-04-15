@@ -104,3 +104,9 @@ export const deleteTournament = async (id) => {
   const res = await api.delete(`/tournaments/${id}`);
   return res.data;
 };
+
+// Cancel tournament
+export const cancelTournament = async (id) => {
+  const res = await api.post(`/tournaments/${id}/cancel`);
+  return res.data;
+};

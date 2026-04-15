@@ -17,7 +17,15 @@ export default function OwnerCreateTournamentPage() {
   const [bannerPreview, setBannerPreview] = useState("");
   const [errors, setErrors] = useState({});
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const formatDateTimeLocal = (date) => {
+    if (!date) return "";
+    const d = new Date(date);
+    const z = d.getTimezoneOffset() * 60 * 1000;
+    const localDate = new Date(d - z);
+    return localDate.toISOString().slice(0, 16);
+  };
+
+  const todayStr = formatDateTimeLocal(new Date());
 
   const [form, setForm] = useState({
     name: "",
@@ -60,20 +68,21 @@ export default function OwnerCreateTournamentPage() {
       }
     }
 
-    // Prize > Fee validation
-    const feeNum = Number(form.fee) || 0;
-    const prizeNum = Number(form.prize_pool) || 0;
-    if (feeNum > 0 && prizeNum > 0 && prizeNum <= feeNum) {
-      newErrors.prize = "Giải thưởng phải lớn hơn phí tham gia";
+    // Fee validation
+    const feeRaw = String(form.fee ?? "").trim();
+    const feeNum = Number(feeRaw);
+    if (feeRaw && (Number.isFinite(feeNum) && feeNum < 0)) {
+      newErrors.fee = "Phí tham gia không được là số âm";
     }
 
+    // Prize validation
     const prizeRaw = String(form.prize_pool ?? "").trim();
     const strictPrizeNum = Number(prizeRaw);
     if (!prizeRaw) {
       newErrors.prize = "Vui lòng nhập tiền thưởng";
     } else if (!Number.isFinite(strictPrizeNum) || strictPrizeNum <= 0) {
       newErrors.prize = "Tiền thưởng phải lớn hơn 0";
-    } else if ((Number(form.fee) || 0) > 0 && strictPrizeNum <= (Number(form.fee) || 0)) {
+    } else if ((feeNum || 0) > 0 && strictPrizeNum <= (feeNum || 0)) {
       newErrors.prize = "Tiền thưởng phải lớn hơn phí tham gia";
     }
 
@@ -243,8 +252,9 @@ export default function OwnerCreateTournamentPage() {
               <div className="relative">
                 <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input type="number" name="fee" value={form.fee} onChange={handleChange}
-                  placeholder="0 = Miễn phí" min="0" className={`${inputClass} pl-10`} />
+                  placeholder="0 = Miễn phí" min="0" className={`${inputClass} pl-10 ${errors.fee ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`} />
               </div>
+              {errors.fee && <p className="text-red-500 text-xs mt-1.5 font-medium">{errors.fee}</p>}
             </div>
 
             <div>
@@ -284,15 +294,15 @@ export default function OwnerCreateTournamentPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div>
               <label className={labelClass}>Mở đăng ký</label>
-              <input type="date" name="registration_open" value={form.registration_open} onChange={handleChange} min={todayStr} className={`${inputClass} ${errors.dates ? "border-red-500" : ""}`} />
+              <input type="datetime-local" name="registration_open" value={form.registration_open} onChange={handleChange} min={todayStr} className={`${inputClass} ${errors.dates ? "border-red-500" : ""}`} />
             </div>
             <div>
               <label className={labelClass}>Đóng đăng ký</label>
-              <input type="date" name="registration_deadline" value={form.registration_deadline} onChange={handleChange} min={form.registration_open || todayStr} className={`${inputClass} ${errors.dates ? "border-red-500" : ""}`} />
+              <input type="datetime-local" name="registration_deadline" value={form.registration_deadline} onChange={handleChange} min={form.registration_open || todayStr} className={`${inputClass} ${errors.dates ? "border-red-500" : ""}`} />
             </div>
             <div>
               <label className={labelClass}>Ngày thi đấu</label>
-              <input type="date" name="play_date" value={form.play_date} onChange={handleChange} min={form.registration_deadline || form.registration_open || todayStr} className={`${inputClass} ${errors.dates ? "border-red-500" : ""}`} />
+              <input type="datetime-local" name="play_date" value={form.play_date} onChange={handleChange} min={form.registration_deadline || form.registration_open || todayStr} className={`${inputClass} ${errors.dates ? "border-red-500" : ""}`} />
             </div>
           </div>
           {errors.dates && <p className="text-red-500 text-sm mt-3 font-medium bg-red-50 p-2.5 rounded-lg border border-red-100">{errors.dates}</p>}

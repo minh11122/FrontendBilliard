@@ -2,10 +2,10 @@ import { useNavigate, Link } from "react-router-dom";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import toast from "react-hot-toast";
-import { Building, MapPin, Phone, FileText, Image, Search } from "lucide-react";
+import { Building, MapPin, Phone, FileText, Image, Search, X } from "lucide-react";
 import { registerClub } from "@/services/club.service";
 import { getProvinces, getDistrictsByProvince, matchAdministrativeUnit } from "@/services/location.service";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MapAddressPicker } from "@/components/common/MapAddressPicker";
 import { SiteLogo } from "@/components/common/SiteLogo";
 import { uploadImages } from "@/utils/cloudinary";
@@ -15,6 +15,8 @@ export function RegisterOwnerAccount() {
   const [provinces, setProvinces] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [previewImages, setPreviewImages] = useState([]);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const fetchProvinces = async () => {
@@ -125,37 +127,95 @@ export function RegisterOwnerAccount() {
     }
   };
 
+  useEffect(() => {
+    return () => {
+      previewImages.forEach((image) => {
+        if (image.previewUrl?.startsWith("blob:")) {
+          URL.revokeObjectURL(image.previewUrl);
+        }
+      });
+    };
+  }, [previewImages]);
+
   // upload ảnh
   const handleImageUpload = async (e) => {
-    const files = Array.from(e.target.files);
+  const files = Array.from(e.target.files || []);
+  e.target.value = "";
 
-    if (files.length === 0) return;
+  if (files.length === 0) return;
 
-    try {
-      const urls = await uploadImages(files, setIsUploadingImage);
-      if (urls.length > 0) {
-        formik.setFieldValue("legalDocuments", urls);
-        toast.success("Tải ảnh thành công!");
-      } else {
-        toast.error("Tải ảnh thất bại! Vui lòng thử lại.");
-      }
-    } catch (error) {
-      toast.error("Có lỗi xảy ra khi tải ảnh lên.");
+  const newPreviewItems = files.map((file) => ({
+    id: `${file.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    previewUrl: URL.createObjectURL(file),
+    uploadedUrl: "",
+  }));
+
+  setPreviewImages((prev) => [...prev, ...newPreviewItems]);
+
+  try {
+    const urls = await uploadImages(files, setIsUploadingImage);
+    if (urls.length > 0 && urls.length === newPreviewItems.length) {
+      setPreviewImages((prev) => {
+        const uploadedMap = new Map(
+          newPreviewItems.map((item, index) => [item.id, urls[index]])
+        );
+
+        const updatedPreviews = prev.map((item) =>
+          uploadedMap.has(item.id)
+            ? { ...item, uploadedUrl: uploadedMap.get(item.id) }
+            : item
+        );
+
+        formik.setFieldValue(
+          "legalDocuments",
+          updatedPreviews
+            .map((item) => item.uploadedUrl)
+            .filter(Boolean)
+        );
+
+        return updatedPreviews;
+      });
+      toast.success("Tải ảnh thành công!");
+    } else {
+      newPreviewItems.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+      setPreviewImages((prev) =>
+        prev.filter((item) => !newPreviewItems.some((newItem) => newItem.id === item.id))
+      );
+      toast.error("Tải ảnh thất bại!");
     }
+  } catch {
+    newPreviewItems.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+    setPreviewImages((prev) =>
+      prev.filter((item) => !newPreviewItems.some((newItem) => newItem.id === item.id))
+    );
+    toast.error("Có lỗi xảy ra khi tải ảnh.");
+  }
+};
+
+  const handleRemoveImage = (imageId) => {
+    setPreviewImages((prev) => {
+      const imageToRemove = prev.find((item) => item.id === imageId);
+      if (!imageToRemove) return prev;
+
+      if (imageToRemove.previewUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(imageToRemove.previewUrl);
+      }
+
+      const updatedPreviews = prev.filter((item) => item.id !== imageId);
+
+      formik.setFieldValue(
+        "legalDocuments",
+        updatedPreviews.map((item) => item.uploadedUrl).filter(Boolean)
+      );
+
+      return updatedPreviews;
+    });
   };
 
   return (
     <div className="min-h-screen bg-gray-100 px-4 py-6">
       
-      {/* top bar */}
-      <div className="max-w-6xl mx-auto flex items-center justify-between mb-6">
-        <Link to="/" className="flex items-center gap-2 font-bold text-lg">
-          <SiteLogo className="w-8 h-8 rounded-lg" alt="Billiards Manager logo" />
-          <span>
-            Billiards <span className="text-green-600">Manager</span>
-          </span>
-        </Link>
-      </div>
+      
 
       <div className="max-w-6xl mx-auto bg-white rounded-3xl shadow-xl grid md:grid-cols-2 overflow-hidden">
         
@@ -310,19 +370,37 @@ export function RegisterOwnerAccount() {
                 Ảnh giấy phép kinh doanh
               </label>
 
-              <div className={`mt-2 border-2 border-dashed rounded-xl p-6 text-center transition-colors ${isUploadingImage ? "bg-gray-50 border-gray-300" : "hover:border-green-500 bg-white"}`}>
-                <Image className="mx-auto mb-2 text-gray-400"/>
+              <div
+                className={`mt-2 border-2 border-dashed rounded-xl p-6 text-center transition-colors ${
+                  isUploadingImage
+                    ? "bg-gray-50 border-gray-300"
+                    : "hover:border-green-500 bg-white cursor-pointer"
+                }`}
+                onClick={() => {
+                  if (!isUploadingImage) {
+                    fileInputRef.current?.click();
+                  }
+                }}
+              >
+                <Image className="mx-auto mb-2 text-gray-400" />
                 {isUploadingImage ? (
                   <p className="text-sm text-gray-500 font-medium">Đang tải ảnh lên hệ thống...</p>
                 ) : (
                   <>
                     <input
+                      ref={fileInputRef}
                       type="file"
                       multiple
                       onChange={handleImageUpload}
                       disabled={isUploadingImage}
-                      className="text-sm text-gray-500 w-full"
+                      className="hidden"
                     />
+                    <p className="text-sm text-gray-700 font-medium">
+                      Bấm vào đây để chọn một hoặc nhiều ảnh
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Ảnh sẽ hiển thị ngay sau khi bạn chọn.
+                    </p>
                     {formik.values.legalDocuments.length > 0 && (
                       <p className="text-xs text-green-600 mt-3 font-medium">
                         Đã tải lên {formik.values.legalDocuments.length} ảnh hợp lệ
@@ -331,6 +409,30 @@ export function RegisterOwnerAccount() {
                   </>
                 )}
               </div>
+
+              {previewImages.length > 0 && (
+                <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {previewImages.map((image) => (
+                    <div key={image.id} className="relative rounded-xl border overflow-hidden bg-gray-50">
+                      <img
+                        src={image.previewUrl}
+                        alt="Giấy phép kinh doanh"
+                        className="w-full h-28 object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleRemoveImage(image.id);
+                        }}
+                        className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/65 hover:bg-black/80 text-white flex items-center justify-center"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Submit */}
