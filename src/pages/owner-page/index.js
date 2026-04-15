@@ -28,3 +28,4 @@ export { default as OwnerReviewListPage } from "./owner-review-list-page";
 export * from "./owner-tournament-bracket-page";
 export * from "./owner-post-page";
 export { default as OwnerPaymentHistoryPage } from "./owner-payment-history-page";
+export { default as OwnerRegisterClubPage } from "./owner-register-club-page";

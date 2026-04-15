@@ -74,6 +74,7 @@ import {
   PostPage,
   OwnerPostPage,
   StaffClubPaymentHistoryPage,
+  OwnerRegisterClubPage,
   CreateStaffSystem
 } from "@/pages";
 
@@ -163,6 +164,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute allowedRoles={["OWNER"]}>
             <OwnerOnboardingPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "owner/register-club",
+        element: (
+          <ProtectedRoute allowedRoles={["OWNER"]}>
+            <OwnerRegisterClubPage />
           </ProtectedRoute>
         ),
       },

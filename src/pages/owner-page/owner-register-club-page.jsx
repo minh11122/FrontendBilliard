@@ -1,15 +1,15 @@
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import toast from "react-hot-toast";
-import { Building, MapPin, Phone, FileText, Image, Search, X } from "lucide-react";
+import { Building, MapPin, Phone, FileText, Image, Search, X, ArrowLeft } from "lucide-react";
 import { registerClub } from "@/services/club.service";
 import { getProvinces, getDistrictsByProvince, matchAdministrativeUnit } from "@/services/location.service";
 import { useState, useEffect, useRef } from "react";
 import { MapAddressPicker } from "@/components/common/MapAddressPicker";
 import { uploadImages } from "@/utils/cloudinary";
 
-export function RegisterOwnerAccount() {
+export function OwnerRegisterClubPage() {
   const navigate = useNavigate();
   const [provinces, setProvinces] = useState([]);
   const [districts, setDistricts] = useState([]);
@@ -32,7 +32,7 @@ export function RegisterOwnerAccount() {
   const validationSchema = Yup.object({
     name: Yup.string().required("Vui lòng nhập tên CLB"),
     province_code: Yup.string().required("Vui lòng chọn Tỉnh/Thành phố"),
-    district_code: Yup.string().required("Vui lòng chọn Quận/Phuyện/Phường"),
+    district_code: Yup.string().required("Vui lòng chọn Quận/Huyện/Phường"),
     address: Yup.string().required("Vui lòng nhập địa chỉ chi tiết"),
     phone: Yup.string().required("Vui lòng nhập số điện thoại"),
     tax_code: Yup.string().required("Vui lòng nhập mã số thuế"),
@@ -58,10 +58,8 @@ export function RegisterOwnerAccount() {
     onSubmit: async (values, { setSubmitting }) => {
       try {
         await registerClub(values);
-
         toast.success("Đăng ký CLB thành công! Chờ admin duyệt.");
-
-        navigate("/");
+        navigate("/owner/select-club");
       } catch (error) {
         toast.error(
           error.response?.data?.message || "Đăng ký CLB thất bại"
@@ -72,7 +70,6 @@ export function RegisterOwnerAccount() {
     },
   });
 
-  // Fetch districts when province changes
   useEffect(() => {
     const fetchDistricts = async () => {
       if (formik.values.province_code) {
@@ -91,39 +88,34 @@ export function RegisterOwnerAccount() {
 
   const handleLocationSelect = async (locationData) => {
     const { lat, lng, address, provinceName, districtName, isFromSearch } = locationData;
-    
-    // 1. Update lat/lng
+
     formik.setFieldValue("lat", lat);
     formik.setFieldValue("lng", lng);
 
-    // Nếu không phải từ search (tức là từ kéo marker), update lại ô input địa chỉ cho chuẩn
     if (!isFromSearch) {
       formik.setFieldValue("address", address);
     }
 
-    // 2. Map Province Name to Code
     const matchedProvince = matchAdministrativeUnit(provinceName, provinces);
     if (matchedProvince) {
       formik.setFieldValue("province_code", matchedProvince.code);
-      
-      // 3. Map District Name to Code
+
       try {
         const districtList = await getDistrictsByProvince(matchedProvince.code);
         setDistricts(districtList);
-        
+
         const matchedDistrict = matchAdministrativeUnit(districtName, districtList);
         if (matchedDistrict) {
           formik.setFieldValue("district_code", matchedDistrict.code);
         } else {
-            // Xóa code nếu không khớp để tránh data cũ
-            formik.setFieldValue("district_code", "");
+          formik.setFieldValue("district_code", "");
         }
       } catch (error) {
         console.error("Error matching district:", error);
       }
     } else {
-        formik.setFieldValue("province_code", "");
-        formik.setFieldValue("district_code", "");
+      formik.setFieldValue("province_code", "");
+      formik.setFieldValue("district_code", "");
     }
   };
 
@@ -137,60 +129,57 @@ export function RegisterOwnerAccount() {
     };
   }, [previewImages]);
 
-  // upload ảnh
   const handleImageUpload = async (e) => {
-  const files = Array.from(e.target.files || []);
-  e.target.value = "";
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
 
-  if (files.length === 0) return;
+    if (files.length === 0) return;
 
-  const newPreviewItems = files.map((file) => ({
-    id: `${file.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    previewUrl: URL.createObjectURL(file),
-    uploadedUrl: "",
-  }));
+    const newPreviewItems = files.map((file) => ({
+      id: `${file.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      previewUrl: URL.createObjectURL(file),
+      uploadedUrl: "",
+    }));
 
-  setPreviewImages((prev) => [...prev, ...newPreviewItems]);
+    setPreviewImages((prev) => [...prev, ...newPreviewItems]);
 
-  try {
-    const urls = await uploadImages(files, setIsUploadingImage);
-    if (urls.length > 0 && urls.length === newPreviewItems.length) {
-      setPreviewImages((prev) => {
-        const uploadedMap = new Map(
-          newPreviewItems.map((item, index) => [item.id, urls[index]])
+    try {
+      const urls = await uploadImages(files, setIsUploadingImage);
+      if (urls.length > 0 && urls.length === newPreviewItems.length) {
+        setPreviewImages((prev) => {
+          const uploadedMap = new Map(
+            newPreviewItems.map((item, index) => [item.id, urls[index]])
+          );
+
+          const updatedPreviews = prev.map((item) =>
+            uploadedMap.has(item.id)
+              ? { ...item, uploadedUrl: uploadedMap.get(item.id) }
+              : item
+          );
+
+          formik.setFieldValue(
+            "legalDocuments",
+            updatedPreviews.map((item) => item.uploadedUrl).filter(Boolean)
+          );
+
+          return updatedPreviews;
+        });
+        toast.success("Tải ảnh thành công!");
+      } else {
+        newPreviewItems.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+        setPreviewImages((prev) =>
+          prev.filter((item) => !newPreviewItems.some((newItem) => newItem.id === item.id))
         );
-
-        const updatedPreviews = prev.map((item) =>
-          uploadedMap.has(item.id)
-            ? { ...item, uploadedUrl: uploadedMap.get(item.id) }
-            : item
-        );
-
-        formik.setFieldValue(
-          "legalDocuments",
-          updatedPreviews
-            .map((item) => item.uploadedUrl)
-            .filter(Boolean)
-        );
-
-        return updatedPreviews;
-      });
-      toast.success("Tải ảnh thành công!");
-    } else {
+        toast.error("Tải ảnh thất bại!");
+      }
+    } catch {
       newPreviewItems.forEach((item) => URL.revokeObjectURL(item.previewUrl));
       setPreviewImages((prev) =>
         prev.filter((item) => !newPreviewItems.some((newItem) => newItem.id === item.id))
       );
-      toast.error("Tải ảnh thất bại!");
+      toast.error("Có lỗi xảy ra khi tải ảnh.");
     }
-  } catch {
-    newPreviewItems.forEach((item) => URL.revokeObjectURL(item.previewUrl));
-    setPreviewImages((prev) =>
-      prev.filter((item) => !newPreviewItems.some((newItem) => newItem.id === item.id))
-    );
-    toast.error("Có lỗi xảy ra khi tải ảnh.");
-  }
-};
+  };
 
   const handleRemoveImage = (imageId) => {
     setPreviewImages((prev) => {
@@ -214,20 +203,28 @@ export function RegisterOwnerAccount() {
 
   return (
     <div className="min-h-screen bg-gray-100 px-4 py-6">
-      
-      
+      {/* Back button */}
+      <div className="max-w-6xl mx-auto mb-4">
+        <button
+          onClick={() => navigate("/owner/select-club")}
+          className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Quay lại danh sách quán
+        </button>
+      </div>
 
       <div className="max-w-6xl mx-auto bg-white rounded-3xl shadow-xl grid md:grid-cols-2 overflow-hidden">
-        
+
         {/* LEFT FORM */}
         <div className="p-8 md:p-10">
 
           <h2 className="text-2xl font-bold mb-2">
-            Đăng ký làm chủ câu lạc bộ
+            Đăng ký câu lạc bộ mới
           </h2>
 
           <p className="text-gray-500 mb-6">
-            Điền thông tin để đăng ký quản lý câu lạc bộ billiards.
+            Điền thông tin để đăng ký thêm câu lạc bộ billiards vào hệ thống.
           </p>
 
           <form onSubmit={formik.handleSubmit} className="space-y-5">
@@ -251,7 +248,7 @@ export function RegisterOwnerAccount() {
               )}
             </div>
 
-            {/* Địa chỉ chi tiết (Search Box) */}
+            {/* Địa chỉ */}
             <div className="group">
               <label className="text-sm font-bold text-gray-700 mb-1.5 block">Địa chỉ chi tiết (Dùng để tìm trên Map)</label>
               <div className="relative">
@@ -270,7 +267,7 @@ export function RegisterOwnerAccount() {
               </p>
             </div>
 
-            {/* Bản đồ chọn địa chỉ */}
+            {/* Bản đồ */}
             <div className="space-y-4 pt-2">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-bold flex items-center gap-2">
@@ -285,15 +282,14 @@ export function RegisterOwnerAccount() {
                   </span>
                 )}
               </div>
-              
+
               <div className="h-[400px] overflow-hidden rounded-3xl border-4 border-gray-50 shadow-inner relative group">
-                <MapAddressPicker 
-                    onLocationSelect={handleLocationSelect} 
+                <MapAddressPicker
+                    onLocationSelect={handleLocationSelect}
                     searchQuery={formik.values.address}
                 />
               </div>
 
-              {/* Thông tin vùng hành chính tự động */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-blue-50/50 p-3 rounded-2xl border border-blue-100/50 transition-all hover:bg-blue-50">
                   <span className="text-[10px] text-blue-600 uppercase font-black tracking-wider block mb-1">Tỉnh / Thành phố</span>
@@ -331,10 +327,14 @@ export function RegisterOwnerAccount() {
                 <input
                   name="phone"
                   onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
                   value={formik.values.phone}
                   className="pl-10 border rounded-xl w-full px-3 py-2.5"
                 />
               </div>
+              {formik.touched.phone && formik.errors.phone && (
+                <p className="text-red-500 text-[11px] mt-1 ml-1">{formik.errors.phone}</p>
+              )}
             </div>
 
             {/* Tax code */}
@@ -345,10 +345,14 @@ export function RegisterOwnerAccount() {
                 <input
                   name="tax_code"
                   onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
                   value={formik.values.tax_code}
                   className="pl-10 border rounded-xl w-full px-3 py-2.5"
                 />
               </div>
+              {formik.touched.tax_code && formik.errors.tax_code && (
+                <p className="text-red-500 text-[11px] mt-1 ml-1">{formik.errors.tax_code}</p>
+              )}
             </div>
 
             {/* Description */}
@@ -359,7 +363,7 @@ export function RegisterOwnerAccount() {
                 rows="3"
                 onChange={formik.handleChange}
                 value={formik.values.description}
-                className="border rounded-xl w-full px-3 py-2.5"
+                className="border rounded-xl w-full px-3 py-2.5 mt-1"
                 placeholder="Giới thiệu về câu lạc bộ..."
               />
             </div>
@@ -456,17 +460,14 @@ export function RegisterOwnerAccount() {
             src="https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?q=80&w=1600"
             className="absolute inset-0 w-full h-full object-cover"
           />
-
           <div className="absolute inset-0 bg-gradient-to-br from-green-900/90 to-black/80" />
-
           <div className="relative h-full p-10 text-white flex flex-col justify-center">
             <h3 className="text-3xl font-bold mb-4">
-              Quản lý câu lạc bộ billiards
+              Mở rộng chuỗi của bạn
             </h3>
-
             <p className="text-white/80">
-              Quản lý bàn, nhân viên, lịch đặt bàn và doanh thu
-              trong một hệ thống duy nhất.
+              Thêm chi nhánh mới vào hệ thống để quản lý tập trung bàn,
+              nhân viên, lịch đặt và doanh thu.
             </p>
           </div>
         </div>
@@ -475,3 +476,5 @@ export function RegisterOwnerAccount() {
     </div>
   );
 }
+
+export default OwnerRegisterClubPage;

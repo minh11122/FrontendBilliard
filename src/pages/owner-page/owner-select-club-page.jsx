@@ -96,7 +96,7 @@ export function OwnerSelectClubPage() {
             <h3 className="text-xl font-bold mb-2 text-gray-800">Chưa có cơ sở nào</h3>
             <p className="text-gray-500 mb-8">Bạn chưa đăng ký không gian bida nào trên hệ thống của chúng tôi.</p>
             <button 
-              onClick={() => navigate("/register-owner-account")}
+              onClick={() => navigate("/owner/register-club")}
               className="px-8 py-3.5 bg-gray-900 text-white rounded-2xl font-bold hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
             >
               Tạo không gian mới ngay
@@ -107,7 +107,7 @@ export function OwnerSelectClubPage() {
             {/* Action Bar */}
             <div className="flex justify-center mb-6 w-full max-w-5xl mx-auto">
               <button 
-                onClick={() => navigate("/register-owner-account")}
+                onClick={() => navigate("/owner/register-club")}
                 className="px-6 py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-800 transition-all shadow-md hover:-translate-y-0.5"
               >
                 + Thêm quán mới
