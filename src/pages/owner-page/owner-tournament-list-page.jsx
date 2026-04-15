@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Trophy, Plus, Search, Users, Brackets, Play, Sparkles, Edit, Calendar, Trash2 } from "lucide-react";
+import { Trophy, Plus, Search, Users, Brackets, Play, Sparkles, Edit, Calendar, Trash2, XCircle, Info } from "lucide-react";
 import toast from "react-hot-toast";
 import { 
   getTournamentsByClub, 
@@ -112,6 +112,25 @@ export default function OwnerTournamentListPage() {
       }
     } catch (e) {
       toast.error(e?.response?.data?.message || "Không thể bắt đầu");
+    }
+  };
+
+  const handleCancel = async (t) => {
+    const hasPlayers = (t.registered_player || 0) > 0;
+    const confirmMsg = hasPlayers 
+      ? `CẢNH BÁO: Giải đấu "${t.name}" đã có ${t.registered_player} người tham gia. \n\nKhi hủy giải, bạn phải TỰ LIÊN HỆ và HOÀN LỆ PHÍ cho người chơi ngoài hệ thống. Hệ thống sẽ không tự động hoàn tiền.\n\nBạn có chắc chắn muốn hủy giải đấu này không?`
+      : `Bạn có chắc chắn muốn hủy giải đấu "${t.name}" không?`;
+
+    if (window.confirm(confirmMsg)) {
+      try {
+        const res = await cancelTournament(t._id);
+        if (res.success) {
+          toast.success("Đã hủy giải đấu");
+          fetchData();
+        }
+      } catch (e) {
+        toast.error(e.response?.data?.message || "Không thể hủy giải đấu");
+      }
     }
   };
 
@@ -248,6 +267,14 @@ export default function OwnerTournamentListPage() {
                             <Edit size={14} /> Chỉnh sửa
                           </button>
                         )}
+                        <button onClick={() => navigate(`/owner/tournaments/${t._id}/players`)} className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5">
+                          <Users size={14} /> Người chơi
+                        </button>
+                        {t.registered_player > 0 && (
+                          <button onClick={() => handleCancel(t)} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:bg-red-100 transition">
+                            <XCircle size={14} /> Hủy giải
+                          </button>
+                        )}
                       </>
                     )}
 
@@ -261,6 +288,14 @@ export default function OwnerTournamentListPage() {
                             <Edit size={14} /> Chỉnh sửa
                           </button>
                         )}
+                        <button onClick={() => navigate(`/owner/tournaments/${t._id}/players`)} className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5">
+                          <Users size={14} /> Người chơi
+                        </button>
+                        {t.registered_player > 0 && (
+                          <button onClick={() => handleCancel(t)} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:bg-red-100 transition">
+                            <XCircle size={14} /> Hủy giải
+                          </button>
+                        )}
                       </>
                     )}
 
@@ -272,20 +307,30 @@ export default function OwnerTournamentListPage() {
                         <button onClick={() => handleStart(t)} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5">
                           <Play size={14} /> Bắt đầu giải
                         </button>
-                        <button onClick={() => navigate(`/owner/tournaments/${t._id}/players`)} className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold">
-                          Người chơi
+                        <button onClick={() => navigate(`/owner/tournaments/${t._id}/players`)} className="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:bg-slate-50 transition">
+                          <Users size={14} /> Người chơi
                         </button>
+                        {t.registered_player > 0 && (
+                          <button onClick={() => handleCancel(t)} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:bg-red-100 transition">
+                            <XCircle size={14} /> Hủy giải
+                          </button>
+                        )}
                       </>
                     )}
 
                     {t.status === "InProgress" && (
                       <>
-                        <button onClick={() => navigate(`/owner/tournaments/${t._id}/players`)} className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold">
-                          Người chơi
-                        </button>
-                        <button onClick={() => navigate(`/owner/tournaments/${t._id}/bracket`)} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold flex items-center gap-2">
+                        <button onClick={() => navigate(`/owner/tournaments/${t._id}/matches`)} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold flex items-center gap-2">
                           <Trophy size={14} /> Sơ đồ & Kết quả
                         </button>
+                        <button onClick={() => navigate(`/owner/tournaments/${t._id}/players`)} className="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:bg-slate-50 transition">
+                          <Users size={14} /> Người chơi
+                        </button>
+                        {t.registered_player > 0 && (
+                          <button onClick={() => handleCancel(t)} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:bg-red-100 transition">
+                            <XCircle size={14} /> Hủy giải
+                          </button>
+                        )}
                       </>
                     )}
 

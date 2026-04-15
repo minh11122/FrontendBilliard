@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Trophy, Users, Calendar, Play, Clock, Search } from "lucide-react";
+import { Trophy, Users, Calendar, Play, Clock, Search, XCircle } from "lucide-react";
 import toast from "react-hot-toast";
-import { getTournamentsByClub } from "@/services/tournament.service";
+import { getTournamentsByClub, cancelTournament } from "@/services/tournament.service";
 import { useNavigate } from "react-router-dom";
 
 const tabs = [
@@ -44,6 +44,26 @@ export const StaffClubPageTournament = () => {
     };
     fetchData();
   }, [CLUB_ID]);
+
+  const handleCancel = async (t) => {
+    const hasPlayers = (t.registered_player || 0) > 0;
+    const confirmMsg = hasPlayers 
+      ? `CẢNH BÁO: Giải đấu "${t.name}" đã có ${t.registered_player} người tham gia. \n\nKhi hủy giải, bạn phải TỰ LIÊN HỆ và HOÀN LỆ PHÍ cho người chơi ngoài hệ thống.\n\nBạn có chắc chắn muốn hủy giải đấu này không?`
+      : `Bạn có chắc chắn muốn hủy giải đấu "${t.name}" không?`;
+
+    if (window.confirm(confirmMsg)) {
+      try {
+        const res = await cancelTournament(t._id);
+        if (res.success) {
+          toast.success("Đã hủy giải đấu");
+          const updated = await getTournamentsByClub(CLUB_ID);
+          if (updated.success) setTournaments(updated.data || []);
+        }
+      } catch (e) {
+        toast.error(e.response?.data?.message || "Không thể hủy giải đấu");
+      }
+    }
+  };
 
   const filtered = tournaments.filter((t) => {
     const matchSearch = t.name?.toLowerCase().includes(search.toLowerCase());
@@ -117,13 +137,30 @@ export const StaffClubPageTournament = () => {
                 </div>
                 
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {t.status === "InProgress" ? (
-                    <button 
-                      onClick={() => navigate(`/staff/tournaments/${t._id}/matches`)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold flex items-center gap-2 self-start hover:bg-blue-700 transition"
-                    >
-                      <Play size={16} /> Quản lý trận
-                    </button>
+                  {t.status === "Open" || t.status === "Closed" ? (
+                    <>
+                      <button 
+                        onClick={() => navigate(`/staff/tournaments/${t._id}/players`)}
+                        className="px-4 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-sm font-semibold flex items-center gap-2 self-start transition"
+                      >
+                        <Users size={16} /> Người chơi
+                      </button>
+                    </>
+                  ) : t.status === "InProgress" ? (
+                    <>
+                      <button 
+                        onClick={() => navigate(`/staff/tournaments/${t._id}/matches`)}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold flex items-center gap-2 self-start hover:bg-blue-700 transition"
+                      >
+                        <Play size={16} /> Quản lý trận
+                      </button>
+                      <button 
+                        onClick={() => navigate(`/staff/tournaments/${t._id}/players`)}
+                        className="px-4 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-sm font-semibold flex items-center gap-2 self-start transition"
+                      >
+                        <Users size={16} /> Người chơi
+                      </button>
+                    </>
                   ) : t.status === "Completed" ? (
                     <>
                       <button 
