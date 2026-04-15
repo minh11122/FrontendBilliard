@@ -321,7 +321,7 @@ export default function OwnerTournamentListPage() {
 
                     {t.status === "InProgress" && (
                       <>
-                        <button onClick={() => navigate(`/owner/tournaments/${t._id}/matches`)} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold flex items-center gap-2">
+                        <button onClick={() => navigate(`/owner/tournaments/${t._id}/bracket`)} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold flex items-center gap-2">
                           <Trophy size={14} /> Sơ đồ & Kết quả
                         </button>
                         <button onClick={() => navigate(`/owner/tournaments/${t._id}/players`)} className="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:bg-slate-50 transition">

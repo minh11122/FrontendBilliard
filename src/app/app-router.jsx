@@ -247,6 +247,14 @@ export const router = createBrowserRouter([
               </PlanProtectedRoute>
             ),
           },
+          {
+            path: "tournaments/:id/bracket",
+            element: (
+              <PlanProtectedRoute allowedPlans={["pro"]}>
+                <OwnerTournamentBracketPage />
+              </PlanProtectedRoute>
+            ),
+          },
           { path: "posts", element: <OwnerPostPage /> },
         ],
       },
