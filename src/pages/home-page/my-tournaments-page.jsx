@@ -18,6 +18,10 @@ const statusConfig = {
     label: "Đã kết thúc",
     color: "bg-gray-200 text-gray-600",
   },
+  cancelled: {
+    label: "Đã hủy",
+    color: "bg-red-100 text-red-600",
+  },
 };
 
 export const MyTournamentsPage = () => {
@@ -58,6 +62,7 @@ export const MyTournamentsPage = () => {
       // Map status to UI status
       let uiStatus = "upcoming";
       if (tournament.status === "InProgress") uiStatus = "live";
+      if (tournament.status === "Cancelled") uiStatus = "cancelled";
       if (tournament.status === "Completed") uiStatus = "ended";
 
       // Filter by tab
@@ -161,6 +166,7 @@ export const MyTournamentsPage = () => {
               // Map db status to ui status
               let uiStatus = "upcoming";
               if (tournament.status === "InProgress") uiStatus = "live";
+              if (tournament.status === "Cancelled") uiStatus = "cancelled";
               if (tournament.status === "Completed") uiStatus = "ended";
 
               const cfg = statusConfig[uiStatus];
