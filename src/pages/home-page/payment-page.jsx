@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useBlocker, useParams } from "react-router-do
 import { ChevronLeft, QrCode, Shield, Clock, MapPin, Star, Lock, AlertCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import { createPayOSBookingPayment, cancelHold } from "@/services/booking.service";
+import { SiteLogo } from "@/components/common/SiteLogo";
 
 export const PaymentPage = () => {
   const location = useLocation();
@@ -69,14 +70,14 @@ export const PaymentPage = () => {
   // Tính thời gian giữ chỗ còn lại
   useEffect(() => {
     if (!bookingData?.heldUntil) return;
-    
+
     const heldUntil = new Date(bookingData.heldUntil).getTime();
-    
+
     const updateTimer = () => {
       const now = Date.now();
       const remaining = Math.max(0, Math.floor((heldUntil - now) / 1000));
       setTimeLeft(remaining);
-      
+
       if (remaining <= 0) {
         toast.error("Hết thời gian giữ chỗ. Bàn đã được trả về.");
         allowNavRef.current = true;
@@ -126,7 +127,7 @@ export const PaymentPage = () => {
 
   const handleCancelBooking = async () => {
     if (!booking?._id) return;
-    
+
     if (!window.confirm("Bạn có chắc chắn muốn hủy đơn đặt bàn này không? Bàn sẽ được giải phóng ngay lập tức.")) {
       return;
     }
@@ -276,7 +277,7 @@ export const PaymentPage = () => {
                   <span className="text-emerald-600 font-semibold underline decoration-dotted">
                     chính sách hoàn tiền
                   </span>{" "}
-                  của BilliardMaster.
+                  của BilliardOne.
                 </span>
               </label>
             </div>
@@ -351,7 +352,10 @@ export const PaymentPage = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Loại bàn</p>
-                    <p className="font-bold text-sm text-slate-900">🎱 Bàn {table?.table_type || "Pool"}</p>
+                    <p className="font-bold text-sm text-slate-900 flex items-center gap-1.5">
+                      <SiteLogo className="w-4 h-4 rounded-sm" decorative />
+                      <span>Bàn {table?.table_type || "Pool"}</span>
+                    </p>
                   </div>
                   <div>
                     <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Vị trí</p>
@@ -396,7 +400,7 @@ export const PaymentPage = () => {
 
       {/* Footer */}
       <div className="border-t mt-16 py-6 text-center text-xs text-slate-400">
-        © 2026 BilliardMaster System. All rights reserved.
+        © 2026 BilliardOne System. All rights reserved.
       </div>
 
       {/* Leave Dialog */}
@@ -438,22 +442,22 @@ export const PaymentPage = () => {
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-2 bg-amber-500"></div>
-            
+
             <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <AlertCircle className="w-8 h-8 text-amber-600" />
             </div>
-            
+
             <h2 className="text-2xl font-bold text-center text-slate-900 mb-4">Xác nhận điều khoản</h2>
-            
+
             <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 mb-8">
               <p className="text-slate-700 leading-relaxed font-medium text-sm">
-                Bằng việc xác nhận thanh toán, bạn đồng ý với điều khoản: 
+                Bằng việc xác nhận thanh toán, bạn đồng ý với điều khoản:
                 <span className="text-rose-600 font-bold ml-1 italic">
                   "Nếu quá giờ đặt bàn mà bạn không đến, tiền cọc sẽ bị mất hoàn toàn để giữ quyền lợi cho quán."
                 </span>
               </p>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <button
                 onClick={() => setShowTermsModal(false)}

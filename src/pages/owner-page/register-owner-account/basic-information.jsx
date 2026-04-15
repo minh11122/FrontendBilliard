@@ -7,6 +7,7 @@ import { registerClub } from "@/services/club.service";
 import { getProvinces, getDistrictsByProvince, matchAdministrativeUnit } from "@/services/location.service";
 import { useState, useEffect } from "react";
 import { MapAddressPicker } from "@/components/common/MapAddressPicker";
+import { SiteLogo } from "@/components/common/SiteLogo";
 import { uploadImages } from "@/utils/cloudinary";
 
 export function RegisterOwnerAccount() {
@@ -149,9 +150,7 @@ export function RegisterOwnerAccount() {
       {/* top bar */}
       <div className="max-w-6xl mx-auto flex items-center justify-between mb-6">
         <Link to="/" className="flex items-center gap-2 font-bold text-lg">
-          <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center text-white">
-            🎱
-          </div>
+          <SiteLogo className="w-8 h-8 rounded-lg" alt="Billiards Manager logo" />
           <span>
             Billiards <span className="text-green-600">Manager</span>
           </span>

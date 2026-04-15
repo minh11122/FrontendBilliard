@@ -1,7 +1,8 @@
 import { useState, useContext, useEffect } from "react";
-import { Moon, User, LogOut, Bell, ChevronDown, Trophy } from "lucide-react";
+import { Moon, Sun, User, LogOut, Bell, ChevronDown, Trophy } from "lucide-react";
 import { useNavigate, Link, NavLink, useLocation } from "react-router-dom";
 import { AuthContext } from "@/context/AuthContext";
+import { SiteLogo } from "@/components/common/SiteLogo";
 
 import {
   getNotifications,
@@ -16,6 +17,38 @@ export const HeaderHome = () => {
   const [openMenu, setOpenMenu] = useState(false);
   const [openUserMenu, setOpenUserMenu] = useState(false);
   const [openNoti, setOpenNoti] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem("theme");
+    return saved === "dark";
+  });
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  }, [darkMode]);
+
+  // Scroll listener for transparent → solid header
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 50);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Close tournament dropdown when clicking outside
+  useEffect(() => {
+    if (!openMenu) return;
+    const handler = (e) => {
+      if (!e.target.closest(".tournament-dropdown")) setOpenMenu(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [openMenu]);
 
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -90,11 +123,15 @@ export const HeaderHome = () => {
       console.error(err);
     }
   };
-
   return (
-    <header className="w-full bg-white border-b border-gray-200 shadow-sm relative z-[9999]">
+    <header
+      className={`w-full fixed top-0 left-0 right-0 z-[9999] transition-all duration-300 ${scrolled
+        ? "bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm"
+        : "bg-transparent border-b border-transparent"
+        }`}
+    >
       {user && isIncomplete && (
-        <div className="bg-yellow-50 border-b border-yellow-200 text-yellow-800 px-6 py-3 text-sm flex items-center justify-between">
+        <div className="bg-yellow-50 dark:bg-yellow-900/30 border-b border-yellow-200 dark:border-yellow-700 text-yellow-800 dark:text-yellow-300 px-6 py-3 text-sm flex items-center justify-between">
           <span>⚠️ Vui lòng nhập đầy đủ thông tin (tên, số điện thoại)</span>
 
           <button
@@ -109,15 +146,13 @@ export const HeaderHome = () => {
         {/* Logo */}
         <Link to="/" className="group transition-all">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-md group-hover:shadow-lg group-hover:scale-105 transition-all">
-              🎱
-            </div>
+            <SiteLogo
+              className="w-10 h-10 group-hover:scale-105 transition-transform"
+              alt="BilliardOne logo"
+            />
             <div className="flex flex-col">
-              <span className="font-bold text-lg text-gray-900">
-                Billiard<span className="text-green-500">Master</span>
-              </span>
-              <span className="text-xs text-gray-500 font-medium">
-                Quản lý CLB
+              <span className={`font-bold text-lg ${scrolled ? "text-gray-900 dark:text-white" : "text-white"}`}>
+                Billiard<span className="text-green-400">One</span>
               </span>
             </div>
           </div>
@@ -128,10 +163,11 @@ export const HeaderHome = () => {
           <NavLink
             to="/"
             className={({ isActive }) =>
-              `px-4 py-2 font-medium transition-colors ${
-                isActive
-                  ? "text-green-500 border-b-2 border-green-500"
-                  : "text-gray-700 hover:text-green-500"
+              `px-4 py-2 font-medium transition-colors ${isActive
+                ? "text-green-400 border-b-2 border-green-400"
+                : scrolled
+                  ? "text-gray-700 dark:text-gray-300 hover:text-green-500"
+                  : "text-white/90 hover:text-white"
               }`
             }
           >
@@ -141,10 +177,11 @@ export const HeaderHome = () => {
           <NavLink
             to="/booking"
             className={({ isActive }) =>
-              `px-4 py-2 font-medium transition-colors ${
-                isActive
-                  ? "text-green-500 border-b-2 border-green-500"
-                  : "text-gray-700 hover:text-green-500"
+              `px-4 py-2 font-medium transition-colors ${isActive
+                ? "text-green-400 border-b-2 border-green-400"
+                : scrolled
+                  ? "text-gray-700 dark:text-gray-300 hover:text-green-500"
+                  : "text-white/90 hover:text-white"
               }`
             }
           >
@@ -152,100 +189,106 @@ export const HeaderHome = () => {
           </NavLink>
 
           {/* Tournament Dropdown */}
-          <div className="relative group ml-1">
+          <div className="relative ml-1 tournament-dropdown">
             <button
-              className={`px-4 py-2 font-bold rounded-lg transition-all flex items-center gap-2 border ${
-                location.pathname.startsWith("/tournament") ||
+              onClick={() => setOpenMenu(!openMenu)}
+              className={`px-4 py-2 font-bold rounded-lg transition-all flex items-center gap-2 border ${location.pathname.startsWith("/tournament") ||
                 location.pathname === "/my-tournaments"
-                  ? "text-green-600 bg-green-50 border-green-200"
-                  : "text-gray-700 hover:bg-gray-50 border-transparent"
-              }`}
+                ? "text-green-400 bg-green-500/10 border-green-400/30"
+                : scrolled
+                  ? "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 border-transparent"
+                  : "text-white/90 hover:text-white border-transparent hover:bg-white/10"
+                }`}
             >
               <Trophy
                 size={16}
                 className={
                   location.pathname.startsWith("/tournament") ||
-                  location.pathname === "/my-tournaments"
+                    location.pathname === "/my-tournaments"
                     ? "text-green-500"
-                    : "text-gray-400"
+                    : "text-gray-400 dark:text-gray-500"
                 }
               />
               <span>Giải đấu</span>
               <ChevronDown
                 size={14}
-                className="transition-transform group-hover:rotate-180 text-gray-400"
+                className={`transition-transform text-gray-400 dark:text-gray-500 ${openMenu ? "rotate-180" : ""}`}
               />
             </button>
 
-            <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-[10000] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 translate-y-2 group-hover:translate-y-0">
-              <div className="p-2">
-                <NavLink
-                  to="/tournament"
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-                      isActive
+            {openMenu && (
+              <div className="absolute top-full left-0 mt-1 w-64 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-[10000]">
+                <div className="p-2">
+                  <NavLink
+                    to="/tournament"
+                    onClick={() => setOpenMenu(false)}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${isActive
                         ? "bg-green-500 text-white shadow-md shadow-green-200"
-                        : "text-gray-700 hover:bg-gray-50"
-                    }`
-                  }
-                >
-                  <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600 shrink-0">
-                    <Trophy size={16} />
-                  </div>
-                  <div className="flex flex-col">
-                    <span>Giải đấu cộng đồng</span>
-                    <span className="text-[10px] opacity-70 font-medium">
-                      Khám phá các giải đấu mới
-                    </span>
-                  </div>
-                </NavLink>
+                        : "text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+                      }`
+                    }
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center text-orange-600 shrink-0">
+                      <Trophy size={16} />
+                    </div>
+                    <div className="flex flex-col">
+                      <span>Giải đấu cộng đồng</span>
+                      <span className="text-[10px] opacity-70 font-medium">
+                        Khám phá các giải đấu mới
+                      </span>
+                    </div>
+                  </NavLink>
 
-                <div className="h-px bg-gray-50 my-1 mx-2" />
+                  <div className="h-px bg-gray-50 dark:bg-gray-700 my-1 mx-2" />
 
-                <NavLink
-                  to="/my-tournaments"
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-                      isActive
+                  <NavLink
+                    to="/my-tournaments"
+                    onClick={() => setOpenMenu(false)}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${isActive
                         ? "bg-green-500 text-white shadow-md shadow-green-200"
-                        : "text-gray-700 hover:bg-gray-50"
-                    }`
-                  }
-                >
-                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
-                    <User size={16} />
-                  </div>
-                  <div className="flex flex-col">
-                    <span>Giải của tôi</span>
-                    <span className="text-[10px] opacity-70 font-medium">
-                      Lịch sử và tiến trình
-                    </span>
-                  </div>
-                </NavLink>
+                        : "text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+                      }`
+                    }
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-600 shrink-0">
+                      <User size={16} />
+                    </div>
+                    <div className="flex flex-col">
+                      <span>Giải của tôi</span>
+                      <span className="text-[10px] opacity-70 font-medium">
+                        Lịch sử và tiến trình
+                      </span>
+                    </div>
+                  </NavLink>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <NavLink
             to="/posts"
             className={({ isActive }) =>
-              `px-4 py-2 font-medium transition-colors ${
-                isActive
-                  ? "text-green-500 border-b-2 border-green-500"
-                  : "text-gray-700 hover:text-green-500"
+              `px-4 py-2 font-medium transition-colors ${isActive
+                ? "text-green-400 border-b-2 border-green-400"
+                : scrolled
+                  ? "text-gray-700 dark:text-gray-300 hover:text-green-500"
+                  : "text-white/90 hover:text-white"
               }`
             }
           >
-            Bài viết
+            Bài viết
           </NavLink>
 
           <NavLink
             to="/my-bookings"
             className={({ isActive }) =>
-              `px-4 py-2 font-medium transition-colors ${
-                isActive
-                  ? "text-green-500 border-b-2 border-green-500"
-                  : "text-gray-700 hover:text-green-500"
+              `px-4 py-2 font-medium transition-colors ${isActive
+                ? "text-green-400 border-b-2 border-green-400"
+                : scrolled
+                  ? "text-gray-700 dark:text-gray-300 hover:text-green-500"
+                  : "text-white/90 hover:text-white"
               }`
             }
           >
@@ -255,10 +298,11 @@ export const HeaderHome = () => {
           <NavLink
             to="/payment-history"
             className={({ isActive }) =>
-              `px-4 py-2 font-medium transition-colors ${
-                isActive
-                  ? "text-green-500 border-b-2 border-green-500"
-                  : "text-gray-700 hover:text-green-500"
+              `px-4 py-2 font-medium transition-colors ${isActive
+                ? "text-green-400 border-b-2 border-green-400"
+                : scrolled
+                  ? "text-gray-700 dark:text-gray-300 hover:text-green-500"
+                  : "text-white/90 hover:text-white"
               }`
             }
           >
@@ -269,8 +313,15 @@ export const HeaderHome = () => {
         {/* Right Section */}
         <div className="flex items-center gap-2">
           {/* Theme Button */}
-          <button className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
-            <Moon size={20} />
+          <button
+            onClick={() => setDarkMode((prev) => !prev)}
+            className={`p-2 rounded-lg transition-colors ${scrolled
+              ? "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+              : "text-white/80 hover:text-white hover:bg-white/10"
+              }`}
+            title={darkMode ? "Chuyển sang sáng" : "Chuyển sang tối"}
+          >
+            {darkMode ? <Sun size={20} /> : <Moon size={20} />}
           </button>
 
           {/* Notifications */}
@@ -278,7 +329,10 @@ export const HeaderHome = () => {
             <div className="relative">
               <button
                 onClick={handleOpenNoti}
-                className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors relative group"
+                className={`p-2 rounded-lg transition-colors relative group ${scrolled
+                  ? "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  : "text-white/80 hover:text-white hover:bg-white/10"
+                  }`}
               >
                 <Bell size={20} />
 
@@ -291,10 +345,10 @@ export const HeaderHome = () => {
 
               {/* Notifications Dropdown */}
               {openNoti && (
-                <div className="absolute right-0 mt-2 w-96 bg-white border border-gray-200 rounded-2xl shadow-2xl py-0 overflow-hidden">
+                <div className="absolute right-0 mt-2 w-96 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl py-0 overflow-hidden">
                   {/* Header */}
-                  <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                    <p className="text-sm font-semibold text-gray-900">
+                  <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
                       Thông báo
                     </p>
                     {unreadCount > 0 && (
@@ -324,24 +378,22 @@ export const HeaderHome = () => {
                         <div key={n._id}>
                           <div
                             onClick={() => handleClickNoti(n._id)}
-                            className={`px-6 py-4 cursor-pointer transition-colors border-l-4 ${
-                              !n.is_read
-                                ? "bg-blue-50 border-l-green-500 hover:bg-blue-100"
-                                : "bg-white border-l-transparent hover:bg-gray-50"
-                            }`}
+                            className={`px-6 py-4 cursor-pointer transition-colors border-l-4 ${!n.is_read
+                              ? "bg-blue-50 dark:bg-blue-900/20 border-l-green-500 hover:bg-blue-100 dark:hover:bg-blue-900/30"
+                              : "bg-white dark:bg-gray-800 border-l-transparent hover:bg-gray-50 dark:hover:bg-gray-700"
+                              }`}
                           >
                             <div className="flex justify-between items-start gap-3">
                               <div className="flex-1">
                                 <p
-                                  className={`text-sm font-semibold ${
-                                    !n.is_read
-                                      ? "text-gray-900"
-                                      : "text-gray-700"
-                                  }`}
+                                  className={`text-sm font-semibold ${!n.is_read
+                                    ? "text-gray-900 dark:text-white"
+                                    : "text-gray-700 dark:text-gray-300"
+                                    }`}
                                 >
                                   {n.title}
                                 </p>
-                                <p className="text-xs text-gray-500 mt-1">
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                   {n.message}
                                 </p>
                               </div>
@@ -355,7 +407,7 @@ export const HeaderHome = () => {
 
                           {/* Divider */}
                           {index !== notifications.length - 1 && (
-                            <div className="border-t border-gray-100" />
+                            <div className="border-t border-gray-100 dark:border-gray-700" />
                           )}
                         </div>
                       ))
@@ -385,17 +437,17 @@ export const HeaderHome = () => {
 
               {/* User Dropdown */}
               {openUserMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden">
                   <Link
                     to="/profile"
-                    className="block px-4 py-3 text-gray-700 hover:bg-gray-50 font-medium transition-colors border-b border-gray-100"
+                    className="block px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors border-b border-gray-100 dark:border-gray-700"
                   >
                     👤 Hồ sơ của tôi
                   </Link>
 
                   <button
                     onClick={handleLogout}
-                    className="w-full text-left px-4 py-3 text-gray-700 hover:bg-red-50 flex items-center gap-2 font-medium transition-colors text-red-600"
+                    className="w-full text-left px-4 py-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 font-medium transition-colors"
                   >
                     <LogOut size={16} />
                     Đăng xuất

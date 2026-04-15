@@ -141,3 +141,186 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* =====================================================
+   GLOBAL DARK MODE OVERRIDES FOR CUSTOMER PAGES
+   Covers all pages under HomeMainLayout without
+   requiring individual class edits on each page.
+   ===================================================== */
+
+/* --- Backgrounds --- */
+.dark .bg-white {
+  background-color: #1f2937 !important; /* gray-800 */
+}
+.dark .bg-gray-50 {
+  background-color: #111827 !important; /* gray-900 */
+}
+.dark .bg-slate-50 {
+  background-color: #111827 !important;
+}
+.dark .bg-gray-100 {
+  background-color: #1f2937 !important;
+}
+.dark .bg-slate-100 {
+  background-color: #1f2937 !important;
+}
+.dark .bg-gray-200 {
+  background-color: #374151 !important;
+}
+.dark .bg-slate-200 {
+  background-color: #374151 !important;
+}
+
+/* --- Page-level min-h-screen backgrounds --- */
+.dark .min-h-screen.bg-white,
+.dark .min-h-screen.bg-gray-50,
+.dark .min-h-screen.bg-slate-50 {
+  background-color: #030712 !important; /* gray-950 */
+}
+
+/* sticky headers that use bg-white */
+.dark .sticky.bg-white {
+  background-color: #1f2937 !important;
+}
+
+/* --- Text Colors --- */
+.dark .text-gray-900,
+.dark .text-slate-900 {
+  color: #f9fafb !important; /* gray-50 */
+}
+.dark .text-gray-800,
+.dark .text-slate-800 {
+  color: #f3f4f6 !important; /* gray-100 */
+}
+.dark .text-gray-700,
+.dark .text-slate-700 {
+  color: #e5e7eb !important; /* gray-200 */
+}
+.dark .text-gray-600,
+.dark .text-slate-600 {
+  color: #d1d5db !important; /* gray-300 */
+}
+.dark .text-gray-500,
+.dark .text-slate-500 {
+  color: #9ca3af !important; /* gray-400 */
+}
+.dark .text-gray-400,
+.dark .text-slate-400 {
+  color: #6b7280 !important; /* gray-500 */
+}
+
+/* --- Borders --- */
+.dark .border-gray-200,
+.dark .border-slate-200 {
+  border-color: #374151 !important; /* gray-700 */
+}
+.dark .border-gray-300,
+.dark .border-slate-300 {
+  border-color: #4b5563 !important; /* gray-600 */
+}
+.dark .border-gray-100,
+.dark .border-slate-100 {
+  border-color: #374151 !important;
+}
+
+/* Generic border (used in detail grids etc) */
+.dark .border {
+  border-color: #374151 !important;
+}
+.dark .border-b {
+  border-bottom-color: #374151 !important;
+}
+.dark .border-t {
+  border-top-color: #374151 !important;
+}
+.dark .border-dashed {
+  border-color: #4b5563 !important;
+}
+
+/* --- Inputs & Form Controls --- */
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #374151 !important;
+  color: #f9fafb !important;
+  border-color: #4b5563 !important;
+}
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #9ca3af !important;
+}
+.dark select option {
+  background-color: #1f2937;
+  color: #f9fafb;
+}
+
+/* --- Hover overrides for buttons/interactive elements --- */
+.dark .hover\:bg-gray-50:hover,
+.dark .hover\:bg-slate-50:hover {
+  background-color: #374151 !important;
+}
+.dark .hover\:bg-gray-100:hover,
+.dark .hover\:bg-slate-100:hover {
+  background-color: #374151 !important;
+}
+.dark .hover\:border-slate-300:hover,
+.dark .hover\:border-gray-300:hover {
+  border-color: #6b7280 !important;
+}
+.dark .hover\:text-gray-900:hover,
+.dark .hover\:text-slate-900:hover {
+  color: #f9fafb !important;
+}
+
+/* --- Tab buttons (inactive) --- */
+.dark .text-slate-600.bg-white {
+  background-color: #374151 !important;
+  color: #d1d5db !important;
+}
+
+/* --- Modal overlays --- */
+.dark .bg-white.rounded-2xl,
+.dark .bg-white.rounded-xl,
+.dark .bg-white.rounded-lg {
+  background-color: #1f2937 !important;
+}
+
+/* Sticky modal header */
+.dark .sticky.bg-white.border-b {
+  background-color: #1f2937 !important;
+  border-bottom-color: #374151 !important;
+}
+
+/* --- Info/detail boxes (bg-slate-50, border) --- */
+.dark .bg-slate-50.p-4,
+.dark .bg-slate-50.rounded-xl,
+.dark .bg-slate-50.p-5,
+.dark .bg-slate-50.rounded-2xl {
+  background-color: #111827 !important;
+}
+.dark .bg-gray-50.p-4,
+.dark .bg-gray-50.rounded-xl,
+.dark .bg-gray-50.rounded-2xl {
+  background-color: #111827 !important;
+}
+
+/* --- Table type badge chips --- */
+.dark .bg-gray-100.text-gray-700 {
+  background-color: #374151 !important;
+  color: #d1d5db !important;
+}
+.dark .border-gray-200.border-dashed {
+  border-color: #4b5563 !important;
+}
+
+/* Pagination buttons */
+.dark .text-gray-600.hover\:bg-gray-100 {
+  color: #d1d5db !important;
+}
+
+/* Club card labels/tags */
+.dark .px-2.py-1.bg-gray-100 {
+  background-color: #374151 !important;
+}
+
+

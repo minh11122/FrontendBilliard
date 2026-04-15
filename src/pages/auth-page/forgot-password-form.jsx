@@ -4,6 +4,7 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 import toast from "react-hot-toast";
 import { forgotPassword } from "@/services/auth.service";
+import { SiteLogo } from "@/components/common/SiteLogo";
 
 export function ForgotPasswordForm() {
   const formik = useFormik({
@@ -35,9 +36,7 @@ export function ForgotPasswordForm() {
       {/* Top brand */}
       <div className="max-w-6xl mx-auto flex items-center justify-between mb-6">
         <Link to="/" className="flex items-center gap-2 font-bold text-lg">
-          <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center text-white">
-            🎱
-          </div>
+          <SiteLogo className="w-8 h-8 rounded-lg" alt="Billiards Manager logo" />
           <span>
             Billiards <span className="text-green-600">Manager</span>
           </span>

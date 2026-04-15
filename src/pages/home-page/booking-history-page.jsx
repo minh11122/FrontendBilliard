@@ -4,6 +4,7 @@ import { MapPin, Clock, Calendar, ChevronRight, X, Star, AlertCircle, CheckCircl
 import { getMyBookings, verifyBookingPayOSPayment, cancelHold } from "@/services/booking.service";
 import { createFeedback, getFeedbackByBookingId, updateFeedback } from "@/services/feedback.service";
 import { AuthContext } from "@/context/AuthContext";
+import { SiteLogo } from "@/components/common/SiteLogo";
 import toast from "react-hot-toast";
 
 const STATUS_CONFIG = {
@@ -236,7 +237,8 @@ export const BookingHistoryPage = () => {
                       <Clock className="w-3 h-3" /> {booking.start_time} - {booking.end_time}, {booking.play_date ? new Date(booking.play_date).toLocaleDateString("vi-VN") : "—"}
                     </span>
                     <span className="flex items-center gap-1">
-                      🎱 Bàn {booking.table_info?.table_number || "—"} ({booking.table_info?.table_type || "Pool"})
+                      <SiteLogo className="w-4 h-4 rounded-sm" decorative />
+                      <span>Bàn {booking.table_info?.table_number || "—"} ({booking.table_info?.table_type || "Pool"})</span>
                     </span>
                     <span className="flex items-center gap-1">
                       <MapPin className="w-3 h-3" /> {booking.club?.address || "—"}
@@ -519,7 +521,10 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
               <p className="font-bold text-sm text-slate-900">{booking.start_time} - {booking.end_time}</p>
             </div>
             <div className="bg-slate-50 rounded-xl p-4 border">
-              <p className="text-[10px] text-slate-400 uppercase font-bold mb-1">🎱 Số bàn</p>
+              <p className="text-[10px] text-slate-400 uppercase font-bold mb-1 flex items-center gap-1">
+                <SiteLogo className="w-3.5 h-3.5 rounded-[4px]" decorative />
+                <span>Số bàn</span>
+              </p>
               <p className="font-bold text-sm text-slate-900">Bàn {booking.table_info?.table_number || "—"}</p>
             </div>
             <div className="bg-slate-50 rounded-xl p-4 border">

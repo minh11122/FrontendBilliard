@@ -92,7 +92,7 @@ export const SidebarAdmin = () => {
             </div>
             <div>
               <p className="text-sm font-bold leading-tight text-slate-900">
-                BilliardsMaster
+                BilliardOne
               </p>
               <p className="text-[11px] text-slate-400 font-medium">System Staff</p>
               <p className="text-[11px] font-medium text-slate-600 mt-0.5 truncate max-w-[160px]">

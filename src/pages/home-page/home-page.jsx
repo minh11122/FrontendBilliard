@@ -115,27 +115,10 @@ export const HomePage = () => {
   ];
 
   return (
-    <div className="bg-white">
-      {/* ANNOUNCEMENT BANNER */}
-      <section className="bg-green-500 text-white py-3">
-        <div className="container mx-auto px-6">
-          <div className="flex items-center justify-center gap-2 text-sm">
-            <Zap size={16} />
-            <span>
-              🎉 Nhanh Tay đặt bàn: Tiện ích mọi lúc mọi nơi.
-              <button
-                onClick={() => navigate("/booking")}
-                className="ml-2 font-semibold hover:underline"
-              >
-                Xem chi tiết →
-              </button>
-            </span>
-          </div>
-        </div>
-      </section>
+    <div className="bg-white dark:bg-gray-950 transition-colors duration-300">
 
       {/* HERO */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-hidden -mt-[73px]">
         <div className="relative w-full h-[400px] md:h-[520px] lg:h-[600px]">
           {/* Ảnh */}
           <img
@@ -168,9 +151,8 @@ export const HomePage = () => {
             {images.map((_, i) => (
               <div
                 key={i}
-                className={`w-3 h-3 rounded-full ${
-                  i === index ? "bg-white" : "bg-white/40"
-                }`}
+                className={`w-3 h-3 rounded-full ${i === index ? "bg-white" : "bg-white/40"
+                  }`}
               />
             ))}
           </div>
@@ -182,23 +164,23 @@ export const HomePage = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           <div>
             <Users className="mx-auto text-green-500 mb-2" />
-            <p className="text-2xl font-bold">50+</p>
-            <p className="text-gray-500 text-sm">Câu lạc bộ liên kết</p>
+            <p className="text-2xl font-bold dark:text-white">50+</p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">Câu lạc bộ liên kết</p>
           </div>
           <div>
             <Trophy className="mx-auto text-green-500 mb-2" />
-            <p className="text-2xl font-bold">200+</p>
-            <p className="text-gray-500 text-sm">Bàn bida chất lượng</p>
+            <p className="text-2xl font-bold dark:text-white">200+</p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">Bàn bida chất lượng</p>
           </div>
           <div>
             <Star className="mx-auto text-green-500 mb-2" />
-            <p className="text-2xl font-bold">1000+</p>
-            <p className="text-gray-500 text-sm">Thành viên hoạt động</p>
+            <p className="text-2xl font-bold dark:text-white">1000+</p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">Thành viên hoạt động</p>
           </div>
           <div>
             <Clock className="mx-auto text-green-500 mb-2" />
-            <p className="text-2xl font-bold">24/7</p>
-            <p className="text-gray-500 text-sm">Hỗ trợ đặt bàn</p>
+            <p className="text-2xl font-bold dark:text-white">24/7</p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">Hỗ trợ đặt bàn</p>
           </div>
         </div>
       </section>
@@ -206,10 +188,10 @@ export const HomePage = () => {
       {/* PROMOTIONS */}
       <section className="container mx-auto px-6 py-16">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">
             Giải đấu mới nhất
           </h2>
-          <p className="text-gray-600 mt-2">
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
             Tham gia các giải đấu hấp dẫn đang diễn ra
           </p>
         </div>
@@ -218,7 +200,7 @@ export const HomePage = () => {
           {tournaments.map((tour) => (
             <div
               key={tour._id}
-              className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all"
+              className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-xl transition-all"
             >
               <img
                 src={tour.banner || "/img-home/page1.png"}
@@ -226,15 +208,15 @@ export const HomePage = () => {
               />
 
               <div className="p-5">
-                <h3 className="font-semibold text-lg text-gray-900 mb-2">
+                <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-2">
                   {tour.name}
                 </h3>
 
-                <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+                <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">
                   {tour.description || "Chưa có mô tả"}
                 </p>
 
-                <div className="text-xs text-gray-500 space-y-1 mb-4">
+                <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1 mb-4">
                   <p>
                     📅{" "}
                     {tour.play_date
@@ -259,15 +241,15 @@ export const HomePage = () => {
       </section>
 
       {/* FEATURES */}
-      <section className="bg-gray-50 py-16">
+      <section className="bg-gray-50 dark:bg-gray-900 py-16 transition-colors duration-300">
         <div className="container mx-auto px-6">
           {/* title */}
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3">
               Tại sao chọn{" "}
-              <span className="text-green-500">BilliarMaster?</span>
+              <span className="text-green-500">BilliardOne?</span>
             </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Nền tảng quản lý bida toàn diện dành cho cơ thủ và chủ CLB
             </p>
           </div>
@@ -277,10 +259,10 @@ export const HomePage = () => {
             {features.map((feature, idx) => (
               <div
                 key={idx}
-                className="group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                className="group bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
               >
                 {/* icon */}
-                <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-green-500 transition-all">
+                <div className="w-14 h-14 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center mb-4 group-hover:bg-green-500 transition-all">
                   <TrendingUp
                     className="text-green-500 group-hover:text-white transition-all"
                     size={26}
@@ -288,10 +270,10 @@ export const HomePage = () => {
                 </div>
 
                 {/* content */}
-                <h3 className="font-semibold text-gray-900 mb-2 text-lg">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-2 text-lg">
                   {feature.title}
                 </h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
+                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
                   {feature.description}
                 </p>
               </div>
@@ -304,10 +286,10 @@ export const HomePage = () => {
       <section className="container mx-auto px-6 py-16">
         <div className="flex justify-between items-end mb-10">
           <div>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">
               Câu lạc bộ nổi bật
             </h2>
-            <p className="text-gray-600 mt-2">
+            <p className="text-gray-600 dark:text-gray-400 mt-2">
               Khám phá những CLB uy tín gần bạn
             </p>
           </div>
@@ -324,7 +306,7 @@ export const HomePage = () => {
           {clubs.map((club) => (
             <div
               key={club._id}
-              className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all"
+              className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-xl transition-all"
             >
               <div className="relative h-44">
                 <img
@@ -335,22 +317,22 @@ export const HomePage = () => {
                   className="w-full h-full object-cover"
                 />
 
-                <span className="absolute top-3 right-3 text-xs bg-white text-green-600 px-2 py-1 rounded-lg font-semibold shadow">
+                <span className="absolute top-3 right-3 text-xs bg-white dark:bg-gray-800 text-green-600 px-2 py-1 rounded-lg font-semibold shadow">
                   Approved
                 </span>
               </div>
 
               <div className="p-4">
-                <h3 className="font-semibold text-gray-900 mb-1">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
                   {club.name}
                 </h3>
 
-                <p className="text-gray-600 text-sm flex gap-1 mb-4">
+                <p className="text-gray-600 dark:text-gray-400 text-sm flex gap-1 mb-4">
                   <MapPin size={14} className="text-green-500" />
                   {club.district_name || club.address}
                 </p>
 
-                <div className="flex justify-between items-center pt-3 border-t">
+                <div className="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-700">
                   <span className="text-green-600 font-semibold text-sm">
                     {club.opening_time} - {club.closing_time}
                   </span>
@@ -369,13 +351,13 @@ export const HomePage = () => {
       </section>
 
       {/* TESTIMONIALS */}
-      <section className="bg-gray-50 py-16">
+      <section className="bg-gray-50 dark:bg-gray-900 py-16 transition-colors duration-300">
         <div className="container mx-auto px-6">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">
               Khách hàng nói gì
             </h2>
-            <p className="text-gray-600 mt-2">
+            <p className="text-gray-600 dark:text-gray-400 mt-2">
               Trải nghiệm thực tế từ người dùng
             </p>
           </div>
@@ -384,7 +366,7 @@ export const HomePage = () => {
             {testimonials.map((item) => (
               <div
                 key={item._id}
-                className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition"
+                className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-xl transition"
               >
                 <div className="flex mb-3">
                   {[...Array(item.rating)].map((_, i) => (
@@ -396,7 +378,7 @@ export const HomePage = () => {
                   ))}
                 </div>
 
-                <p className="text-gray-700 italic mb-6">
+                <p className="text-gray-700 dark:text-gray-300 italic mb-6">
                   "{item.comment || "Rất hài lòng!"}"
                 </p>
 
@@ -406,8 +388,8 @@ export const HomePage = () => {
                     className="w-10 h-10 rounded-full object-cover"
                   />
                   <div>
-                    <p className="font-semibold text-sm">{item.user_name}</p>
-                    <p className="text-gray-500 text-xs">Khách hàng</p>
+                    <p className="font-semibold text-sm dark:text-white">{item.user_name}</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-xs">Khách hàng</p>
                   </div>
                 </div>
               </div>
@@ -479,14 +461,14 @@ export const HomePage = () => {
       </section>
 
       {/* BLOG SECTION */}
-      <section className="bg-gray-50 py-16">
+      <section className="bg-gray-50 dark:bg-gray-900 py-16 transition-colors duration-300">
         <div className="container mx-auto px-6">
           <div className="flex justify-between items-end mb-10">
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">
                 Bài viết mới nhất
               </h2>
-              <p className="text-gray-600 mt-2">Tin tức & mẹo chơi bida</p>
+              <p className="text-gray-600 dark:text-gray-400 mt-2">Tin tức & mẹo chơi bida</p>
             </div>
 
             <button
@@ -501,7 +483,7 @@ export const HomePage = () => {
             {posts.map((post) => (
               <div
                 key={post._id}
-                className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition"
+                className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-xl transition"
               >
                 <img
                   src={
@@ -512,15 +494,15 @@ export const HomePage = () => {
                 />
 
                 <div className="p-5">
-                  <span className="text-xs font-semibold text-green-600 bg-green-100 px-2 py-1 rounded">
+                  <span className="text-xs font-semibold text-green-600 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded">
                     {post.club_name}
                   </span>
 
-                  <h3 className="font-semibold text-lg mt-3 mb-2 line-clamp-2">
+                  <h3 className="font-semibold text-lg mt-3 mb-2 line-clamp-2 dark:text-white">
                     {post.title}
                   </h3>
 
-                  <p className="text-gray-600 text-sm line-clamp-3 mb-4">
+                  <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-3 mb-4">
                     {post.content}
                   </p>
 
@@ -548,7 +530,7 @@ export const HomePage = () => {
               Mở rộng kinh doanh cùng chúng tôi
             </h3>
             <p className="text-white/90 text-lg mb-6 max-w-lg">
-              Trở thành đối tác của BilliarMaster để tiếp cận hàng ngàn khách
+              Trở thành đối tác của BilliardOne để tiếp cận hàng ngàn khách
               hàng tiềm năng và quản lý CLB hiệu quả hơn.
             </p>
             <div className="flex gap-4">
