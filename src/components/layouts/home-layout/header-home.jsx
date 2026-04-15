@@ -292,7 +292,7 @@ export const HeaderHome = () => {
               }`
             }
           >
-            Đặt bàn
+            Lịch sử đặt bàn
           </NavLink>
 
           <NavLink

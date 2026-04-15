@@ -60,6 +60,10 @@ export const TournamentPage = () => {
       button: "Xem trực tiếp",
       buttonStyle: "bg-blue-600 hover:bg-blue-700 text-white",
     },
+    ended: {
+      label: "Đã kết thúc",
+      color: "bg-gray-100 text-gray-500",
+      button: "Xem chi tiết",
       buttonStyle: "bg-gray-200 text-gray-500 cursor-not-allowed",
     },
     cancelled: {
