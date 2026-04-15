@@ -62,8 +62,8 @@ export const TournamentPage = () => {
     },
     ended: {
       label: "Đã kết thúc",
-      color: "bg-gray-200 text-gray-600",
-      button: "Xem kết quả",
+      color: "bg-gray-100 text-gray-500",
+      button: "Xem chi tiết",
       buttonStyle: "bg-gray-200 text-gray-500 cursor-not-allowed",
     },
     cancelled: {
