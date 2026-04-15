@@ -87,6 +87,19 @@ export const HeaderHome = () => {
     fetchUnread();
   }, [user]);
 
+  useEffect(() => {
+    if (!user || user.roleName !== "CUSTOMER") return;
+
+    const interval = setInterval(() => {
+      fetchUnread();
+      if (openNoti) {
+        fetchNotifications();
+      }
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [user, openNoti]);
+
   const fetchNotifications = async () => {
     try {
       const res = await getNotifications();
@@ -105,8 +118,13 @@ export const HeaderHome = () => {
     }
   };
 
-  const handleOpenNoti = () => {
-    setOpenNoti(!openNoti);
+  const handleOpenNoti = async () => {
+    const nextOpen = !openNoti;
+    setOpenNoti(nextOpen);
+
+    if (nextOpen) {
+      await Promise.all([fetchNotifications(), fetchUnread()]);
+    }
   };
 
   const handleClickNoti = async (id) => {
