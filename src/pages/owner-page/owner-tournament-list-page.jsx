@@ -212,7 +212,7 @@ export default function OwnerTournamentListPage() {
                       </span>
                       {t.play_date && (
                         <span className="inline-flex items-center gap-1 bg-black/30 backdrop-blur-sm px-2 py-1 rounded-full">
-                          <Calendar size={12} /> {new Date(t.play_date).toLocaleDateString("vi-VN")}
+                          <Calendar size={12} /> {new Date(t.play_date).toLocaleDateString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric" })}
                         </span>
                       )}
                     </div>
@@ -243,9 +243,11 @@ export default function OwnerTournamentListPage() {
                         <button onClick={() => handleOpen(t)} className="px-3 py-1.5 bg-[#00A65A] text-white rounded-lg text-xs font-semibold flex items-center gap-1.5">
                           <Sparkles size={14} /> Mở đăng ký
                         </button>
-                        <button onClick={() => navigate(`/owner/tournaments/edit/${t._id}`)} className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5">
-                          <Edit size={14} /> Chỉnh sửa
-                        </button>
+                        {t.registered_player === 0 && (
+                          <button onClick={() => navigate(`/owner/tournaments/edit/${t._id}`)} className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5">
+                            <Edit size={14} /> Chỉnh sửa
+                          </button>
+                        )}
                       </>
                     )}
 
@@ -254,9 +256,11 @@ export default function OwnerTournamentListPage() {
                         <button onClick={() => handleClose(t)} className="px-3 py-1.5 bg-amber-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5">
                           <Brackets size={14} /> Chốt & tạo bracket
                         </button>
-                        <button onClick={() => navigate(`/owner/tournaments/edit/${t._id}`)} className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5">
-                          <Edit size={14} /> Chỉnh sửa
-                        </button>
+                        {t.registered_player === 0 && (
+                          <button onClick={() => navigate(`/owner/tournaments/edit/${t._id}`)} className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5">
+                            <Edit size={14} /> Chỉnh sửa
+                          </button>
+                        )}
                       </>
                     )}
 

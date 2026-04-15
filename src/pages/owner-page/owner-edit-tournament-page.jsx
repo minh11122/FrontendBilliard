@@ -17,8 +17,17 @@ export default function OwnerEditTournamentPage() {
   const [bannerFile, setBannerFile] = useState(null);
   const [bannerPreview, setBannerPreview] = useState("");
   const [errors, setErrors] = useState({});
+  const [canEdit, setCanEdit] = useState(true);
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const formatDateTimeLocal = (date) => {
+    if (!date) return "";
+    const d = new Date(date);
+    const z = d.getTimezoneOffset() * 60 * 1000;
+    const localDate = new Date(d - z);
+    return localDate.toISOString().slice(0, 16);
+  };
+
+  const todayStr = formatDateTimeLocal(new Date());
 
   const [form, setForm] = useState({
     name: "",
@@ -55,11 +64,12 @@ export default function OwnerEditTournamentPage() {
             max_players: t.max_players || "",
             fee: t.fee || "",
             prize_pool: t.prize_pool || "",
-            registration_open: t.registration_open ? t.registration_open.split("T")[0] : "",
-            registration_deadline: t.registration_deadline ? t.registration_deadline.split("T")[0] : "",
-            play_date: t.play_date ? t.play_date.split("T")[0] : "",
+            registration_open: t.registration_open ? formatDateTimeLocal(t.registration_open) : "",
+            registration_deadline: t.registration_deadline ? formatDateTimeLocal(t.registration_deadline) : "",
+            play_date: t.play_date ? formatDateTimeLocal(t.play_date) : "",
             auto_bracket: t.auto_bracket !== undefined ? t.auto_bracket : true,
           });
+          setCanEdit((t.registered_player || 0) === 0);
           // Only show valid remote URLs (not blob: from old data)
           const isValidUrl = t.banner && !t.banner.startsWith("blob:") && t.banner.startsWith("http");
           if (isValidUrl) setBannerPreview(t.banner);
@@ -221,14 +231,26 @@ export default function OwnerEditTournamentPage() {
           <button type="button" onClick={() => navigate(-1)} className="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 font-medium transition-all shadow-sm">
             Hủy bỏ
           </button>
-          <button type="button" onClick={handleSubmit} disabled={submitting || Object.keys(errors).length > 0}
+          <button type="button" onClick={handleSubmit} disabled={submitting || Object.keys(errors).length > 0 || !canEdit}
             className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-semibold transition-all shadow-sm flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
             <Save className="w-5 h-5" /> {submitting ? "Đang lưu..." : "Lưu thay đổi"}
           </button>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      {!canEdit && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 flex items-start gap-3">
+          <Info className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-amber-800 font-bold text-sm">Không thể chỉnh sửa giải đấu này</p>
+            <p className="text-amber-700 text-xs mt-1">
+              Giải đấu đã có người tham gia đăng ký. Để đảm bảo tính công bằng, bạn không thể thay đổi thông tin sau khi danh sách người chơi đã bắt đầu hình thành.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className={`space-y-6 ${!canEdit ? "opacity-75 pointer-events-none" : ""}`}>
         {/* --- Section 1: Thông tin cơ bản --- */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-8">
           <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
@@ -332,15 +354,15 @@ export default function OwnerEditTournamentPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div>
               <label className={labelClass}>Mở đăng ký</label>
-              <input type="date" name="registration_open" value={form.registration_open} onChange={handleChange} min={todayStr} className={`${inputClass} ${errors.dates ? "border-red-500" : ""}`} />
+              <input type="datetime-local" name="registration_open" value={form.registration_open} onChange={handleChange} min={todayStr} className={`${inputClass} ${errors.dates ? "border-red-500" : ""}`} />
             </div>
             <div>
               <label className={labelClass}>Đóng đăng ký</label>
-              <input type="date" name="registration_deadline" value={form.registration_deadline} onChange={handleChange} min={form.registration_open || todayStr} className={`${inputClass} ${errors.dates ? "border-red-500" : ""}`} />
+              <input type="datetime-local" name="registration_deadline" value={form.registration_deadline} onChange={handleChange} min={form.registration_open || todayStr} className={`${inputClass} ${errors.dates ? "border-red-500" : ""}`} />
             </div>
             <div>
               <label className={labelClass}>Ngày thi đấu</label>
-              <input type="date" name="play_date" value={form.play_date} onChange={handleChange} min={form.registration_deadline || form.registration_open || todayStr} className={`${inputClass} ${errors.dates ? "border-red-500" : ""}`} />
+              <input type="datetime-local" name="play_date" value={form.play_date} onChange={handleChange} min={form.registration_deadline || form.registration_open || todayStr} className={`${inputClass} ${errors.dates ? "border-red-500" : ""}`} />
             </div>
           </div>
           {errors.dates && <p className="text-red-500 text-sm mt-3 font-medium bg-red-50 p-2.5 rounded-lg border border-red-100">{errors.dates}</p>}
