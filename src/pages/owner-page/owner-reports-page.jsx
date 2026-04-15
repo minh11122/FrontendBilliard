@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { getClubAnalytics } from "@/services/club.service";
 import toast from "react-hot-toast";
-import { Loader2, TrendingUp, Calendar, CreditCard, Clock, Star, DollarSign, Users, Award, AlertCircle } from "lucide-react";
+import { Loader2, TrendingUp, Calendar, CreditCard, Clock, Star, DollarSign, Users, Award, AlertCircle, Trophy } from "lucide-react";
 import { 
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, 
   XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer 
@@ -285,6 +285,56 @@ export default function OwnerReportsPage() {
                  ))}
                  {data.services.bottomList.length === 0 && <p className="text-sm text-gray-500 italic">Không có dịch vụ nào ế.</p>}
                </div>
+            </div>
+         </div>
+      </div>
+      
+      {/* Tournaments List */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+         <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <Trophy size={20} className="text-yellow-500" /> Thống kê Giải đấu
+            </h3>
+         </div>
+         
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-4 flex flex-col justify-center items-center text-center">
+               <span className="text-sm font-semibold text-yellow-800 mb-1">Số lượng giải đấu</span>
+               <span className="text-2xl font-black text-yellow-600">{data?.tournaments?.totalTournaments || 0}</span>
+            </div>
+            <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex flex-col justify-center items-center text-center">
+               <span className="text-sm font-semibold text-indigo-800 mb-1">Tổng người tham gia</span>
+               <span className="text-2xl font-black text-indigo-600">{data?.tournaments?.totalPlayers || 0}</span>
+            </div>
+            <div className="bg-green-50 border border-green-100 rounded-xl p-4 flex flex-col justify-center items-center text-center">
+               <span className="text-sm font-semibold text-green-800 mb-1">Doanh thu giải đấu</span>
+               <span className="text-2xl font-black text-green-600">{formatMoney(data?.tournaments?.totalRevenue || 0)}</span>
+            </div>
+         </div>
+
+         <div>
+            <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">🏆 Top giải đấu tạo doanh thu</h4>
+            <div className="space-y-3">
+              {(data?.tournaments?.tournamentsList || []).map((t, idx) => (
+                <div key={t.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                   <div className="flex items-center gap-3">
+                     <span className="w-6 h-6 rounded-full bg-yellow-100 text-yellow-700 text-xs font-bold flex items-center justify-center">{idx + 1}</span>
+                     <div>
+                       <span className="font-semibold text-sm text-gray-900 block">{t.name}</span>
+                       <span className="text-xs text-gray-500">{t.status}</span>
+                     </div>
+                   </div>
+                   <div className="text-right">
+                     <p className="text-sm font-bold text-gray-900">
+                       {t.players} <span className="text-xs font-normal text-gray-500">người chơi</span>
+                     </p>
+                     <p className="text-xs text-green-600 font-semibold">{formatMoney(t.revenue)}</p>
+                   </div>
+                </div>
+              ))}
+              {(!data?.tournaments?.tournamentsList || data?.tournaments?.tournamentsList.length === 0) && (
+                <p className="text-sm text-gray-500 italic">Chưa có dữ liệu giải đấu nào.</p>
+              )}
             </div>
          </div>
       </div>
