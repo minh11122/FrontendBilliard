@@ -8,7 +8,8 @@ import {
   closeRegistration, 
   generateBracket, 
   startTournament, 
-  deleteTournament 
+  deleteTournament,
+  cancelTournament 
 } from "@/services/tournament.service";
 
 const tabs = [
