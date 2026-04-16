@@ -11,3 +11,4 @@ export * from './payment-history-page';
 export * from "./profile-page";
 export * from './my-tournaments-page';
 export * from './post-page';
+export * from './post-detail-page';
