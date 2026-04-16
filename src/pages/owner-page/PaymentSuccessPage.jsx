@@ -15,14 +15,15 @@ export default function PaymentSuccessPage() {
 
       const orderCode = params.get("orderCode");
 
-      const subscription_id =
-        localStorage.getItem("pending_subscription");
+      const subscription_id = localStorage.getItem("pending_subscription");
+      const durationMonths = Number(localStorage.getItem("pending_subscription_duration") || 1);
 
       try {
 
-        await verifySubscriptionPayment(orderCode, subscription_id);
+        await verifySubscriptionPayment(orderCode, subscription_id, durationMonths);
 
         localStorage.removeItem("pending_subscription");
+        localStorage.removeItem("pending_subscription_duration");
 
         toast.success("Thanh toán thành công!");
 
