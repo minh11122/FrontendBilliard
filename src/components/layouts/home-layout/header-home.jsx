@@ -55,6 +55,7 @@ export const HeaderHome = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const isSolidHeader = scrolled || location.pathname !== "/";
   const { user, logout } = useContext(AuthContext);
   const [isIncomplete, setIsIncomplete] = useState(false);
 
@@ -143,7 +144,7 @@ export const HeaderHome = () => {
   };
   return (
     <header
-      className={`w-full fixed top-0 left-0 right-0 z-[9999] transition-all duration-300 ${scrolled
+      className={`w-full fixed top-0 left-0 right-0 z-[9999] transition-all duration-300 ${isSolidHeader
         ? "bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm"
         : "bg-transparent border-b border-transparent"
         }`}
@@ -169,7 +170,7 @@ export const HeaderHome = () => {
               alt="BilliardOne logo"
             />
             <div className="flex flex-col">
-              <span className={`font-bold text-lg ${scrolled ? "text-gray-900 dark:text-white" : "text-white"}`}>
+              <span className={`font-bold text-lg ${isSolidHeader ? "text-gray-900 dark:text-white" : "text-white"}`}>
                 Billiard<span className="text-green-400">One</span>
               </span>
             </div>
@@ -183,7 +184,7 @@ export const HeaderHome = () => {
             className={({ isActive }) =>
               `px-4 py-2 font-medium transition-colors ${isActive
                 ? "text-green-400 border-b-2 border-green-400"
-                : scrolled
+                : isSolidHeader
                   ? "text-gray-700 dark:text-gray-300 hover:text-green-500"
                   : "text-white/90 hover:text-white"
               }`
@@ -197,7 +198,7 @@ export const HeaderHome = () => {
             className={({ isActive }) =>
               `px-4 py-2 font-medium transition-colors ${isActive
                 ? "text-green-400 border-b-2 border-green-400"
-                : scrolled
+                : isSolidHeader
                   ? "text-gray-700 dark:text-gray-300 hover:text-green-500"
                   : "text-white/90 hover:text-white"
               }`
@@ -213,7 +214,7 @@ export const HeaderHome = () => {
               className={`px-4 py-2 font-bold rounded-lg transition-all flex items-center gap-2 border ${location.pathname.startsWith("/tournament") ||
                 location.pathname === "/my-tournaments"
                 ? "text-green-400 bg-green-500/10 border-green-400/30"
-                : scrolled
+                : isSolidHeader
                   ? "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 border-transparent"
                   : "text-white/90 hover:text-white border-transparent hover:bg-white/10"
                 }`}
@@ -290,7 +291,7 @@ export const HeaderHome = () => {
             className={({ isActive }) =>
               `px-4 py-2 font-medium transition-colors ${isActive
                 ? "text-green-400 border-b-2 border-green-400"
-                : scrolled
+                : isSolidHeader
                   ? "text-gray-700 dark:text-gray-300 hover:text-green-500"
                   : "text-white/90 hover:text-white"
               }`
@@ -304,7 +305,7 @@ export const HeaderHome = () => {
             className={({ isActive }) =>
               `px-4 py-2 font-medium transition-colors ${isActive
                 ? "text-green-400 border-b-2 border-green-400"
-                : scrolled
+                : isSolidHeader
                   ? "text-gray-700 dark:text-gray-300 hover:text-green-500"
                   : "text-white/90 hover:text-white"
               }`
@@ -318,7 +319,7 @@ export const HeaderHome = () => {
             className={({ isActive }) =>
               `px-4 py-2 font-medium transition-colors ${isActive
                 ? "text-green-400 border-b-2 border-green-400"
-                : scrolled
+                : isSolidHeader
                   ? "text-gray-700 dark:text-gray-300 hover:text-green-500"
                   : "text-white/90 hover:text-white"
               }`
@@ -333,7 +334,7 @@ export const HeaderHome = () => {
           {/* Theme Button */}
           <button
             onClick={() => setDarkMode((prev) => !prev)}
-            className={`p-2 rounded-lg transition-colors ${scrolled
+            className={`p-2 rounded-lg transition-colors ${isSolidHeader
               ? "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
               : "text-white/80 hover:text-white hover:bg-white/10"
               }`}
@@ -347,7 +348,7 @@ export const HeaderHome = () => {
             <div className="relative">
               <button
                 onClick={handleOpenNoti}
-                className={`p-2 rounded-lg transition-colors relative group ${scrolled
+                className={`p-2 rounded-lg transition-colors relative group ${isSolidHeader
                   ? "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                   : "text-white/80 hover:text-white hover:bg-white/10"
                   }`}
