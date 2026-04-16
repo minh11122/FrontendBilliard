@@ -1,9 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   FileText, CheckCircle2, XCircle, Eye, RefreshCw,
-  Loader2, AlertCircle, X, Search
+  Loader2, AlertCircle, X, Search, Bell
 } from "lucide-react";
-import { getPosts, approvePost, rejectPost, getDashboardData } from "../../services/staffDashboard.service";
+import {
+  getPosts, approvePost, rejectPost, getDashboardData,
+  getStaffNotifications, markStaffNotificationRead, markAllStaffNotificationsRead
+} from "../../services/staffDashboard.service";
 
 // ─── Toast ──────────────────────────────────────────────────────────────────
 const Toast = ({ message, type, onClose }) => (
@@ -148,6 +151,11 @@ export const SystemStaff2 = () => {
   const [rejectTarget, setRejectTarget] = useState(null);
   const [filterStatus, setFilterStatus] = useState("Pending");
   const [search, setSearch] = useState("");
+  const [notifications, setNotifications] = useState([]);
+  const [showNotificationPopup, setShowNotificationPopup] = useState(false);
+
+  const popupRef = useRef(null);
+  const unreadCount = notifications.filter(n => !n.is_read).length;
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
@@ -159,6 +167,15 @@ export const SystemStaff2 = () => {
       const res = await getDashboardData();
       if (res?.success) {
         setCounts({ Pending: res.data.stats?.pendingPosts || 0 });
+      }
+    } catch { /* silent */ }
+  }, []);
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const res = await getStaffNotifications();
+      if (res?.success) {
+        setNotifications(res.data || []);
       }
     } catch { /* silent */ }
   }, []);
@@ -178,11 +195,29 @@ export const SystemStaff2 = () => {
 
   useEffect(() => {
     fetchCounts();
+    fetchNotifications();
     const interval = setInterval(() => {
       fetchCounts();
+      fetchNotifications();
     }, 10000);
     return () => clearInterval(interval);
-  }, [fetchCounts]);
+  }, [fetchCounts, fetchNotifications]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (popupRef.current && !popupRef.current.contains(event.target)) {
+        setShowNotificationPopup(false);
+      }
+    };
+
+    if (showNotificationPopup) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showNotificationPopup]);
 
   useEffect(() => {
       fetchPosts(filterStatus);
@@ -191,6 +226,24 @@ export const SystemStaff2 = () => {
   const handleTabChange = (key) => {
     setFilterStatus(key);
     setSearch("");
+  };
+
+  const handleReadNotification = async (notifId) => {
+    try {
+      await markStaffNotificationRead(notifId);
+      fetchNotifications();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleReadAll = async () => {
+    try {
+      await markAllStaffNotificationsRead();
+      fetchNotifications();
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleApprove = async (id) => {
@@ -252,10 +305,69 @@ export const SystemStaff2 = () => {
             <p className="text-xs text-gray-500">Duyệt và quản lý bài đăng của CLB</p>
           </div>
         </div>
-        <button onClick={() => fetchPosts(filterStatus)} disabled={loading}
+        <div className="flex items-center gap-4">
+          <div className="relative" ref={popupRef}>
+            <button
+              onClick={() => setShowNotificationPopup(!showNotificationPopup)}
+              className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors flex items-center justify-center"
+              title="ThÃ´ng bÃ¡o má»›i"
+            >
+              <Bell className="w-5 h-5" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+              )}
+            </button>
+
+            {showNotificationPopup && (
+              <div className="absolute top-full right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden transform origin-top-right animate-in zoom-in-95 duration-200">
+                <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+                  <h3 className="font-semibold text-sm text-gray-800">ThÃ´ng bÃ¡o má»›i</h3>
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={handleReadAll}
+                      className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      ÄÃ¡nh dáº¥u Ä‘Ã£ Ä‘á»c
+                    </button>
+                  )}
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="px-4 py-8 text-center text-gray-500 text-sm">
+                      KhÃ´ng cÃ³ thÃ´ng bÃ¡o má»›i nÃ o
+                    </div>
+                  ) : (
+                    notifications.map((notif) => (
+                      <div
+                        key={notif._id}
+                        onClick={() => handleReadNotification(notif._id)}
+                        className={`px-4 py-3 border-b border-gray-50 hover:bg-blue-50 cursor-pointer transition-colors flex gap-3 items-start ${!notif.is_read ? "bg-blue-50/50" : ""}`}
+                      >
+                        <div className="flex-shrink-0 mt-1">
+                          {!notif.is_read && <div className="w-2 h-2 rounded-full bg-blue-500 mt-1"></div>}
+                        </div>
+                        <div>
+                          <p className={`text-sm text-gray-900 line-clamp-1 ${!notif.is_read ? "font-medium" : ""}`}>{notif.title}</p>
+                          <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{notif.message}</p>
+                          <p className="text-[10px] text-gray-400 mt-1">
+                            {new Date(notif.created_at).toLocaleString("vi-VN", {
+                              hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric"
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <button onClick={() => fetchPosts(filterStatus)} disabled={loading}
           className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg shadow-sm border border-gray-200 bg-white">
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-blue-500" : ""}`} /> Làm mới
         </button>
+      </div>
       </div>
 
       {error && (

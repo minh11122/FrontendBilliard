@@ -29,6 +29,7 @@ const formatMoney = (n) => `${(Number(n) || 0).toLocaleString("vi-VN")}đ`;
 const formatDateTime = (d) => (d ? new Date(d).toLocaleString("vi-VN") : "—");
 
 export default function StaffClubPaymentHistoryPage() {
+  const PAGE_SIZE = 10;
   // Staff-club: thường club_id đã nằm trong token, nhưng vẫn cho phép fallback từ localStorage
   const clubIdFromStorage = localStorage.getItem("selected_club_id") || "";
 
@@ -36,6 +37,7 @@ export default function StaffClubPaymentHistoryPage() {
   const [error, setError] = useState("");
   const [transactions, setTransactions] = useState([]);
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const fetchData = async () => {
     try {
@@ -69,6 +71,22 @@ export default function StaffClubPaymentHistoryPage() {
       return `${player} ${booking} ${table} ${club} ${type} ${desc}`.toLowerCase().includes(q);
     });
   }, [transactions, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginatedTransactions = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 p-6">
@@ -127,7 +145,7 @@ export default function StaffClubPaymentHistoryPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filtered.map((tx) => (
+                  {paginatedTransactions.map((tx) => (
                     <tr key={tx._id} className="hover:bg-slate-50/70 transition-colors">
                       <td className="px-6 py-4 text-sm text-slate-600">{formatDateTime(tx.transaction_time)}</td>
                       <td className="px-6 py-4 text-sm">
@@ -157,6 +175,35 @@ export default function StaffClubPaymentHistoryPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {!loading && !error && filtered.length > 0 && (
+            <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-slate-100 text-sm text-slate-500">
+              <span>
+                Hien thi {(currentPage - 1) * PAGE_SIZE + 1} - {Math.min(currentPage * PAGE_SIZE, filtered.length)} trong {filtered.length} giao dich
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                >
+                  Truoc
+                </Button>
+                <span>
+                  Trang {currentPage} / {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                >
+                  Sau
+                </Button>
+              </div>
             </div>
           )}
         </div>

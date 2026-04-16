@@ -87,6 +87,13 @@ export async function getStaffNotifications() {
     return res.data;
 }
 
+export async function createStaffTestNotification() {
+    const res = await axios.post(`${BASE_URL}/notifications/test`, {}, {
+        headers: authHeader()
+    });
+    return res.data;
+}
+
 export async function markStaffNotificationRead(id) {
     const res = await axios.patch(`${BASE_URL}/notifications/${id}/read`, {}, {
         headers: authHeader()
