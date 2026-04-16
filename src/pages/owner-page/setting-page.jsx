@@ -98,6 +98,7 @@ export function SettingPage() {
 
   const [provinces, setProvinces] = useState([]);
   const [mapSearch, setMapSearch] = useState("");
+  const SUBSCRIPTION_WARNING_DAYS = 3;
 
   const clubId = localStorage.getItem("selected_club_id");
 
@@ -120,6 +121,25 @@ export function SettingPage() {
       setSubscriptions(subs);
       setCurrentSubscription(current);
       setProvinces(provinceRes || []);
+
+      if (current?.expire_date) {
+        const expireDate = new Date(current.expire_date);
+        const today = new Date();
+        const msPerDay = 24 * 60 * 60 * 1000;
+        const daysRemaining = Math.ceil((expireDate.getTime() - today.getTime()) / msPerDay);
+
+        if (daysRemaining >= 0 && daysRemaining <= SUBSCRIPTION_WARNING_DAYS) {
+          const warningKey = `owner_subscription_expiring_${clubId}_${expireDate.toISOString()}`;
+
+          if (sessionStorage.getItem(warningKey) !== "shown") {
+            toast(
+              `Goi dich vu sap het han sau ${daysRemaining} ngay. Vui long gia han som.`,
+              { icon: "!" }
+            );
+            sessionStorage.setItem(warningKey, "shown");
+          }
+        }
+      }
 
       if (current?.subscription_id?.name) {
         const planName = String(current.subscription_id.name).toLowerCase();
