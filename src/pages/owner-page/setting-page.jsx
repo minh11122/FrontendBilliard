@@ -863,49 +863,7 @@ export function SettingPage() {
         {/* TAB CONTENT: PAYMENT */}
         {activeTab === "payment" && (
           <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
-            <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
-              <h3 className="text-xl font-bold mb-8 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center">
-                  <CreditCard className="w-5 h-5" />
-                </div>
-                Phương thức thanh toán
-              </h3>
-
-              <div className="grid gap-4">
-                <div className="p-6 rounded-2xl border-2 border-orange-500 bg-orange-50/20 flex items-center justify-between group transition-all">
-                  <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 bg-white rounded-2xl shadow-sm flex items-center justify-center p-2">
-                      <img
-                        src="/vnpay-logo.png"
-                        alt="VNPay"
-                        className="w-full h-auto"
-                        onError={(e) => {
-                          e.target.src =
-                            "https://play-lh.googleusercontent.com/9_S-O96O3K0X5G-w-6S8-3H-6X5-X-O-6-X-O-6-X-O-6-X-O-6-X-O-6-X-O-6-X-O-6-X-O-6-X-O-6-X-O-6-X";
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <p className="font-black text-gray-900">Ví VNPay / Ngân hàng</p>
-                      <p className="text-sm text-gray-500">Mặc định - Đang hoạt động</p>
-                    </div>
-                  </div>
-                  <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-white">✓</div>
-                </div>
-
-                <div className="p-6 rounded-2xl border-2 border-gray-50 bg-gray-50/30 flex items-center justify-between group grayscale hover:grayscale-0 transition-all cursor-not-allowed opacity-60">
-                  <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 bg-white rounded-2xl shadow-sm flex items-center justify-center p-2">
-                      <img src="https://upload.wikimedia.org/wikipedia/vi/f/fe/MoMo_Logo.png" alt="MoMo" className="w-full h-auto" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-gray-900">Ví MoMo</p>
-                      <p className="text-sm text-gray-500">Đang bảo trì...</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            
 
             {/* Cấu hình tiền cọc */}
             <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
@@ -924,19 +882,20 @@ export function SettingPage() {
                   <label className="text-sm font-semibold text-gray-700">Phần trăm tiền cọc (%)</label>
                   <input
                     type="number"
-                    min="0"
+                    min="5"
                     max="100"
+                    step="5"
                     value={clubData.deposit_percentage}
                     onChange={(e) => setClubData({ ...clubData, deposit_percentage: e.target.value })}
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 font-bold"
-                    placeholder="Ví dụ: 30"
+                    placeholder="Ví dụ: 30 (5, 10, ..., 100)"
                   />
                 </div>
                 <button
                   onClick={async () => {
                     const val = Number(clubData.deposit_percentage);
-                    if (val < 0 || val > 100 || isNaN(val)) {
-                      return toast.error("Phần trăm cọc phải từ 0 đến 100 (%)");
+                    if (val < 5 || val > 100 || isNaN(val) || val % 5 !== 0) {
+                      return toast.error("Phần trăm cọc phải từ 5 đến 100 và chia hết cho 5");
                     }
                     try {
                       setSaving(true);
