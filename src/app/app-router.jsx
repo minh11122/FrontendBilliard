@@ -72,6 +72,7 @@ import {
   StaffClubReviewListPage,
   MyTournamentsPage,
   PostPage,
+  PostDetailPage,
   OwnerPostPage,
   StaffClubPaymentHistoryPage,
   CreateStaffSystem,
@@ -150,6 +151,7 @@ export const router = createBrowserRouter([
             ),
           },
           { path: "/posts", element: <PostPage /> },
+          { path: "/posts/:id", element: <PostDetailPage /> },
         ],
       },
       {

@@ -1,52 +1,17 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Eye, Search, Clock, MapPin } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import axios from "@/lib/axios";
 
 import { Button } from "@/components/ui/button";
 
-const StatusPill = ({ status }) => {
-  const map = {
-    Approved: { cls: "bg-green-50 text-green-700 border-green-200", label: "Đã duyệt" },
-    Pending: { cls: "bg-yellow-50 text-yellow-800 border-yellow-200", label: "Chờ duyệt" },
-    Rejected: { cls: "bg-red-50 text-red-700 border-red-200", label: "Từ chối" },
-  };
-
-  const v = map[status] || { cls: "bg-gray-50 text-gray-700 border-gray-200", label: status || "—" };
-  return (
-    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${v.cls}`}>
-      {v.label}
-    </span>
-  );
-};
-
-const ModalShell = ({ title, children, onClose, footer }) => {
-  return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden" role="dialog" aria-modal="true">
-        <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/60 flex items-center justify-between gap-3">
-          <h3 className="font-extrabold text-gray-900 text-lg">{title}</h3>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500"
-            aria-label="Đóng"
-          >
-            ×
-          </button>
-        </div>
-        <div className="p-5 overflow-y-auto max-h-[78vh]">{children}</div>
-        {footer ? <div className="px-5 py-4 border-t border-gray-100 bg-white">{footer}</div> : null}
-      </div>
-    </div>
-  );
-};
-
 export const PostPage = () => {
+  const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState(null);
 
   const fetchPosts = async () => {
     try {
@@ -81,8 +46,6 @@ export const PostPage = () => {
     if (!d) return "—";
     return new Date(d).toLocaleString("vi-VN");
   };
-
-  const detailPost = selected;
 
   const renderSnippet = (content) => {
     const text = content || "";
@@ -157,9 +120,6 @@ export const PostPage = () => {
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-green-50 to-gray-50" />
                   )}
-                  <div className="absolute left-3 top-3">
-                    <StatusPill status={p.status} />
-                  </div>
                 </div>
 
                 <div className="p-5">
@@ -181,7 +141,7 @@ export const PostPage = () => {
                     </div>
 
                     <Button
-                      onClick={() => setSelected(p)}
+                      onClick={() => navigate(`/posts/${p._id}`)}
                       className="bg-green-600 hover:bg-green-700 text-white rounded-xl h-10 px-4 font-bold flex items-center gap-2"
                     >
                       <Eye className="w-4 h-4" />
@@ -195,48 +155,6 @@ export const PostPage = () => {
         )}
       </div>
 
-      {detailPost ? (
-        <ModalShell
-          title="Chi tiết bài viết"
-          onClose={() => setSelected(null)}
-          footer={
-            <div className="flex items-center justify-end">
-              <Button variant="outline" onClick={() => setSelected(null)} className="rounded-xl">
-                Đóng
-              </Button>
-            </div>
-          }
-        >
-            <div className="space-y-4">
-            <div className="flex items-start justify-between gap-4 flex-wrap">
-              <div className="min-w-[240px]">
-                <div className="text-lg font-extrabold text-gray-900">{detailPost.title}</div>
-                <div className="text-sm text-gray-600 mt-1 flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-green-600" />
-                  <span>{detailPost.club_id?.name || "CLB"}</span>
-                </div>
-                <div className="text-xs text-gray-500 mt-2 flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  <span>{detailPost.published_at ? formatDate(detailPost.published_at) : formatDate(detailPost.created_at)}</span>
-                </div>
-              </div>
-              <StatusPill status={detailPost.status} />
-            </div>
-
-            {detailPost.image_url ? (
-              <div className="rounded-2xl overflow-hidden border border-gray-200 bg-gray-50">
-                <img src={detailPost.image_url} alt={detailPost.title} className="w-full max-h-[420px] object-cover" />
-              </div>
-            ) : null}
-
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-              <div className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2">Nội dung</div>
-              <div className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{detailPost.content}</div>
-            </div>
-
-          </div>
-        </ModalShell>
-      ) : null}
     </div>
   );
 };

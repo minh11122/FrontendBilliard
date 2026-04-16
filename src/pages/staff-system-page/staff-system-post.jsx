@@ -7,6 +7,7 @@ import {
   getPosts, approvePost, rejectPost, getDashboardData,
   getStaffNotifications, markStaffNotificationRead, markAllStaffNotificationsRead
 } from "../../services/staffDashboard.service";
+import { PostBlocksRenderer } from "@/components/common/post-blocks-renderer";
 
 // ─── Toast ──────────────────────────────────────────────────────────────────
 const Toast = ({ message, type, onClose }) => (
@@ -54,30 +55,37 @@ const PostDetailModal = ({ post, onClose }) => {
   return (
     <>
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-gray-900 text-lg leading-snug pr-4">{post.title}</h3>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg flex-shrink-0"><X className="w-5 h-5 text-gray-500" /></button>
         </div>
-        <div className="space-y-3 text-sm">
-          {post.image_url && (
-            <img src={post.image_url} alt="Ảnh bài đăng" className="w-full h-48 object-cover rounded-xl cursor-pointer hover:opacity-90 transition-opacity" onClick={() => setViewImage(post.image_url)}/>
-          )}
-          <div className="flex gap-2">
-            <span className="text-gray-500 w-24 flex-shrink-0">CLB:</span>
-            <span className="font-medium text-gray-900">{post.club_id?.name || "—"}</span>
+        <div className="space-y-4 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+              <p className="text-gray-500 text-xs mb-1">CLB</p>
+              <p className="font-medium text-gray-900">{post.club_id?.name || "—"}</p>
+            </div>
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+              <p className="text-gray-500 text-xs mb-1">Trạng thái</p>
+              <StatusBadge status={post.status} />
+            </div>
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+              <p className="text-gray-500 text-xs mb-1">Ngày tạo</p>
+              <p className="text-gray-900">{post.created_at ? new Date(post.created_at).toLocaleString("vi-VN") : "—"}</p>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <span className="text-gray-500 w-24 flex-shrink-0">Trạng thái:</span>
-            <StatusBadge status={post.status} />
-          </div>
-          <div className="flex gap-2">
-            <span className="text-gray-500 w-24 flex-shrink-0">Ngày tạo:</span>
-            <span className="text-gray-900">{post.created_at ? new Date(post.created_at).toLocaleString("vi-VN") : "—"}</span>
-          </div>
+
           <div>
             <p className="text-gray-500 mb-1.5">Nội dung:</p>
-            <div className="bg-gray-50 rounded-xl p-4 text-gray-800 leading-relaxed text-sm whitespace-pre-wrap">{post.content || "(Không có nội dung)"}</div>
+            <div className="bg-gray-50 rounded-xl p-4 text-gray-800">
+              <PostBlocksRenderer
+                blocks={post.content_blocks}
+                fallbackContent={post.content || "(Không có nội dung)"}
+                fallbackImage={post.image_url}
+                title={post.title}
+              />
+            </div>
           </div>
           {post.rejected_reason && (
             <div className="p-3 bg-red-50 rounded-xl text-red-700 text-xs">

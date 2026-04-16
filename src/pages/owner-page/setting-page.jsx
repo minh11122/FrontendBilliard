@@ -35,6 +35,7 @@ export function SettingPage() {
   
   // Data states
   const [subscriptions, setSubscriptions] = useState([]);
+  const [selectedDurationByPlan, setSelectedDurationByPlan] = useState({});
   const [currentSubscription, setCurrentSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -281,14 +282,24 @@ export function SettingPage() {
     loadAllData(); // reload original data
   };
 
-  const handleSelectPlan = async (id) => {
+  const handleSelectPlan = async (subscription) => {
 
     try {
+      const selectedMonths = Number(selectedDurationByPlan[subscription._id] || 1);
+      const currentSub = getSubscriptionFromCurrent(currentSubscription);
+      const currentName = String(currentSub?.name || "").toLowerCase();
+      const targetName = String(subscription?.name || "").toLowerCase();
 
-      const payment = await createPayOSSubscriptionPayment(id);
+      if (currentName.includes("pro") && targetName.includes("basic")) {
+        toast.error("Đang dùng gói Pro, không thể chuyển xuống Basic.");
+        return;
+      }
+
+      const payment = await createPayOSSubscriptionPayment(subscription._id, selectedMonths);
 
       // lưu subscription để verify sau
-      localStorage.setItem("pending_subscription", id);
+      localStorage.setItem("pending_subscription", subscription._id);
+      localStorage.setItem("pending_subscription_duration", String(selectedMonths));
 
       // redirect PayOS
       window.location.href = payment.checkoutUrl;
@@ -335,13 +346,11 @@ export function SettingPage() {
     return "Không xác định";
   };
 
-  const getSubscriptionPeriodLabel = (durationDays) => {
-    const days = Number(durationDays) || 30;
-    if (days % 30 === 0) {
-      const months = days / 30;
-      return `${months} tháng`;
-    }
-    return `${days} ngày`;
+  const getSubscriptionTier = (name) => {
+    const normalized = String(name || "").toLowerCase();
+    if (normalized.includes("pro")) return "pro";
+    if (normalized.includes("basic")) return "basic";
+    return "other";
   };
 
 
@@ -812,9 +821,11 @@ export function SettingPage() {
               {subscriptions.map((sub) => {
                 const basePrice = Number(sub.price) || 0;
                 const discountPercent = Number(sub.discount_percent) || 0;
-                const finalPrice = Math.max(0, basePrice - (basePrice * discountPercent) / 100);
-                const price = finalPrice.toLocaleString("vi-VN");
-                const periodLabel = getSubscriptionPeriodLabel(sub.duration_days);
+                const selectedMonths = Number(selectedDurationByPlan[sub._id] || 1);
+                const monthlyPrice = Math.max(0, basePrice - (basePrice * discountPercent) / 100);
+                const totalPrice = Math.round(monthlyPrice * selectedMonths);
+                const price = totalPrice.toLocaleString("vi-VN");
+                const periodLabel = `${selectedMonths} tháng`;
                 const featureRows = [
                   `Đăng tối đa ${sub.post_limit || 0} bài`,
                   sub.features?.allow_priority_post ? "Bài đăng ưu tiên" : null,
@@ -822,6 +833,10 @@ export function SettingPage() {
                   sub.features?.allow_pin_post ? "Ghim bài đăng" : null
                 ].filter(Boolean);
                 const isCurrent = getSubscriptionFromCurrent(currentSubscription)?._id === sub._id;
+                const currentTier = getSubscriptionTier(getSubscriptionFromCurrent(currentSubscription)?.name);
+                const targetTier = getSubscriptionTier(sub.name);
+                const isDowngradeBlocked = currentTier === "pro" && targetTier === "basic" && !isCurrent;
+                const disablePurchase = isCurrent || isDowngradeBlocked;
 
                 return (
                   <div
@@ -852,6 +867,22 @@ export function SettingPage() {
 
                       <div className="space-y-4 mb-8">
                          <p className="text-gray-500 text-sm leading-relaxed">{sub.description}</p>
+                         <div className="space-y-2">
+                          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Thời hạn</label>
+                          <select
+                            value={selectedMonths}
+                            onChange={(e) =>
+                              setSelectedDurationByPlan((prev) => ({ ...prev, [sub._id]: Number(e.target.value) }))
+                            }
+                            className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                            disabled={isCurrent}
+                          >
+                            <option value={1}>1 tháng</option>
+                            <option value={3}>3 tháng</option>
+                            <option value={6}>6 tháng</option>
+                            <option value={12}>12 tháng</option>
+                          </select>
+                         </div>
                          <ul className="space-y-3">
                           {featureRows.map((item) => (
                             <li key={item} className="flex items-center gap-3 text-sm text-gray-600">
@@ -864,14 +895,14 @@ export function SettingPage() {
                     </div>
 
                     <button
-                      disabled={isCurrent}
-                      onClick={() => handleSelectPlan(sub._id)}
+                      disabled={disablePurchase}
+                      onClick={() => handleSelectPlan(sub)}
                       className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-wider transition-all
-                      ${isCurrent 
+                      ${disablePurchase
                         ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
                         : "bg-orange-500 text-white hover:bg-orange-600 shadow-lg shadow-orange-200"}`}
                     >
-                      {isCurrent ? "Đang sử dụng" : "Nâng cấp ngay"}
+                      {isCurrent ? "Đang sử dụng" : isDowngradeBlocked ? "Không thể hạ xuống Basic" : "Nâng cấp ngay"}
                     </button>
                   </div>
                 );
@@ -883,49 +914,7 @@ export function SettingPage() {
         {/* TAB CONTENT: PAYMENT */}
         {activeTab === "payment" && (
           <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
-            <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
-              <h3 className="text-xl font-bold mb-8 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center">
-                  <CreditCard className="w-5 h-5" />
-                </div>
-                Phương thức thanh toán
-              </h3>
-
-              <div className="grid gap-4">
-                <div className="p-6 rounded-2xl border-2 border-orange-500 bg-orange-50/20 flex items-center justify-between group transition-all">
-                  <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 bg-white rounded-2xl shadow-sm flex items-center justify-center p-2">
-                      <img
-                        src="/vnpay-logo.png"
-                        alt="VNPay"
-                        className="w-full h-auto"
-                        onError={(e) => {
-                          e.target.src =
-                            "https://play-lh.googleusercontent.com/9_S-O96O3K0X5G-w-6S8-3H-6X5-X-O-6-X-O-6-X-O-6-X-O-6-X-O-6-X-O-6-X-O-6-X-O-6-X-O-6-X-O-6-X";
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <p className="font-black text-gray-900">Ví VNPay / Ngân hàng</p>
-                      <p className="text-sm text-gray-500">Mặc định - Đang hoạt động</p>
-                    </div>
-                  </div>
-                  <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-white">✓</div>
-                </div>
-
-                <div className="p-6 rounded-2xl border-2 border-gray-50 bg-gray-50/30 flex items-center justify-between group grayscale hover:grayscale-0 transition-all cursor-not-allowed opacity-60">
-                  <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 bg-white rounded-2xl shadow-sm flex items-center justify-center p-2">
-                      <img src="https://upload.wikimedia.org/wikipedia/vi/f/fe/MoMo_Logo.png" alt="MoMo" className="w-full h-auto" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-gray-900">Ví MoMo</p>
-                      <p className="text-sm text-gray-500">Đang bảo trì...</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            
 
             {/* Cấu hình tiền cọc */}
             <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
@@ -944,19 +933,20 @@ export function SettingPage() {
                   <label className="text-sm font-semibold text-gray-700">Phần trăm tiền cọc (%)</label>
                   <input
                     type="number"
-                    min="0"
+                    min="5"
                     max="100"
+                    step="5"
                     value={clubData.deposit_percentage}
                     onChange={(e) => setClubData({ ...clubData, deposit_percentage: e.target.value })}
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 font-bold"
-                    placeholder="Ví dụ: 30"
+                    placeholder="Ví dụ: 30 (5, 10, ..., 100)"
                   />
                 </div>
                 <button
                   onClick={async () => {
                     const val = Number(clubData.deposit_percentage);
-                    if (val < 0 || val > 100 || isNaN(val)) {
-                      return toast.error("Phần trăm cọc phải từ 0 đến 100 (%)");
+                    if (val < 5 || val > 100 || isNaN(val) || val % 5 !== 0) {
+                      return toast.error("Phần trăm cọc phải từ 5 đến 100 và chia hết cho 5");
                     }
                     try {
                       setSaving(true);
