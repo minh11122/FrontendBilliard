@@ -40,12 +40,14 @@ const fallbackBanner = "https://images.unsplash.com/photo-1611599537845-1c7aca00
 
 export default function OwnerTournamentListPage() {
   const navigate = useNavigate();
+  const PAGE_SIZE = 10;
   const CLUB_ID = localStorage.getItem("selected_club_id") || "";
   const [tournaments, setTournaments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("All");
   const [deletingId, setDeletingId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const fetchData = async () => {
     try {
@@ -159,6 +161,22 @@ export default function OwnerTournamentListPage() {
     return matchSearch && matchTab;
   });
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginatedTournaments = filtered.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, activeTab]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
   return (
     <div className="flex-1 p-6 lg:p-10 max-w-[1400px] mx-auto w-full min-h-[calc(100vh-80px)] bg-slate-50/50">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -214,7 +232,7 @@ export default function OwnerTournamentListPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filtered.map((t) => {
+          {paginatedTournaments.map((t) => {
             const badge = statusBadge[t.status] || statusBadge.Draft;
             const bannerUrl = t.banner?.trim() ? t.banner : fallbackBanner;
             const canDelete = (t.registered_player || 0) === 0;
@@ -377,6 +395,35 @@ export default function OwnerTournamentListPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {!loading && filtered.length > 0 && (
+        <div className="mt-6 flex items-center justify-between gap-3 text-sm text-slate-500">
+          <span>
+            Hien thi {(currentPage - 1) * PAGE_SIZE + 1} - {Math.min(currentPage * PAGE_SIZE, filtered.length)} trong {filtered.length} giai dau
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-50"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            >
+              Truoc
+            </button>
+            <span>
+              Trang {currentPage} / {totalPages}
+            </span>
+            <button
+              type="button"
+              className="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-50"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Sau
+            </button>
+          </div>
         </div>
       )}
     </div>

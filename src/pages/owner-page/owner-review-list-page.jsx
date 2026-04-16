@@ -224,6 +224,9 @@ const OwnerReviewListPage = () => {
             >
               Sau
             </Button>
+            <span className="text-sm text-muted-foreground ml-2">
+              Trang {pagination.current} / {Math.max(1, Math.ceil(pagination.total / pagination.pageSize))}
+            </span>
           </div>
         )}
       </div>

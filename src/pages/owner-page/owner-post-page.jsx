@@ -58,6 +58,7 @@ const ModalShell = ({ title, children, onClose, footer }) => {
 };
 
 export const OwnerPostPage = () => {
+  const PAGE_SIZE = 10;
   const CLUB_NAME = localStorage.getItem("selected_club_name") || "CLB của bạn";
   const CLUB_ID = localStorage.getItem("selected_club_id") || "";
 
@@ -66,6 +67,7 @@ export const OwnerPostPage = () => {
   const [error, setError] = useState("");
 
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [selectedPost, setSelectedPost] = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -108,6 +110,22 @@ export const OwnerPostPage = () => {
       return t.includes(q) || c.includes(q);
     });
   }, [posts, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginatedPosts = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const openCreate = () => {
     setMode("create");
@@ -315,7 +333,7 @@ export const OwnerPostPage = () => {
                       </td>
                     </tr>
                   ) : (
-                    filtered.map((p) => (
+                    paginatedPosts.map((p) => (
                       <tr key={p._id} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/40 transition-colors">
                         <td className="px-6 py-4">
                           <div className="flex items-start gap-3">
@@ -369,6 +387,35 @@ export const OwnerPostPage = () => {
                 </tbody>
               </table>
             </div>
+
+            {filtered.length > 0 ? (
+              <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-between gap-3 text-sm text-slate-500">
+                <span>
+                  Hien thi {(currentPage - 1) * PAGE_SIZE + 1} - {Math.min(currentPage * PAGE_SIZE, filtered.length)} trong {filtered.length} bai dang
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  >
+                    Truoc
+                  </Button>
+                  <span>
+                    Trang {currentPage} / {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  >
+                    Sau
+                  </Button>
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
 
