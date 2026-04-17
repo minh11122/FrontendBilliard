@@ -132,7 +132,7 @@ export const StaffClubPageStatic = () => {
             <button
               type="button"
               onClick={() => setShowNotificationPopup((prev) => !prev)}
-              className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm hover:bg-gray-50 transition"
+              className="hidden"
             >
               <Bell className="w-5 h-5" />
               {unreadCount > 0 && (

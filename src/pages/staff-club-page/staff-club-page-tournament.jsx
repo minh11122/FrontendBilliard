@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { getTournamentsByClub, cancelTournament } from "@/services/tournament.service";
 import { useNavigate } from "react-router-dom";
 import axios from "@/lib/axios";
+import { Button } from "@/components/ui/button";
 
 const tabs = [
   { id: "All", label: "Tất cả", statuses: [] },
@@ -36,6 +37,13 @@ export const StaffClubPageTournament = () => {
   const notificationRef = useRef(null);
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, activeTab]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -136,6 +144,9 @@ export const StaffClubPageTournament = () => {
     return matchSearch && matchTab;
   });
 
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  const currentTournaments = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   return (
     <div className="flex-1 p-6 lg:p-10 max-w-[1400px] mx-auto w-full min-h-[calc(100vh-80px)] bg-slate-50/50">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -149,7 +160,7 @@ export const StaffClubPageTournament = () => {
           <button
             type="button"
             onClick={() => setShowNotificationPopup((prev) => !prev)}
-            className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50 transition"
+            className="hidden"
           >
             <Bell className="w-5 h-5" />
             {unreadCount > 0 && (
@@ -250,7 +261,7 @@ export const StaffClubPageTournament = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filtered.map((t) => {
+          {currentTournaments.map((t) => {
             const badge = statusBadge[t.status] || statusBadge.Draft;
             return (
               <div key={t._id} className="bg-white rounded-[20px] shadow-sm border border-slate-100 p-4 flex flex-col gap-4">
@@ -348,6 +359,36 @@ export const StaffClubPageTournament = () => {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Pagination Container */}
+      {!loading && filtered.length > 0 && (
+        <div className="flex items-center justify-between gap-3 mt-4 px-6 py-4 text-sm text-slate-500 bg-white rounded-[20px] shadow-sm border border-slate-100">
+          <span>
+            Hiển thị {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, filtered.length)} trong {filtered.length} giải đấu
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            >
+              Trước
+            </Button>
+            <span>
+              Trang {currentPage} / {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Sau
+            </Button>
+          </div>
         </div>
       )}
     </div>

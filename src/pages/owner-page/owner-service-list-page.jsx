@@ -263,32 +263,26 @@ export default function OwnerServiceListPage() {
             </div>
 
             {/* Pagination */}
-            {pagination.totalPages > 1 && (
+            {services.length > 0 && (
               <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50/50">
                 <p className="text-sm text-slate-500">
                   Hiển thị {services.length} / {pagination.total} dịch vụ
                 </p>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-4">
                   <button
                     onClick={() => fetchServices(pagination.currentPage - 1)}
                     disabled={pagination.currentPage <= 1}
-                    className="p-2 rounded-lg border border-slate-200 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all">
-                    <ChevronLeft size={16} />
+                    className="text-sm px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-colors">
+                    Trước
                   </button>
-                  {Array.from({ length: pagination.totalPages }, (_, i) => (
-                    <button key={i + 1} onClick={() => fetchServices(i + 1)}
-                      className={`w-9 h-9 rounded-lg text-sm font-medium transition-all ${pagination.currentPage === i + 1
-                          ? "bg-primary text-slate-900 shadow-sm"
-                          : "border border-slate-200 hover:bg-white text-slate-600"
-                        }`}>
-                      {i + 1}
-                    </button>
-                  ))}
+                  <span className="text-sm text-gray-500 font-semibold">
+                    Trang {pagination.currentPage} / {Math.max(1, pagination.totalPages)}
+                  </span>
                   <button
                     onClick={() => fetchServices(pagination.currentPage + 1)}
-                    disabled={pagination.currentPage >= pagination.totalPages}
-                    className="p-2 rounded-lg border border-slate-200 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all">
-                    <ChevronRight size={16} />
+                    disabled={pagination.currentPage >= Math.max(1, pagination.totalPages)}
+                    className="text-sm px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-colors">
+                    Sau
                   </button>
                 </div>
               </div>

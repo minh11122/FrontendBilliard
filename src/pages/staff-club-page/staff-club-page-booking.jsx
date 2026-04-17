@@ -661,6 +661,13 @@ const BookingListSection = () => {
   const [availableTables, setAvailableTables] = useState([]);
   const dateInputRef = useRef(null);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, statusFilter, dateMode, currentDate, debouncedSearch]);
+
   useEffect(() => {
     const fetchAvailableTables = async () => {
       try {
@@ -759,6 +766,9 @@ const BookingListSection = () => {
     { key: "Completed", label: "Hoàn thành", count: statusCounts.Completed },
     { key: "Cancelled", label: "Đã hủy", count: statusCounts.Cancelled },
   ];
+
+  const totalPages = Math.ceil(bookings.length / pageSize);
+  const currentBookings = bookings.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <>
@@ -902,7 +912,7 @@ const BookingListSection = () => {
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : bookings.length === 0 ? (
+              ) : currentBookings.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-16">
                     <div className="flex flex-col items-center gap-2">
@@ -912,7 +922,7 @@ const BookingListSection = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                bookings.map((booking) => (
+                currentBookings.map((booking) => (
                   <TableRow key={booking._id} className="hover:bg-gray-50 border-b border-gray-50">
                     <TableCell className="px-6 py-4">
                       <span className="font-medium text-[#4caf50]">#{booking.code_number}</span>
@@ -988,13 +998,42 @@ const BookingListSection = () => {
 
         {/* Footer */}
         {!loading && bookings.length > 0 && (
-          <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100 bg-gray-50/50">
-            <div className="text-sm text-gray-600">
-              Tổng số: <span className="font-semibold text-gray-900">{bookings.length}</span> đơn đặt bàn
+          <div className="flex flex-col gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50 text-sm text-gray-600">
+            <div className="flex items-center justify-between">
+              <div>
+                Tổng số: <span className="font-semibold text-gray-900">{bookings.length}</span> đơn đặt bàn
+              </div>
+              <div className="flex items-center gap-4">
+                <span>⏱️ Đang chơi: <span className="font-semibold text-green-600">{statusCounts.Playing}</span></span>
+                <span>📅 Đã đặt: <span className="font-semibold text-blue-600">{statusCounts.Booked}</span></span>
+              </div>
             </div>
-            <div className="text-sm text-gray-600">
-              <span className="mr-4">⏱️ Đang chơi: <span className="font-semibold text-green-600">{statusCounts.Playing}</span></span>
-              <span>📅 Đã đặt: <span className="font-semibold text-blue-600">{statusCounts.Booked}</span></span>
+
+            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+              <span>
+                Hiển thị {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, bookings.length)} trong {bookings.length} đơn đặt bàn
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                >
+                  Trước
+                </Button>
+                <span>
+                  Trang {currentPage} / {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                >
+                  Sau
+                </Button>
+              </div>
             </div>
           </div>
         )}
@@ -1092,7 +1131,7 @@ export const StaffClubPageBooking = () => {
               type="button"
               variant="outline"
               size="icon"
-              className="relative bg-white"
+              className="hidden"
               onClick={() => setShowNotificationPopup((prev) => !prev)}
             >
               <Bell className="w-4 h-4" />

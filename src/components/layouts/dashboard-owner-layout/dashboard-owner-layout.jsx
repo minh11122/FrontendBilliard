@@ -129,14 +129,14 @@ export const DashboardOwnerLayout = () => {
                 <div className="absolute right-0 mt-2 w-96 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
                   <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-5 py-4">
                     <p className="text-sm font-semibold text-slate-900">
-                      Thong bao
+                      Thông báo
                     </p>
                     {unreadCount > 0 && (
                       <button
                         onClick={handleReadAllNotifications}
                         className="text-xs font-semibold text-orange-600 transition hover:text-orange-700"
                       >
-                        Danh dau tat ca
+                        Đánh dấu tất cả đã đọc
                       </button>
                     )}
                   </div>
@@ -144,7 +144,7 @@ export const DashboardOwnerLayout = () => {
                   <div className="max-h-96 overflow-y-auto">
                     {notifications.length === 0 ? (
                       <p className="px-5 py-8 text-center text-sm text-slate-500">
-                        Khong co thong bao nao
+                        Không có thông báo nào
                       </p>
                     ) : (
                       notifications.map((notification, index) => (
@@ -166,9 +166,18 @@ export const DashboardOwnerLayout = () => {
                                 <p className="mt-1 text-xs text-slate-500">
                                   {notification.message}
                                 </p>
+                                <p className="mt-2 text-[11px] font-medium text-slate-400">
+                                  {notification.created_at ? new Date(notification.created_at).toLocaleString("vi-VN", {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric"
+                                  }) : ""}
+                                </p>
                               </div>
                               {!notification.is_read && (
-                                <span className="mt-1 h-2.5 w-2.5 rounded-full bg-orange-500" />
+                                <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-orange-500" />
                               )}
                             </div>
                           </button>

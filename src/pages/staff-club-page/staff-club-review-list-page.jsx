@@ -215,7 +215,7 @@ export const StaffClubReviewListPage = () => {
               type="button"
               variant="outline"
               size="icon"
-              className="relative"
+              className="hidden"
               onClick={() => setShowNotificationPopup((prev) => !prev)}
             >
               <Bell className="w-4 h-4" />

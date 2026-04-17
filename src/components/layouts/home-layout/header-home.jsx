@@ -415,11 +415,20 @@ export const HeaderHome = () => {
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                   {n.message}
                                 </p>
+                                <p className="mt-2 text-[11px] font-medium text-gray-400 dark:text-gray-500">
+                                  {n.created_at ? new Date(n.created_at).toLocaleString("vi-VN", {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric"
+                                  }) : ""}
+                                </p>
                               </div>
 
                               {/* Unread Indicator */}
                               {!n.is_read && (
-                                <span className="w-3 h-3 bg-green-500 rounded-full flex-shrink-0 mt-1" />
+                                <span className="w-2.5 h-2.5 bg-green-500 rounded-full flex-shrink-0 mt-1.5" />
                               )}
                             </div>
                           </div>
