@@ -302,48 +302,83 @@ export const HomePage = () => {
           </button>
         </div>
 
-        <div className="grid md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {clubs.map((club) => (
             <div
               key={club._id}
-              className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-xl transition-all"
+              className="card group h-[420px] w-full rounded-[1.5em] relative flex justify-end flex-col p-[1.5em] z-[1] overflow-hidden shadow-[0px_4px_16px_0px_#22c55e44] hover:shadow-[0px_4px_24px_0px_#22c55e66] transition-all duration-500 cursor-pointer"
+              onClick={() => navigate(`/booking/${club._id}`)}
             >
-              <div className="relative h-44">
+              {/* Background Image & Overlay */}
+              <div className="absolute top-0 left-0 h-full w-full bg-[#111111]">
                 <img
-                  src={
-                    club.avatar ||
-                    `https://source.unsplash.com/400x300/?billiards&sig=${club._id}`
-                  }
-                  className="w-full h-full object-cover"
+                  src={club.avatar || "/img-home/page1.png"}
+                  className="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-700"
+                  alt={club.name}
                 />
-
-                <span className="absolute top-3 right-3 text-xs bg-white dark:bg-gray-800 text-green-600 px-2 py-1 rounded-lg font-semibold shadow">
-                  Approved
-                </span>
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
               </div>
 
-              <div className="p-4">
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
-                  {club.name}
-                </h3>
-
-                <p className="text-gray-600 dark:text-gray-400 text-sm flex gap-1 mb-4">
-                  <MapPin size={14} className="text-green-500" />
-                  {club.district_name || club.address}
-                </p>
-
-                <div className="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-700">
-                  <span className="text-green-600 font-semibold text-sm">
-                    {club.opening_time} - {club.closing_time}
-                  </span>
-
-                  <button
-                    onClick={() => navigate(`/booking/${club._id}`)}
-                    className="bg-green-500 hover:bg-green-600 text-white text-xs px-3 py-1.5 rounded-lg"
+              {/* Content Container */}
+              <div className="container text-white z-[2] relative flex flex-col gap-2">
+                <div className="h-fit w-full">
+                  <h1
+                    className="text-[1.8em] leading-tight uppercase tracking-wider mb-1"
+                    style={{
+                      fontWeight: 900,
+                      WebkitTextFillColor: "transparent",
+                      WebkitTextStrokeWidth: "1px",
+                      WebkitTextStrokeColor: "#fff",
+                      textShadow: "0 0 10px rgba(255,255,255,0.5)",
+                    }}
                   >
-                    Xem
-                  </button>
+                    {club.name}
+                  </h1>
+                  <p className="text-sm font-bold opacity-80 flex items-center gap-1">
+                    <MapPin size={14} className="text-green-400" />
+                    {club.district_name || club.address}
+                  </p>
                 </div>
+
+                {/* Stars & Stats */}
+                <div className="flex justify-between items-center h-fit w-full">
+                  <div className="flex gap-0.5">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Star
+                        key={s}
+                        size={14}
+                        fill={s <= Math.round(club.rating || 0) ? "#22c55e" : "none"}
+                        className={s <= Math.round(club.rating || 0) ? "text-green-500" : "text-white/40"}
+                      />
+                    ))}
+                  </div>
+                  <div className="text-white text-[10px] font-medium bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-sm border border-white/10">
+                    {club.rating > 0 ? `${Number(club.rating).toFixed(1)}/5` : "Chưa có đánh giá"}
+                  </div>
+                </div>
+
+                {/* Tags */}
+                <div className="flex flex-wrap items-center h-fit w-fit gap-2 mt-1">
+                  <div className="border border-white/30 rounded-[0.5em] text-white text-[10px] font-bold px-2 py-0.5 hover:bg-white hover:text-black duration-300">
+                    {club.opening_time === "00:00" && club.closing_time === "00:00"
+                      ? "Mở cửa 24/24"
+                      : `${club.opening_time} - ${club.closing_time}`}
+                  </div>
+                </div>
+              </div>
+
+              {/* Reveal Description on Hover */}
+              <p className="text-white/80 text-sm font-medium relative h-0 group-hover:h-[80px] mt-0 group-hover:mt-4 leading-relaxed duration-500 overflow-hidden line-clamp-3 z-[2]">
+                {club.description || "Câu lạc bộ bida chuyên nghiệp với không gian sang trọng, trang thiết bị hiện đại và dịch vụ tận tâm."}
+              </p>
+
+              {/* Bottom Action */}
+              <div className="z-[2] mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                <button
+                  className="w-full bg-green-500 hover:bg-green-600 text-black font-black py-2 rounded-lg text-sm uppercase tracking-tighter"
+                >
+                  XEM NGAY
+                </button>
               </div>
             </div>
           ))}
