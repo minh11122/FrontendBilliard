@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useContext } from "react";
 import { Bell } from "lucide-react";
-import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { AuthContext } from "@/context/AuthContext";
+import { initiateSocketConnection, subscribeToNotifications, disconnectSocket } from "@/services/socket.service";
+import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { SidebarOwner } from "./sidebar-layout";
 import {
   getNotifications,
@@ -16,21 +18,30 @@ export const DashboardOwnerLayout = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [openNoti, setOpenNoti] = useState(false);
   const notificationRef = useRef(null);
+  const navigate = useNavigate();
+
+  const { user } = useContext(AuthContext);
 
   useEffect(() => {
     fetchUnread();
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      fetchUnread();
-      if (openNoti) {
-        fetchNotifications();
-      }
-    }, 15000);
+    if (user && user._id) {
+      initiateSocketConnection(user._id);
 
-    return () => clearInterval(interval);
-  }, [openNoti]);
+      subscribeToNotifications((notification) => {
+        setUnreadCount((prev) => prev + 1);
+        setNotifications((prev) => [notification, ...prev]);
+      });
+
+      return () => {
+        disconnectSocket();
+      };
+    }
+  }, [user]);
+
+
 
   useEffect(() => {
     if (!openNoti) {
@@ -74,13 +85,26 @@ export const DashboardOwnerLayout = () => {
     }
   };
 
-  const handleReadNotification = async (id) => {
+  const handleReadNotification = async (notification) => {
     try {
-      await markAsRead(id);
-      setNotifications((prev) =>
-        prev.map((n) => (n._id === id ? { ...n, is_read: true } : n))
-      );
-      setUnreadCount((prev) => Math.max(prev - 1, 0));
+      if (!notification.is_read) {
+        await markAsRead(notification._id);
+        setNotifications((prev) =>
+          prev.map((n) => (n._id === notification._id ? { ...n, is_read: true } : n))
+        );
+        setUnreadCount((prev) => Math.max(prev - 1, 0));
+      }
+      if (notification.link) {
+        setOpenNoti(false);
+        let finalLink = notification.link;
+        if (finalLink.startsWith('/staff/')) {
+          finalLink = finalLink.replace('/staff/', '/owner/');
+        }
+        if (finalLink === '/owner/bookings') {
+          finalLink = '/owner/payment-history'; // fallback because owner doesn't have bookings page
+        }
+        navigate(finalLink);
+      }
     } catch (error) {
       console.error("Loi doc notification owner:", error);
     }
@@ -151,7 +175,7 @@ export const DashboardOwnerLayout = () => {
                         <div key={notification._id}>
                           <button
                             type="button"
-                            onClick={() => handleReadNotification(notification._id)}
+                            onClick={() => handleReadNotification(notification)}
                             className={`w-full border-l-4 px-5 py-4 text-left transition ${
                               notification.is_read
                                 ? "border-transparent bg-white hover:bg-slate-50"

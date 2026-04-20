@@ -204,11 +204,6 @@ export const SystemStaff2 = () => {
   useEffect(() => {
     fetchCounts();
     fetchNotifications();
-    const interval = setInterval(() => {
-      fetchCounts();
-      fetchNotifications();
-    }, 10000);
-    return () => clearInterval(interval);
   }, [fetchCounts, fetchNotifications]);
 
   useEffect(() => {

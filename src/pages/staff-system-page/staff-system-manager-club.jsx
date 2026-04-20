@@ -226,12 +226,7 @@ export const SystemStaff1 = () => {
   useEffect(() => {
     fetchCounts();
     fetchNotifications();
-    // Poll every 10 seconds for new counts and notifications
-    const interval = setInterval(() => {
-      fetchCounts();
-      fetchNotifications();
-    }, 10000);
-    return () => clearInterval(interval);
+    
   }, [fetchCounts, fetchNotifications]);
 
   // Handle click outside to close unread popup

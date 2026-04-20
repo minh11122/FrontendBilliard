@@ -87,10 +87,6 @@ export const StaffClubReviewListPage = () => {
   useEffect(() => {
     fetchFeedbacks(pagination.current, pagination.pageSize, ratingFilter, replyFilter);
     fetchNotifications();
-    const interval = setInterval(() => {
-      fetchNotifications();
-    }, 10000);
-    return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

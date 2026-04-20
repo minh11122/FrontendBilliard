@@ -3,6 +3,7 @@ import { Moon, Sun, User, LogOut, Bell, ChevronDown, Trophy } from "lucide-react
 import { useNavigate, Link, NavLink, useLocation } from "react-router-dom";
 import { AuthContext } from "@/context/AuthContext";
 import { SiteLogo } from "@/components/common/SiteLogo";
+import { initiateSocketConnection, subscribeToNotifications, disconnectSocket } from "@/services/socket.service";
 
 import {
   getNotifications,
@@ -86,20 +87,19 @@ export const HeaderHome = () => {
 
     fetchNotifications();
     fetchUnread();
+
+    initiateSocketConnection(user._id);
+    subscribeToNotifications((notification) => {
+      setUnreadCount((prev) => prev + 1);
+      setNotifications((prev) => [notification, ...prev]);
+    });
+
+    return () => {
+      disconnectSocket();
+    };
   }, [user]);
 
-  useEffect(() => {
-    if (!user || user.roleName !== "CUSTOMER") return;
 
-    const interval = setInterval(() => {
-      fetchUnread();
-      if (openNoti) {
-        fetchNotifications();
-      }
-    }, 60000);
-
-    return () => clearInterval(interval);
-  }, [user, openNoti]);
 
   const fetchNotifications = async () => {
     try {
@@ -128,16 +128,23 @@ export const HeaderHome = () => {
     }
   };
 
-  const handleClickNoti = async (id) => {
+  const handleClickNoti = async (notification) => {
     try {
-      await markAsRead(id);
+      if (!notification.is_read) {
+        await markAsRead(notification._id);
 
-      // update UI
-      setNotifications((prev) =>
-        prev.map((n) => (n._id === id ? { ...n, is_read: true } : n)),
-      );
+        // update UI
+        setNotifications((prev) =>
+          prev.map((n) => (n._id === notification._id ? { ...n, is_read: true } : n)),
+        );
 
-      setUnreadCount((prev) => Math.max(prev - 1, 0));
+        setUnreadCount((prev) => Math.max(prev - 1, 0));
+      }
+
+      if (notification.link) {
+        setOpenNoti(false);
+        navigate(notification.link);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -396,7 +403,7 @@ export const HeaderHome = () => {
                       notifications.map((n, index) => (
                         <div key={n._id}>
                           <div
-                            onClick={() => handleClickNoti(n._id)}
+                            onClick={() => handleClickNoti(n)}
                             className={`px-6 py-4 cursor-pointer transition-colors border-l-4 ${!n.is_read
                               ? "bg-blue-50 dark:bg-blue-900/20 border-l-green-500 hover:bg-blue-100 dark:hover:bg-blue-900/30"
                               : "bg-white dark:bg-gray-800 border-l-transparent hover:bg-gray-50 dark:hover:bg-gray-700"

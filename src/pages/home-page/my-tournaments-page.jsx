@@ -43,6 +43,12 @@ export const MyTournamentsPage = () => {
         const res = await api.get("/tournaments/my/tournaments");
         if (res.data?.success) {
           setMyTournaments(res.data.data || []);
+          
+          const params = new URLSearchParams(window.location.search);
+          const tId = params.get("tournamentId");
+          if (tId) {
+             navigate(`/tournament/${tId}`, { replace: true, state: { from: "/my-tournaments" } });
+          }
         }
       } catch {
         toast.error("Không thể tải danh sách giải đấu của bạn");

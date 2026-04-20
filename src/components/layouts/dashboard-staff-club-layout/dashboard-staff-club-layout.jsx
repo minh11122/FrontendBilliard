@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from "react";
-import { Outlet } from "react-router-dom";
+import { useEffect, useRef, useState, useContext } from "react";
+import { Outlet, useNavigate } from "react-router-dom";
+import { AuthContext } from "@/context/AuthContext";
+import { initiateSocketConnection, subscribeToNotifications, disconnectSocket } from "@/services/socket.service";
 import { Bell } from "lucide-react";
 import { SidebarClub } from "./sidebar-layout";
 import axios from "@/lib/axios";
@@ -8,20 +10,31 @@ export const DashboardStaffClubLayout = () => {
   const [notifications, setNotifications] = useState([]);
   const [openNoti, setOpenNoti] = useState(false);
   const notificationRef = useRef(null);
+  const navigate = useNavigate();
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
+
+  const { user } = useContext(AuthContext);
 
   useEffect(() => {
     fetchNotifications();
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      fetchNotifications();
-    }, 15000);
+    if (user && user._id) {
+      initiateSocketConnection(user._id);
 
-    return () => clearInterval(interval);
-  }, []);
+      subscribeToNotifications((notification) => {
+        setNotifications((prev) => [notification, ...prev]);
+      });
+
+      return () => {
+        disconnectSocket();
+      };
+    }
+  }, [user]);
+
+
 
   useEffect(() => {
     if (!openNoti) {
@@ -53,12 +66,18 @@ export const DashboardStaffClubLayout = () => {
     setOpenNoti(!openNoti);
   };
 
-  const handleReadNotification = async (id) => {
+  const handleReadNotification = async (notification) => {
     try {
-      await axios.patch(`/staff/notifications/${id}/read`);
-      setNotifications((prev) =>
-        prev.map((n) => (n._id === id ? { ...n, is_read: true } : n))
-      );
+      if (!notification.is_read) {
+        await axios.patch(`/staff/notifications/${notification._id}/read`);
+        setNotifications((prev) =>
+          prev.map((n) => (n._id === notification._id ? { ...n, is_read: true } : n))
+        );
+      }
+      if (notification.link) {
+        setOpenNoti(false);
+        navigate(notification.link);
+      }
     } catch (error) {
       console.error("Loi doc notification staff:", error);
     }
@@ -118,7 +137,7 @@ export const DashboardStaffClubLayout = () => {
                         <div key={notification._id}>
                           <button
                             type="button"
-                            onClick={() => handleReadNotification(notification._id)}
+                            onClick={() => handleReadNotification(notification)}
                             className={`w-full border-l-4 px-5 py-4 text-left transition ${
                               notification.is_read
                                 ? "border-transparent bg-white hover:bg-slate-50"

@@ -60,7 +60,22 @@ export const BookingHistoryPage = () => {
     try {
       setLoading(true);
       const res = await getMyBookings();
-      if (res.success) setBookings(res.data);
+      if (res.success) {
+        setBookings(res.data);
+        
+        // Auto-open specific booking if requested via URL
+        const params = new URLSearchParams(location.search);
+        const bookingId = params.get("bookingId");
+        if (bookingId) {
+          const target = res.data.find(b => String(b._id) === bookingId);
+          if (target) {
+             setSelectedBooking(target);
+             setActiveTab(target.status);
+             // Remove query parameter cleanly
+             navigate(location.pathname, { replace: true, state: location.state });
+          }
+        }
+      }
     } catch {
       toast.error("Không thể tải lịch sử đặt bàn");
     } finally {
