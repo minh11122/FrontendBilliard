@@ -99,20 +99,30 @@ export default function OwnerReportsPage() {
 
   // Tổng doanh thu giải đấu (phí đăng ký × số người thực tế)
   const totalTournamentRevenue = filteredTournaments.reduce(
-    (sum, t) => sum + ((t.entry_fee || 0) * (t.registered_player || 0)), 0
+    (sum, t) => sum + ((t.fee || 0) * (t.registered_player || 0)), 0
   );
 
   // Biểu đồ giải đấu — bar chart doanh thu
   const tournamentChartData = filteredTournaments
-    .filter(t => (t.entry_fee || 0) * (t.registered_player || 0) > 0)
+    .filter(t => (t.fee || 0) * (t.registered_player || 0) > 0)
     .map(t => ({
       name:    t.name.length > 16 ? t.name.slice(0, 14) + "…" : t.name,
       fullName: t.name,
-      revenue: (t.entry_fee || 0) * (t.registered_player || 0),
+      revenue: (t.fee || 0) * (t.registered_player || 0),
       status:  t.status,
     }))
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 6);
+
+  // Biểu đồ Pie
+  const pieData = Object.entries(
+    filteredTournaments.reduce((acc, t) => {
+      const status = t.status || "Unknown";
+      const rev = (t.fee || 0) * (t.registered_player || 0);
+      if (rev > 0) acc[status] = (acc[status] || 0) + rev;
+      return acc;
+    }, {})
+  ).map(([name, value]) => ({ name, value }));
 
   // Filter Pills component
   const FilterPills = ({ value, onChange }) => (
@@ -243,8 +253,8 @@ export default function OwnerReportsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {tournamentChartData.length > 0 && (
+            {tournamentChartData.length > 0 ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                   <h3 className="text-base font-bold text-gray-900 mb-6 flex items-center gap-2">
                     <TrendingUp size={16} className="text-yellow-500" /> Doanh thu theo giải đấu
@@ -265,99 +275,49 @@ export default function OwnerReportsPage() {
                     </ResponsiveContainer>
                   </div>
                 </div>
-              )}
 
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                <h3 className="text-base font-bold text-gray-900 mb-6 flex items-center gap-2">
-                  📊 Cơ cấu doanh thu trạng thái
-                </h3>
-                <div className="h-[280px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={Object.entries(
-                          filteredTournaments.reduce((acc, t) => {
-                            const status = t.status || "Unknown";
-                            const rev = (t.entry_fee || 0) * (t.registered_player || 0);
-                            acc[status] = (acc[status] || 0) + rev;
-                            return acc;
-                          }, {})
-                        ).map(([name, value]) => ({ name, value }))}
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {Object.entries(
-                          filteredTournaments.reduce((acc, t) => {
-                            const status = t.status || "Unknown";
-                            const rev = (t.entry_fee || 0) * (t.registered_player || 0);
-                            acc[status] = (acc[status] || 0) + rev;
-                            return acc;
-                          }, {})
-                        ).map(([name], index) => (
-                          <Cell key={`cell-${index}`} fill={TOURNAMENT_STATUS_INFO[name]?.bar || "#cbd5e1"} />
-                        ))}
-                      </Pie>
-                      <RechartsTooltip formatter={(v) => formatMoney(v)} />
-                      <Legend 
-                        formatter={(val) => TOURNAMENT_STATUS_INFO[val]?.label || val} 
-                        layout="vertical" verticalAlign="middle" align="right" 
-                        wrapperStyle={{ fontSize: 11 }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                  <h3 className="text-base font-bold text-gray-900 mb-6 flex items-center gap-2">
+                    📊 Cơ cấu doanh thu theo trạng thái
+                  </h3>
+                  {pieData.length > 0 ? (
+                    <div className="h-[280px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={pieData}
+                            innerRadius={60}
+                            outerRadius={80}
+                            paddingAngle={5}
+                            dataKey="value"
+                          >
+                            {pieData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={TOURNAMENT_STATUS_INFO[entry.name]?.bar || "#cbd5e1"} />
+                            ))}
+                          </Pie>
+                          <RechartsTooltip formatter={(v) => formatMoney(v)} />
+                          <Legend 
+                            formatter={(val) => TOURNAMENT_STATUS_INFO[val]?.label || val} 
+                            layout="vertical" verticalAlign="middle" align="right" 
+                            wrapperStyle={{ fontSize: 11 }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <div className="h-[280px] flex items-center justify-center">
+                      <p className="text-gray-400 italic text-sm">Chưa có dữ liệu doanh thu</p>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-              <h3 className="text-base font-bold text-gray-900 mb-6 flex items-center gap-2">
-                <Calendar size={18} className="text-blue-500" /> Chi tiết & Phối cảnh Giải đấu
-              </h3>
-              {filteredTournaments.length === 0 ? (
-                <p className="text-sm text-gray-500 italic text-center py-8">Chưa có giải đấu nào trong khoảng thời gian này.</p>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredTournaments
-                    .sort((a, b) => ((b.entry_fee||0)*(b.registered_player||0)) - ((a.entry_fee||0)*(a.registered_player||0)))
-                    .map((t) => {
-                      const revenue = (t.entry_fee || 0) * (t.registered_player || 0);
-                      const si = TOURNAMENT_STATUS_INFO[t.status] || { label: t.status, color: "bg-gray-100 text-gray-600" };
-                      const fillPct = t.max_players > 0 ? Math.round((t.registered_player || 0) / t.max_players * 100) : 0;
-                      return (
-                        <div key={t._id} className="p-5 bg-gray-50/50 hover:bg-white hover:shadow-xl border border-gray-100 rounded-3xl transition-all duration-300 group">
-                          <div className="flex justify-between items-start mb-4">
-                            <span className={`text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider ${si.color}`}>
-                              {si.label}
-                            </span>
-                            <span className="text-xs text-gray-400 font-medium">{formatDate(t.play_date)}</span>
-                          </div>
-                          <h4 className="font-bold text-gray-900 text-base mb-2 truncate group-hover:text-blue-600 transition-colors" title={t.name}>
-                            {t.name}
-                          </h4>
-                          <div className="flex items-baseline gap-1 mb-6">
-                            <span className="text-xl font-black text-blue-600">{formatMoney(revenue)}</span>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <div className="flex justify-between text-xs font-semibold text-gray-600">
-                              <span>Lấp đầy: {t.registered_player || 0}/{t.max_players}</span>
-                              <span className="text-gray-900">{fillPct}%</span>
-                            </div>
-                            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden shadow-inner">
-                              <div
-                                className="h-full rounded-full transition-all duration-1000 ease-out shadow-sm"
-                                style={{ width: `${fillPct}%`, backgroundColor: TOURNAMENT_STATUS_INFO[t.status]?.bar || "#fbbf24" }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-              )}
-            </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 flex flex-col items-center justify-center text-center">
+                <Trophy size={48} className="text-gray-200 mb-4" />
+                <h3 className="text-lg font-bold text-gray-900 mb-1">Chưa có dữ liệu giải đấu</h3>
+                <p className="text-sm text-gray-500">Khu vực này sẽ hiển thị biểu đồ sau khi có giải đấu sinh ra doanh thu.</p>
+              </div>
+            )}
           </>
         )}
       </section>

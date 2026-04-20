@@ -839,6 +839,7 @@ const QuickCreateModal = ({ open, tables, tableTypes, date, bookings, onCreate, 
 
 export const StaffClubPageManagerTable = () => {
   const navigate = useNavigate();
+  const PAGE_SIZE = 10;
   const [tables, setTables] = useState([]);
   const [tableTypes, setTableTypes] = useState([]);
   const [bookings, setBookings] = useState([]);
@@ -854,6 +855,7 @@ export const StaffClubPageManagerTable = () => {
   const [modalTarget, setModalTarget] = useState(null); 
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [currentPage, setCurrentPage] = useState(1);
   const timelineScrollRef = useRef(null);
   const dateInputRef = useRef(null);
 
@@ -961,6 +963,22 @@ export const StaffClubPageManagerTable = () => {
     }
     return result;
   }, [tables, bookings, currentDate, typeFilter, statusFilter, debouncedSearch]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredTables.length / PAGE_SIZE));
+  const paginatedTables = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredTables.slice(start, start + PAGE_SIZE);
+  }, [filteredTables, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, typeFilter, statusFilter, currentDate]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const handleStatusChange = async (tableId, newStatus) => {
     try {
@@ -1101,7 +1119,7 @@ export const StaffClubPageManagerTable = () => {
 
             <div className="flex w-fit min-w-full">
                <div className="w-44 lg:w-48 sticky left-0 z-20 bg-white border-r border-gray-200 shrink-0 flex flex-col shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                  {filteredTables.map(table => {
+                  {paginatedTables.map(table => {
                      const ds = getTableDerivedStatus(table, currentDate, bookings.filter(b => (b.table_id?._id || b.table_id) === table._id));
                      const meta = STATUS_META[ds] || STATUS_META.available;
                      return (
@@ -1120,7 +1138,7 @@ export const StaffClubPageManagerTable = () => {
                      {HOURS.map(h => <div key={`bg-${h}`} className="shrink-0 border-r border-gray-100/60 h-full" style={{ width: HOUR_WIDTH }} />)}
                   </div>
 
-                  {filteredTables.map(table => {
+                  {paginatedTables.map(table => {
                       const tableBookings = bookings.filter(b => (b.table_id?._id || b.table_id) === table._id);
                       return (
                         <div 
@@ -1157,6 +1175,35 @@ export const StaffClubPageManagerTable = () => {
             </div>
          </div>
       </div>
+
+      {!loading && filteredTables.length > 0 && (
+        <div className="flex items-center justify-between gap-3 pt-4 text-sm text-gray-500">
+          <span>
+            Hien thi {(currentPage - 1) * PAGE_SIZE + 1} - {Math.min(currentPage * PAGE_SIZE, filteredTables.length)} trong {filteredTables.length} ban
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            >
+              Truoc
+            </Button>
+            <span>
+              Trang {currentPage} / {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Sau
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

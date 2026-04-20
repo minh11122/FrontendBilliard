@@ -46,7 +46,7 @@ export async function getCurrentSubscription() {
 }
 
 // tạo link thanh toán PayOS
-export async function createPayOSSubscriptionPayment(subscription_id) {
+export async function createPayOSSubscriptionPayment(subscription_id, duration_months = 1) {
 
   const token = getAuthToken();
   const club_id = getSelectedClub();
@@ -55,7 +55,8 @@ export async function createPayOSSubscriptionPayment(subscription_id) {
     `${API_BASE_URL}/payos/create-payment`,
     {
       subscription_id,
-      club_id
+      club_id,
+      duration_months
     },
     {
       headers: {
@@ -69,7 +70,7 @@ export async function createPayOSSubscriptionPayment(subscription_id) {
 
 
 // verify payment
-export async function verifySubscriptionPayment(orderCode, subscription_id) {
+export async function verifySubscriptionPayment(orderCode, subscription_id, duration_months = 1) {
 
   const token = getAuthToken();
   const club_id = getSelectedClub();
@@ -79,7 +80,8 @@ export async function verifySubscriptionPayment(orderCode, subscription_id) {
     {
       orderCode,
       subscription_id,
-      club_id
+      club_id,
+      duration_months
     },
     {
       headers: {

@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { Trophy, Users, Calendar, Play, Clock, Search, XCircle, Info } from "lucide-react";
+import React, { useEffect, useState, useRef } from "react";
+import { Trophy, Users, Calendar, Play, Clock, Search, XCircle, Info, Bell } from "lucide-react";
 import toast from "react-hot-toast";
 import { getTournamentsByClub, cancelTournament } from "@/services/tournament.service";
 import { useNavigate } from "react-router-dom";
+import axios from "@/lib/axios";
+import { Button } from "@/components/ui/button";
 
 const tabs = [
   { id: "All", label: "Tất cả", statuses: [] },
@@ -30,6 +32,18 @@ export const StaffClubPageTournament = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("All");
+  const [notifications, setNotifications] = useState([]);
+  const [showNotificationPopup, setShowNotificationPopup] = useState(false);
+  const notificationRef = useRef(null);
+
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, activeTab]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -45,6 +59,61 @@ export const StaffClubPageTournament = () => {
     };
     fetchData();
   }, [CLUB_ID]);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const response = await axios.get("/staff/notifications");
+        if (response.data?.success) {
+          setNotifications(response.data.data || []);
+        }
+      } catch (error) {
+        console.error("Loi fetchNotifications:", error);
+      }
+    };
+
+    fetchNotifications();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setShowNotificationPopup(false);
+      }
+    };
+
+    if (showNotificationPopup) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showNotificationPopup]);
+
+  const handleReadNotification = async (id) => {
+    try {
+      await axios.patch(`/staff/notifications/${id}/read`);
+      const response = await axios.get("/staff/notifications");
+      if (response.data?.success) {
+        setNotifications(response.data.data || []);
+      }
+    } catch (error) {
+      console.error("Loi mark notification read:", error);
+    }
+  };
+
+  const handleReadAllNotifications = async () => {
+    try {
+      await axios.patch("/staff/notifications/read-all");
+      const response = await axios.get("/staff/notifications");
+      if (response.data?.success) {
+        setNotifications(response.data.data || []);
+      }
+    } catch (error) {
+      console.error("Loi mark all notifications read:", error);
+    }
+  };
 
   const handleCancel = async (t) => {
     const hasPlayers = (t.registered_player || 0) > 0;
@@ -73,6 +142,9 @@ export const StaffClubPageTournament = () => {
     return matchSearch && matchTab;
   });
 
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  const currentTournaments = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   return (
     <div className="flex-1 p-6 lg:p-10 max-w-[1400px] mx-auto w-full min-h-[calc(100vh-80px)] bg-slate-50/50">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -81,6 +153,72 @@ export const StaffClubPageTournament = () => {
             <Trophy className="w-8 h-8 text-orange-500" /> Quản lý Giải đấu
           </h1>
           <p className="text-slate-500 mt-1 pl-11">Vận hành giải đấu cho CLB của bạn.</p>
+        </div>
+        <div className="relative" ref={notificationRef}>
+          <button
+            type="button"
+            onClick={() => setShowNotificationPopup((prev) => !prev)}
+            className="hidden"
+          >
+            <Bell className="w-5 h-5" />
+            {unreadCount > 0 && (
+              <span className="absolute top-2 right-2 h-2.5 w-2.5 rounded-full border-2 border-white bg-red-500" />
+            )}
+          </button>
+
+          {showNotificationPopup && (
+            <div className="absolute right-0 mt-2 w-80 rounded-2xl border border-slate-200 bg-white shadow-lg z-20 overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50">
+                <span className="text-sm font-semibold text-slate-800">Thong bao</span>
+                {unreadCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleReadAllNotifications}
+                    className="text-xs font-medium text-orange-600 hover:text-orange-700"
+                  >
+                    Danh dau da doc
+                  </button>
+                )}
+              </div>
+              <div className="max-h-80 overflow-y-auto">
+                {notifications.length === 0 ? (
+                  <div className="px-4 py-8 text-center text-sm text-slate-500">
+                    Chua co thong bao nao
+                  </div>
+                ) : (
+                  notifications.map((notif) => (
+                    <button
+                      key={notif._id}
+                      type="button"
+                      onClick={() => handleReadNotification(notif._id)}
+                      className={`w-full text-left px-4 py-3 border-b border-slate-100 hover:bg-slate-50 transition ${!notif.is_read ? "bg-orange-50/50" : "bg-white"}`}
+                    >
+                      <div className="flex gap-3">
+                        <div className="pt-1">
+                          {!notif.is_read && <span className="block h-2 w-2 rounded-full bg-orange-500" />}
+                        </div>
+                        <div className="min-w-0">
+                          <p className={`text-sm line-clamp-1 ${!notif.is_read ? "font-semibold text-slate-900" : "text-slate-900"}`}>
+                            {notif.title}
+                          </p>
+                          <p className="mt-0.5 text-xs text-slate-500 line-clamp-2">{notif.message}</p>
+                          <p className="mt-1 text-[11px] text-slate-400">
+                            {notif.created_at ? new Date(notif.created_at).toLocaleString("vi-VN", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                            }) : ""}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -121,7 +259,7 @@ export const StaffClubPageTournament = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filtered.map((t) => {
+          {currentTournaments.map((t) => {
             const badge = statusBadge[t.status] || statusBadge.Draft;
             return (
               <div key={t._id} className="bg-white rounded-[20px] shadow-sm border border-slate-100 p-4 flex flex-col gap-4">
@@ -219,6 +357,36 @@ export const StaffClubPageTournament = () => {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Pagination Container */}
+      {!loading && filtered.length > 0 && (
+        <div className="flex items-center justify-between gap-3 mt-4 px-6 py-4 text-sm text-slate-500 bg-white rounded-[20px] shadow-sm border border-slate-100">
+          <span>
+            Hiển thị {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, filtered.length)} trong {filtered.length} giải đấu
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            >
+              Trước
+            </Button>
+            <span>
+              Trang {currentPage} / {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Sau
+            </Button>
+          </div>
         </div>
       )}
     </div>

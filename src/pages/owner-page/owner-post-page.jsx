@@ -3,7 +3,7 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 import toast from "react-hot-toast";
 
-import { Plus, Edit2, Eye, Trash2, ImagePlus, X, Search } from "lucide-react";
+import { Plus, Edit2, Eye, Trash2, ImagePlus, X, Search, ArrowUp, ArrowDown } from "lucide-react";
 import axios from "@/lib/axios";
 
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
 import { uploadImages } from "@/utils/cloudinary";
+import { PostBlocksRenderer } from "@/components/common/post-blocks-renderer";
 
 const StatusPill = ({ status }) => {
   const map = {
@@ -58,6 +59,7 @@ const ModalShell = ({ title, children, onClose, footer }) => {
 };
 
 export const OwnerPostPage = () => {
+  const PAGE_SIZE = 10;
   const CLUB_NAME = localStorage.getItem("selected_club_name") || "CLB của bạn";
   const CLUB_ID = localStorage.getItem("selected_club_id") || "";
 
@@ -66,6 +68,7 @@ export const OwnerPostPage = () => {
   const [error, setError] = useState("");
 
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [selectedPost, setSelectedPost] = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -79,6 +82,7 @@ export const OwnerPostPage = () => {
   const [existingImageUrl, setExistingImageUrl] = useState("");
   const [removeExistingImage, setRemoveExistingImage] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [blocks, setBlocks] = useState([{ type: "text", text: "" }]);
 
   const fetchPosts = async () => {
     try {
@@ -109,6 +113,22 @@ export const OwnerPostPage = () => {
     });
   }, [posts, search]);
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginatedPosts = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
   const openCreate = () => {
     setMode("create");
     setEditingId(null);
@@ -117,6 +137,7 @@ export const OwnerPostPage = () => {
     setRemoveExistingImage(false);
     setImageFile(null);
     setImagePreviewUrl(null);
+    setBlocks([{ type: "text", text: "" }]);
 
     formik.resetForm();
     setFormOpen(true);
@@ -135,6 +156,14 @@ export const OwnerPostPage = () => {
       title: post.title || "",
       content: post.content || "",
     });
+    setBlocks(
+      Array.isArray(post.content_blocks) && post.content_blocks.length > 0
+        ? post.content_blocks
+        : [
+            ...(post.content ? [{ type: "text", text: post.content }] : []),
+            ...(post.image_url ? [{ type: "image", image_url: post.image_url, image_width: "wide", image_align: "center" }] : []),
+          ]
+    );
 
     setFormOpen(true);
   };
@@ -147,6 +176,7 @@ export const OwnerPostPage = () => {
     setImagePreviewUrl(null);
     setExistingImageUrl("");
     setRemoveExistingImage(false);
+    setBlocks([{ type: "text", text: "" }]);
   };
 
   const validationSchema = Yup.object({
@@ -178,6 +208,7 @@ export const OwnerPostPage = () => {
         const payload = {
           title: values.title.trim(),
           content: values.content.trim(),
+          content_blocks: blocks,
           ...(CLUB_ID ? { club_id: CLUB_ID } : {}),
           ...(image_url !== undefined ? { image_url } : {}),
         };
@@ -201,6 +232,33 @@ export const OwnerPostPage = () => {
   });
 
   const submitDisabled = isUploadingImage || formik.isSubmitting;
+
+  const updateBlock = (idx, patch) => {
+    setBlocks((prev) => prev.map((b, i) => (i === idx ? { ...b, ...patch } : b)));
+  };
+
+  const addTextBlock = () => setBlocks((prev) => [...prev, { type: "text", text: "" }]);
+  const addImageBlock = () =>
+    setBlocks((prev) => [...prev, { type: "image", image_url: "", image_width: "wide", image_align: "center" }]);
+  const removeBlock = (idx) => setBlocks((prev) => prev.filter((_, i) => i !== idx));
+  const moveBlock = (idx, dir) => {
+    setBlocks((prev) => {
+      const next = [...prev];
+      const target = idx + dir;
+      if (target < 0 || target >= next.length) return prev;
+      [next[idx], next[target]] = [next[target], next[idx]];
+      return next;
+    });
+  };
+
+  const uploadImageForBlock = async (idx, file) => {
+    if (!file) return;
+    const uploaded = await uploadImages([file], setIsUploadingImage);
+    const imageUrl = uploaded?.[0];
+    if (imageUrl) {
+      updateBlock(idx, { image_url: imageUrl });
+    }
+  };
 
   const handlePickImage = (e) => {
     const file = e.target.files?.[0];
@@ -315,7 +373,7 @@ export const OwnerPostPage = () => {
                       </td>
                     </tr>
                   ) : (
-                    filtered.map((p) => (
+                    paginatedPosts.map((p) => (
                       <tr key={p._id} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/40 transition-colors">
                         <td className="px-6 py-4">
                           <div className="flex items-start gap-3">
@@ -369,6 +427,35 @@ export const OwnerPostPage = () => {
                 </tbody>
               </table>
             </div>
+
+            {filtered.length > 0 ? (
+              <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-between gap-3 text-sm text-slate-500">
+                <span>
+                  Hien thi {(currentPage - 1) * PAGE_SIZE + 1} - {Math.min(currentPage * PAGE_SIZE, filtered.length)} trong {filtered.length} bai dang
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  >
+                    Truoc
+                  </Button>
+                  <span>
+                    Trang {currentPage} / {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  >
+                    Sau
+                  </Button>
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
 
@@ -418,12 +505,6 @@ export const OwnerPostPage = () => {
               <StatusPill status={detailPost.status} />
             </div>
 
-            {detailPost.image_url ? (
-              <div className="rounded-2xl border border-slate-200 overflow-hidden bg-slate-50">
-                <img src={detailPost.image_url} alt={detailPost.title} className="w-full max-h-[380px] object-cover" />
-              </div>
-            ) : null}
-
             {detailPost.rejected_reason ? (
               <div className="bg-red-50 border border-red-200 text-red-800 rounded-xl p-4 text-sm">
                 <div className="font-bold mb-1">Lý do từ chối</div>
@@ -433,7 +514,12 @@ export const OwnerPostPage = () => {
 
             <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
               <div className="text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Nội dung</div>
-              <div className="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap">{detailPost.content}</div>
+              <PostBlocksRenderer
+                blocks={detailPost.content_blocks}
+                fallbackContent={detailPost.content}
+                fallbackImage={detailPost.image_url}
+                title={detailPost.title}
+              />
             </div>
           </div>
         </ModalShell>
@@ -479,20 +565,107 @@ export const OwnerPostPage = () => {
 
               <div className="md:col-span-2">
                 <Label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Nội dung <span className="text-red-500">*</span>
+                  Tóm tắt nội dung <span className="text-red-500">*</span>
                 </Label>
                 <Textarea
-                  rows={10}
+                  rows={4}
                   value={formik.values.content}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   name="content"
                   className="bg-slate-50 resize-none"
-                  placeholder="Viết nội dung bài đăng..."
+                  placeholder="Mô tả ngắn bài viết..."
                 />
                 {formik.touched.content && formik.errors.content ? (
                   <div className="text-xs text-red-600 mt-1">{formik.errors.content}</div>
                 ) : null}
+              </div>
+
+              <div className="md:col-span-2 rounded-2xl border border-slate-200 bg-white p-4 space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="font-bold text-slate-900">Nội dung chi tiết dạng trang tin</div>
+                    <div className="text-xs text-slate-500">Bạn có thể trộn đoạn chữ và ảnh theo ý muốn.</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button type="button" variant="outline" onClick={addTextBlock} className="rounded-xl">
+                      + Đoạn chữ
+                    </Button>
+                    <Button type="button" variant="outline" onClick={addImageBlock} className="rounded-xl">
+                      + Ảnh
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {blocks.map((block, idx) => (
+                    <div key={idx} className="rounded-xl border border-slate-200 p-3 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs font-semibold text-slate-600">
+                          Block {idx + 1}: {block.type === "text" ? "Đoạn chữ" : "Ảnh"}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button type="button" onClick={() => moveBlock(idx, -1)} className="p-1.5 rounded hover:bg-slate-100">
+                            <ArrowUp className="w-4 h-4" />
+                          </button>
+                          <button type="button" onClick={() => moveBlock(idx, 1)} className="p-1.5 rounded hover:bg-slate-100">
+                            <ArrowDown className="w-4 h-4" />
+                          </button>
+                          <button type="button" onClick={() => removeBlock(idx)} className="p-1.5 rounded hover:bg-red-50 text-red-600">
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {block.type === "text" ? (
+                        <Textarea
+                          rows={5}
+                          value={block.text || ""}
+                          onChange={(e) => updateBlock(idx, { text: e.target.value })}
+                          className="bg-slate-50"
+                          placeholder="Nhập đoạn nội dung..."
+                        />
+                      ) : (
+                        <div className="space-y-3">
+                          <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/jpg"
+                            onChange={(e) => uploadImageForBlock(idx, e.target.files?.[0])}
+                            className="block w-full text-sm text-slate-600"
+                          />
+                          <div className="grid md:grid-cols-2 gap-3">
+                            <select
+                              value={block.image_width || "wide"}
+                              onChange={(e) => updateBlock(idx, { image_width: e.target.value })}
+                              className="h-10 rounded-lg border border-slate-200 px-3 text-sm"
+                            >
+                              <option value="small">Nhỏ</option>
+                              <option value="normal">Vừa</option>
+                              <option value="wide">Rộng</option>
+                              <option value="full">Toàn chiều ngang</option>
+                            </select>
+                            <select
+                              value={block.image_align || "center"}
+                              onChange={(e) => updateBlock(idx, { image_align: e.target.value })}
+                              className="h-10 rounded-lg border border-slate-200 px-3 text-sm"
+                            >
+                              <option value="left">Canh trái</option>
+                              <option value="center">Canh giữa</option>
+                              <option value="right">Canh phải</option>
+                            </select>
+                          </div>
+                          {block.image_url ? (
+                            <div className="rounded-xl border border-slate-200 overflow-hidden">
+                              <img src={block.image_url} alt={`block-${idx}`} className="w-full max-h-[240px] object-cover" />
+                            </div>
+                          ) : (
+                            <div className="text-xs text-slate-500">Chưa có ảnh.</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 

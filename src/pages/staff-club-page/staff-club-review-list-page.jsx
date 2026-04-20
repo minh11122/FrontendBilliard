@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
-import { Star, MessageSquare } from "lucide-react";
+import { Star, MessageSquare, Bell } from "lucide-react";
 import axios from "@/lib/axios";
 import toast from "react-hot-toast";
 
@@ -41,6 +41,22 @@ export const StaffClubReviewListPage = () => {
   const [replyLoading, setReplyLoading] = useState(false);
   const [ratingFilter, setRatingFilter] = useState("all");
   const [replyFilter, setReplyFilter] = useState("all");
+  const [notifications, setNotifications] = useState([]);
+  const [showNotificationPopup, setShowNotificationPopup] = useState(false);
+  const popupRef = useRef(null);
+
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await axios.get("/staff/notifications");
+      if (response.data?.success) {
+        setNotifications(response.data.data || []);
+      }
+    } catch (error) {
+      console.error("Loi fetchNotifications:", error);
+    }
+  };
 
   const fetchFeedbacks = async (page = 1, limit = 10, rating = ratingFilter, isReplied = replyFilter) => {
     try {
@@ -70,11 +86,46 @@ export const StaffClubReviewListPage = () => {
 
   useEffect(() => {
     fetchFeedbacks(pagination.current, pagination.pageSize, ratingFilter, replyFilter);
+    fetchNotifications();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (popupRef.current && !popupRef.current.contains(event.target)) {
+        setShowNotificationPopup(false);
+      }
+    };
+
+    if (showNotificationPopup) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showNotificationPopup]);
+
   const handlePageChange = (newPage) => {
     fetchFeedbacks(newPage, pagination.pageSize, ratingFilter, replyFilter);
+  };
+
+  const handleReadNotification = async (id) => {
+    try {
+      await axios.patch(`/staff/notifications/${id}/read`);
+      fetchNotifications();
+    } catch (error) {
+      console.error("Loi mark notification read:", error);
+    }
+  };
+
+  const handleReadAllNotifications = async () => {
+    try {
+      await axios.patch("/staff/notifications/read-all");
+      fetchNotifications();
+    } catch (error) {
+      console.error("Loi mark all notifications read:", error);
+    }
   };
 
   const openReplyModal = (record) => {
@@ -154,7 +205,72 @@ export const StaffClubReviewListPage = () => {
           </p>
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto items-stretch sm:items-center">
+          <div className="relative self-end sm:self-auto" ref={popupRef}>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="hidden"
+              onClick={() => setShowNotificationPopup((prev) => !prev)}
+            >
+              <Bell className="w-4 h-4" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-white" />
+              )}
+            </Button>
+
+            {showNotificationPopup && (
+              <div className="absolute right-0 mt-2 w-80 rounded-xl border border-border bg-background shadow-lg z-20 overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
+                  <span className="text-sm font-semibold">Thong bao</span>
+                  {unreadCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleReadAllNotifications}
+                      className="text-xs font-medium text-orange-600 hover:text-orange-700"
+                    >
+                      Danh dau da doc
+                    </button>
+                  )}
+                </div>
+
+                <div className="max-h-80 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="px-4 py-8 text-sm text-center text-muted-foreground">
+                      Chua co thong bao nao
+                    </div>
+                  ) : (
+                    notifications.map((notif) => (
+                      <button
+                        key={notif._id}
+                        type="button"
+                        onClick={() => handleReadNotification(notif._id)}
+                        className={`w-full text-left px-4 py-3 border-b border-border/60 hover:bg-muted/40 transition-colors ${!notif.is_read ? "bg-orange-50/60" : "bg-background"}`}
+                      >
+                        <div className="flex gap-3">
+                          <div className="pt-1">
+                            {!notif.is_read && <span className="block w-2 h-2 rounded-full bg-orange-500" />}
+                          </div>
+                          <div className="min-w-0">
+                            <p className={`text-sm line-clamp-1 ${!notif.is_read ? "font-semibold text-foreground" : "text-foreground"}`}>
+                              {notif.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                              {notif.message}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground mt-1">
+                              {notif.created_at ? format(new Date(notif.created_at), "dd/MM/yyyy HH:mm") : ""}
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
           <Select value={ratingFilter} onValueChange={(val) => { setRatingFilter(val); setPagination(prev => ({...prev, current: 1})); fetchFeedbacks(1, pagination.pageSize, val, replyFilter); }}>
             <SelectTrigger className="w-full sm:w-[150px] bg-background">
               <SelectValue placeholder="Tất cả đánh giá" />

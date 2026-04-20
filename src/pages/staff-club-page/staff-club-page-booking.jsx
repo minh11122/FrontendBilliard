@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import axios from "@/lib/axios";
 import {
   Search, Calendar as CalendarIcon, MoreVertical, TrendingUp, Loader2,
   LogIn, List, User, Clock, CreditCard, MapPin, Hash, Phone, ArrowRight,
   CheckCircle, XCircle, PlusCircle, RefreshCw, ChevronLeft, ChevronRight,
   Eye, ShoppingCart, RotateCcw, ArrowLeftRight, Minus, Plus, Trash2, 
-  CalendarDays, BadgeCheck, Circle, CheckCircle2, Info
+  CalendarDays, BadgeCheck, Circle, CheckCircle2, Info, Bell
 } from "lucide-react";
 
 import bookingService, { checkInBooking, getClubBookings, confirmPayment, createWalkInBooking } from "@/services/booking.service";
@@ -660,6 +661,13 @@ const BookingListSection = () => {
   const [availableTables, setAvailableTables] = useState([]);
   const dateInputRef = useRef(null);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, statusFilter, dateMode, currentDate, debouncedSearch]);
+
   useEffect(() => {
     const fetchAvailableTables = async () => {
       try {
@@ -758,6 +766,9 @@ const BookingListSection = () => {
     { key: "Completed", label: "Hoàn thành", count: statusCounts.Completed },
     { key: "Cancelled", label: "Đã hủy", count: statusCounts.Cancelled },
   ];
+
+  const totalPages = Math.ceil(bookings.length / pageSize);
+  const currentBookings = bookings.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <>
@@ -901,7 +912,7 @@ const BookingListSection = () => {
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : bookings.length === 0 ? (
+              ) : currentBookings.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-16">
                     <div className="flex flex-col items-center gap-2">
@@ -911,7 +922,7 @@ const BookingListSection = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                bookings.map((booking) => (
+                currentBookings.map((booking) => (
                   <TableRow key={booking._id} className="hover:bg-gray-50 border-b border-gray-50">
                     <TableCell className="px-6 py-4">
                       <span className="font-medium text-[#4caf50]">#{booking.code_number}</span>
@@ -987,13 +998,42 @@ const BookingListSection = () => {
 
         {/* Footer */}
         {!loading && bookings.length > 0 && (
-          <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100 bg-gray-50/50">
-            <div className="text-sm text-gray-600">
-              Tổng số: <span className="font-semibold text-gray-900">{bookings.length}</span> đơn đặt bàn
+          <div className="flex flex-col gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50 text-sm text-gray-600">
+            <div className="flex items-center justify-between">
+              <div>
+                Tổng số: <span className="font-semibold text-gray-900">{bookings.length}</span> đơn đặt bàn
+              </div>
+              <div className="flex items-center gap-4">
+                <span>⏱️ Đang chơi: <span className="font-semibold text-green-600">{statusCounts.Playing}</span></span>
+                <span>📅 Đã đặt: <span className="font-semibold text-blue-600">{statusCounts.Booked}</span></span>
+              </div>
             </div>
-            <div className="text-sm text-gray-600">
-              <span className="mr-4">⏱️ Đang chơi: <span className="font-semibold text-green-600">{statusCounts.Playing}</span></span>
-              <span>📅 Đã đặt: <span className="font-semibold text-blue-600">{statusCounts.Booked}</span></span>
+
+            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+              <span>
+                Hiển thị {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, bookings.length)} trong {bookings.length} đơn đặt bàn
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                >
+                  Trước
+                </Button>
+                <span>
+                  Trang {currentPage} / {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                >
+                  Sau
+                </Button>
+              </div>
             </div>
           </div>
         )}
@@ -1008,6 +1048,22 @@ export const StaffClubPageBooking = () => {
   const [activeSection, setActiveSection] = useState("checkin");
   const [bookingListKey, setBookingListKey] = useState(0);
   const [walkInMountKey, setWalkInMountKey] = useState(0);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotificationPopup, setShowNotificationPopup] = useState(false);
+  const notificationRef = useRef(null);
+
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const response = await axios.get("/staff/notifications");
+      if (response.data?.success) {
+        setNotifications(response.data.data || []);
+      }
+    } catch (error) {
+      console.error("Loi fetchNotifications:", error);
+    }
+  }, []);
 
   const sections = [
     { key: "checkin", label: "Check-in Khách", icon: <LogIn size={16} /> },
@@ -1019,6 +1075,44 @@ export const StaffClubPageBooking = () => {
     setBookingListKey((k) => k + 1);
   };
 
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setShowNotificationPopup(false);
+      }
+    };
+
+    if (showNotificationPopup) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showNotificationPopup]);
+
+  const handleReadNotification = async (id) => {
+    try {
+      await axios.patch(`/staff/notifications/${id}/read`);
+      fetchNotifications();
+    } catch (error) {
+      console.error("Loi mark notification read:", error);
+    }
+  };
+
+  const handleReadAllNotifications = async () => {
+    try {
+      await axios.patch("/staff/notifications/read-all");
+      fetchNotifications();
+    } catch (error) {
+      console.error("Loi mark all notifications read:", error);
+    }
+  };
+
   return (
     <div className="p-4 md:p-6 w-full max-w-[1440px] mx-auto bg-gray-50/30 min-h-[calc(100vh-80px)] font-sans">
 
@@ -1027,6 +1121,78 @@ export const StaffClubPageBooking = () => {
         <h1 className="text-2xl font-black text-gray-900 tracking-tight">Quản lý Đặt bàn</h1>
 
         {/* Section Toggle */}
+        <div className="flex items-center gap-3">
+          <div className="relative" ref={notificationRef}>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="hidden"
+              onClick={() => setShowNotificationPopup((prev) => !prev)}
+            >
+              <Bell className="w-4 h-4" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-white" />
+              )}
+            </Button>
+
+            {showNotificationPopup && (
+              <div className="absolute right-0 mt-2 w-80 rounded-xl border border-gray-200 bg-white shadow-lg z-20 overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
+                  <span className="text-sm font-semibold text-gray-800">Thong bao</span>
+                  {unreadCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleReadAllNotifications}
+                      className="text-xs font-medium text-green-600 hover:text-green-700"
+                    >
+                      Danh dau da doc
+                    </button>
+                  )}
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="px-4 py-8 text-sm text-center text-gray-500">
+                      Chua co thong bao nao
+                    </div>
+                  ) : (
+                    notifications.map((notif) => (
+                      <button
+                        key={notif._id}
+                        type="button"
+                        onClick={() => handleReadNotification(notif._id)}
+                        className={`w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors ${!notif.is_read ? "bg-green-50/50" : "bg-white"}`}
+                      >
+                        <div className="flex gap-3">
+                          <div className="pt-1">
+                            {!notif.is_read && <span className="block w-2 h-2 rounded-full bg-green-500" />}
+                          </div>
+                          <div className="min-w-0">
+                            <p className={`text-sm line-clamp-1 ${!notif.is_read ? "font-semibold text-gray-900" : "text-gray-900"}`}>
+                              {notif.title}
+                            </p>
+                            <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">
+                              {notif.message}
+                            </p>
+                            <p className="text-[11px] text-gray-400 mt-1">
+                              {notif.created_at ? new Date(notif.created_at).toLocaleString("vi-VN", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric",
+                              }) : ""}
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
         <div className="inline-flex bg-white rounded-lg border border-gray-200 p-1 shadow-sm">
           {sections.map((sec) => (
             <button
@@ -1043,6 +1209,7 @@ export const StaffClubPageBooking = () => {
               {sec.label}
             </button>
           ))}
+        </div>
         </div>
       </div>
 

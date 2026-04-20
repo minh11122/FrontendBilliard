@@ -1,9 +1,13 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   FileText, CheckCircle2, XCircle, Eye, RefreshCw,
-  Loader2, AlertCircle, X, Search
+  Loader2, AlertCircle, X, Search, Bell
 } from "lucide-react";
-import { getPosts, approvePost, rejectPost, getDashboardData } from "../../services/staffDashboard.service";
+import {
+  getPosts, approvePost, rejectPost, getDashboardData,
+  getStaffNotifications, markStaffNotificationRead, markAllStaffNotificationsRead
+} from "../../services/staffDashboard.service";
+import { PostBlocksRenderer } from "@/components/common/post-blocks-renderer";
 
 // ─── Toast ──────────────────────────────────────────────────────────────────
 const Toast = ({ message, type, onClose }) => (
@@ -51,30 +55,37 @@ const PostDetailModal = ({ post, onClose }) => {
   return (
     <>
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-gray-900 text-lg leading-snug pr-4">{post.title}</h3>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg flex-shrink-0"><X className="w-5 h-5 text-gray-500" /></button>
         </div>
-        <div className="space-y-3 text-sm">
-          {post.image_url && (
-            <img src={post.image_url} alt="Ảnh bài đăng" className="w-full h-48 object-cover rounded-xl cursor-pointer hover:opacity-90 transition-opacity" onClick={() => setViewImage(post.image_url)}/>
-          )}
-          <div className="flex gap-2">
-            <span className="text-gray-500 w-24 flex-shrink-0">CLB:</span>
-            <span className="font-medium text-gray-900">{post.club_id?.name || "—"}</span>
+        <div className="space-y-4 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+              <p className="text-gray-500 text-xs mb-1">CLB</p>
+              <p className="font-medium text-gray-900">{post.club_id?.name || "—"}</p>
+            </div>
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+              <p className="text-gray-500 text-xs mb-1">Trạng thái</p>
+              <StatusBadge status={post.status} />
+            </div>
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+              <p className="text-gray-500 text-xs mb-1">Ngày tạo</p>
+              <p className="text-gray-900">{post.created_at ? new Date(post.created_at).toLocaleString("vi-VN") : "—"}</p>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <span className="text-gray-500 w-24 flex-shrink-0">Trạng thái:</span>
-            <StatusBadge status={post.status} />
-          </div>
-          <div className="flex gap-2">
-            <span className="text-gray-500 w-24 flex-shrink-0">Ngày tạo:</span>
-            <span className="text-gray-900">{post.created_at ? new Date(post.created_at).toLocaleString("vi-VN") : "—"}</span>
-          </div>
+
           <div>
             <p className="text-gray-500 mb-1.5">Nội dung:</p>
-            <div className="bg-gray-50 rounded-xl p-4 text-gray-800 leading-relaxed text-sm whitespace-pre-wrap">{post.content || "(Không có nội dung)"}</div>
+            <div className="bg-gray-50 rounded-xl p-4 text-gray-800">
+              <PostBlocksRenderer
+                blocks={post.content_blocks}
+                fallbackContent={post.content || "(Không có nội dung)"}
+                fallbackImage={post.image_url}
+                title={post.title}
+              />
+            </div>
           </div>
           {post.rejected_reason && (
             <div className="p-3 bg-red-50 rounded-xl text-red-700 text-xs">
@@ -148,6 +159,11 @@ export const SystemStaff2 = () => {
   const [rejectTarget, setRejectTarget] = useState(null);
   const [filterStatus, setFilterStatus] = useState("Pending");
   const [search, setSearch] = useState("");
+  const [notifications, setNotifications] = useState([]);
+  const [showNotificationPopup, setShowNotificationPopup] = useState(false);
+
+  const popupRef = useRef(null);
+  const unreadCount = notifications.filter(n => !n.is_read).length;
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
@@ -159,6 +175,15 @@ export const SystemStaff2 = () => {
       const res = await getDashboardData();
       if (res?.success) {
         setCounts({ Pending: res.data.stats?.pendingPosts || 0 });
+      }
+    } catch { /* silent */ }
+  }, []);
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const res = await getStaffNotifications();
+      if (res?.success) {
+        setNotifications(res.data || []);
       }
     } catch { /* silent */ }
   }, []);
@@ -178,11 +203,24 @@ export const SystemStaff2 = () => {
 
   useEffect(() => {
     fetchCounts();
-    const interval = setInterval(() => {
-      fetchCounts();
-    }, 10000);
-    return () => clearInterval(interval);
-  }, [fetchCounts]);
+    fetchNotifications();
+  }, [fetchCounts, fetchNotifications]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (popupRef.current && !popupRef.current.contains(event.target)) {
+        setShowNotificationPopup(false);
+      }
+    };
+
+    if (showNotificationPopup) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showNotificationPopup]);
 
   useEffect(() => {
       fetchPosts(filterStatus);
@@ -191,6 +229,24 @@ export const SystemStaff2 = () => {
   const handleTabChange = (key) => {
     setFilterStatus(key);
     setSearch("");
+  };
+
+  const handleReadNotification = async (notifId) => {
+    try {
+      await markStaffNotificationRead(notifId);
+      fetchNotifications();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleReadAll = async () => {
+    try {
+      await markAllStaffNotificationsRead();
+      fetchNotifications();
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleApprove = async (id) => {
@@ -252,10 +308,69 @@ export const SystemStaff2 = () => {
             <p className="text-xs text-gray-500">Duyệt và quản lý bài đăng của CLB</p>
           </div>
         </div>
-        <button onClick={() => fetchPosts(filterStatus)} disabled={loading}
+        <div className="flex items-center gap-4">
+          <div className="relative" ref={popupRef}>
+            <button
+              onClick={() => setShowNotificationPopup(!showNotificationPopup)}
+              className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors flex items-center justify-center"
+              title="ThÃ´ng bÃ¡o má»›i"
+            >
+              <Bell className="w-5 h-5" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+              )}
+            </button>
+
+            {showNotificationPopup && (
+              <div className="absolute top-full right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden transform origin-top-right animate-in zoom-in-95 duration-200">
+                <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+                  <h3 className="font-semibold text-sm text-gray-800">ThÃ´ng bÃ¡o má»›i</h3>
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={handleReadAll}
+                      className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      ÄÃ¡nh dáº¥u Ä‘Ã£ Ä‘á»c
+                    </button>
+                  )}
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="px-4 py-8 text-center text-gray-500 text-sm">
+                      KhÃ´ng cÃ³ thÃ´ng bÃ¡o má»›i nÃ o
+                    </div>
+                  ) : (
+                    notifications.map((notif) => (
+                      <div
+                        key={notif._id}
+                        onClick={() => handleReadNotification(notif._id)}
+                        className={`px-4 py-3 border-b border-gray-50 hover:bg-blue-50 cursor-pointer transition-colors flex gap-3 items-start ${!notif.is_read ? "bg-blue-50/50" : ""}`}
+                      >
+                        <div className="flex-shrink-0 mt-1">
+                          {!notif.is_read && <div className="w-2 h-2 rounded-full bg-blue-500 mt-1"></div>}
+                        </div>
+                        <div>
+                          <p className={`text-sm text-gray-900 line-clamp-1 ${!notif.is_read ? "font-medium" : ""}`}>{notif.title}</p>
+                          <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{notif.message}</p>
+                          <p className="text-[10px] text-gray-400 mt-1">
+                            {new Date(notif.created_at).toLocaleString("vi-VN", {
+                              hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric"
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <button onClick={() => fetchPosts(filterStatus)} disabled={loading}
           className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg shadow-sm border border-gray-200 bg-white">
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-blue-500" : ""}`} /> Làm mới
         </button>
+      </div>
       </div>
 
       {error && (

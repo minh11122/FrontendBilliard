@@ -3,6 +3,7 @@ import { User, LogOut, Bell, ChevronDown, Trophy } from "lucide-react";
 import { useNavigate, Link, NavLink, useLocation } from "react-router-dom";
 import { AuthContext } from "@/context/AuthContext";
 import { SiteLogo } from "@/components/common/SiteLogo";
+import { initiateSocketConnection, subscribeToNotifications, disconnectSocket } from "@/services/socket.service";
 
 import {
   getNotifications,
@@ -55,6 +56,7 @@ export const HeaderHome = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const isSolidHeader = scrolled || location.pathname !== "/";
   const { user, logout } = useContext(AuthContext);
   const [isIncomplete, setIsIncomplete] = useState(false);
 
@@ -85,7 +87,19 @@ export const HeaderHome = () => {
 
     fetchNotifications();
     fetchUnread();
+
+    initiateSocketConnection(user._id);
+    subscribeToNotifications((notification) => {
+      setUnreadCount((prev) => prev + 1);
+      setNotifications((prev) => [notification, ...prev]);
+    });
+
+    return () => {
+      disconnectSocket();
+    };
   }, [user]);
+
+
 
   const fetchNotifications = async () => {
     try {
@@ -105,27 +119,39 @@ export const HeaderHome = () => {
     }
   };
 
-  const handleOpenNoti = () => {
-    setOpenNoti(!openNoti);
+  const handleOpenNoti = async () => {
+    const nextOpen = !openNoti;
+    setOpenNoti(nextOpen);
+
+    if (nextOpen) {
+      await Promise.all([fetchNotifications(), fetchUnread()]);
+    }
   };
 
-  const handleClickNoti = async (id) => {
+  const handleClickNoti = async (notification) => {
     try {
-      await markAsRead(id);
+      if (!notification.is_read) {
+        await markAsRead(notification._id);
 
-      // update UI
-      setNotifications((prev) =>
-        prev.map((n) => (n._id === id ? { ...n, is_read: true } : n)),
-      );
+        // update UI
+        setNotifications((prev) =>
+          prev.map((n) => (n._id === notification._id ? { ...n, is_read: true } : n)),
+        );
 
-      setUnreadCount((prev) => Math.max(prev - 1, 0));
+        setUnreadCount((prev) => Math.max(prev - 1, 0));
+      }
+
+      if (notification.link) {
+        setOpenNoti(false);
+        navigate(notification.link);
+      }
     } catch (err) {
       console.error(err);
     }
   };
   return (
     <header
-      className={`w-full fixed top-0 left-0 right-0 z-[9999] transition-all duration-300 ${scrolled
+      className={`w-full fixed top-0 left-0 right-0 z-[9999] transition-all duration-300 ${isSolidHeader
         ? "bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm"
         : "bg-transparent border-b border-transparent"
         }`}
@@ -151,7 +177,7 @@ export const HeaderHome = () => {
               alt="BilliardOne logo"
             />
             <div className="flex flex-col">
-              <span className={`font-bold text-lg ${scrolled ? "text-gray-900 dark:text-white" : "text-white"}`}>
+              <span className={`font-bold text-lg ${isSolidHeader ? "text-gray-900 dark:text-white" : "text-white"}`}>
                 Billiard<span className="text-green-400">One</span>
               </span>
             </div>
@@ -165,7 +191,7 @@ export const HeaderHome = () => {
             className={({ isActive }) =>
               `px-4 py-2 font-medium transition-colors ${isActive
                 ? "text-green-400 border-b-2 border-green-400"
-                : scrolled
+                : isSolidHeader
                   ? "text-gray-700 dark:text-gray-300 hover:text-green-500"
                   : "text-white/90 hover:text-white"
               }`
@@ -179,7 +205,7 @@ export const HeaderHome = () => {
             className={({ isActive }) =>
               `px-4 py-2 font-medium transition-colors ${isActive
                 ? "text-green-400 border-b-2 border-green-400"
-                : scrolled
+                : isSolidHeader
                   ? "text-gray-700 dark:text-gray-300 hover:text-green-500"
                   : "text-white/90 hover:text-white"
               }`
@@ -195,7 +221,7 @@ export const HeaderHome = () => {
               className={`px-4 py-2 font-bold rounded-lg transition-all flex items-center gap-2 border ${location.pathname.startsWith("/tournament") ||
                 location.pathname === "/my-tournaments"
                 ? "text-green-400 bg-green-500/10 border-green-400/30"
-                : scrolled
+                : isSolidHeader
                   ? "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 border-transparent"
                   : "text-white/90 hover:text-white border-transparent hover:bg-white/10"
                 }`}
@@ -272,7 +298,7 @@ export const HeaderHome = () => {
             className={({ isActive }) =>
               `px-4 py-2 font-medium transition-colors ${isActive
                 ? "text-green-400 border-b-2 border-green-400"
-                : scrolled
+                : isSolidHeader
                   ? "text-gray-700 dark:text-gray-300 hover:text-green-500"
                   : "text-white/90 hover:text-white"
               }`
@@ -286,7 +312,7 @@ export const HeaderHome = () => {
             className={({ isActive }) =>
               `px-4 py-2 font-medium transition-colors ${isActive
                 ? "text-green-400 border-b-2 border-green-400"
-                : scrolled
+                : isSolidHeader
                   ? "text-gray-700 dark:text-gray-300 hover:text-green-500"
                   : "text-white/90 hover:text-white"
               }`
@@ -300,7 +326,7 @@ export const HeaderHome = () => {
             className={({ isActive }) =>
               `px-4 py-2 font-medium transition-colors ${isActive
                 ? "text-green-400 border-b-2 border-green-400"
-                : scrolled
+                : isSolidHeader
                   ? "text-gray-700 dark:text-gray-300 hover:text-green-500"
                   : "text-white/90 hover:text-white"
               }`
@@ -349,7 +375,7 @@ export const HeaderHome = () => {
             <div className="relative">
               <button
                 onClick={handleOpenNoti}
-                className={`p-2 rounded-lg transition-colors relative group ${scrolled
+                className={`p-2 rounded-lg transition-colors relative group ${isSolidHeader
                   ? "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                   : "text-white/80 hover:text-white hover:bg-white/10"
                   }`}
@@ -395,7 +421,7 @@ export const HeaderHome = () => {
                       notifications.map((n, index) => (
                         <div key={n._id}>
                           <div
-                            onClick={() => handleClickNoti(n._id)}
+                            onClick={() => handleClickNoti(n)}
                             className={`px-6 py-4 cursor-pointer transition-colors border-l-4 ${!n.is_read
                               ? "bg-blue-50 dark:bg-blue-900/20 border-l-green-500 hover:bg-blue-100 dark:hover:bg-blue-900/30"
                               : "bg-white dark:bg-gray-800 border-l-transparent hover:bg-gray-50 dark:hover:bg-gray-700"
@@ -414,11 +440,20 @@ export const HeaderHome = () => {
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                   {n.message}
                                 </p>
+                                <p className="mt-2 text-[11px] font-medium text-gray-400 dark:text-gray-500">
+                                  {n.created_at ? new Date(n.created_at).toLocaleString("vi-VN", {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric"
+                                  }) : ""}
+                                </p>
                               </div>
 
                               {/* Unread Indicator */}
                               {!n.is_read && (
-                                <span className="w-3 h-3 bg-green-500 rounded-full flex-shrink-0 mt-1" />
+                                <span className="w-2.5 h-2.5 bg-green-500 rounded-full flex-shrink-0 mt-1.5" />
                               )}
                             </div>
                           </div>

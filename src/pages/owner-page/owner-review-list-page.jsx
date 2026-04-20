@@ -202,28 +202,31 @@ const OwnerReviewListPage = () => {
           </div>
         )}
 
-        {/* Custom Pagination (if necessary, simple numbers for now) */}
-        {pagination.total > pagination.pageSize && (
-          <div className="p-4 border-t border-border flex justify-end items-center gap-2">
-            <span className="text-sm text-muted-foreground mr-4">
-              Hiển thị {(pagination.current - 1) * pagination.pageSize + 1} - {Math.min(pagination.current * pagination.pageSize, pagination.total)} trong {pagination.total}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={pagination.current === 1}
-              onClick={() => handlePageChange(pagination.current - 1)}
-            >
-              Trước
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={pagination.current * pagination.pageSize >= pagination.total}
-              onClick={() => handlePageChange(pagination.current + 1)}
-            >
-              Sau
-            </Button>
+        {/* Pagination */}
+        {feedbacks.length > 0 && (
+          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50/50">
+            <div className="text-sm text-slate-500">
+              Hiển thị {(pagination.current - 1) * pagination.pageSize + 1} - {Math.min(pagination.current * pagination.pageSize, pagination.total)} / {pagination.total} đánh giá
+            </div>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => handlePageChange(pagination.current - 1)}
+                disabled={pagination.current === 1}
+                className="text-sm px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-colors"
+              >
+                Trước
+              </button>
+              <span className="text-sm text-slate-500 font-semibold">
+                Trang {pagination.current} / {Math.max(1, Math.ceil(pagination.total / pagination.pageSize))}
+              </span>
+              <button
+                onClick={() => handlePageChange(pagination.current + 1)}
+                disabled={pagination.current * pagination.pageSize >= pagination.total}
+                className="text-sm px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-colors"
+              >
+                Sau
+              </button>
+            </div>
           </div>
         )}
       </div>

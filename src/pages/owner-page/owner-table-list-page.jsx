@@ -419,31 +419,23 @@ export default function OwnerTableListPage() {
                                 ({(pagination.currentPage - 1) * pagination.limit + 1} - {Math.min(pagination.currentPage * pagination.limit, pagination.total)})
                             </span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-4">
                             <button
                                 onClick={() => setPagination({ ...pagination, currentPage: pagination.currentPage - 1 })}
                                 disabled={pagination.currentPage === 1}
-                                className="flex items-center justify-center w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="text-sm px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-colors"
                             >
-                                <ChevronLeft size={18} />
+                                Trước
                             </button>
-
-                            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(page => (
-                                <button
-                                    key={page}
-                                    onClick={() => setPagination({ ...pagination, currentPage: page })}
-                                    className={`flex items-center justify-center w-8 h-8 rounded-lg text-sm transition-colors ${page === pagination.currentPage ? "bg-primary text-primary-foreground font-medium" : "border border-gray-200 text-gray-700 hover:bg-gray-50"}`}
-                                >
-                                    {page}
-                                </button>
-                            ))}
-
+                            <span className="text-sm text-gray-500 font-semibold">
+                                Trang {pagination.currentPage} / {Math.max(1, pagination.totalPages)}
+                            </span>
                             <button
                                 onClick={() => setPagination({ ...pagination, currentPage: pagination.currentPage + 1 })}
-                                disabled={pagination.currentPage === pagination.totalPages}
-                                className="flex items-center justify-center w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={pagination.currentPage >= Math.max(1, pagination.totalPages)}
+                                className="text-sm px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-colors"
                             >
-                                <ChevronRight size={18} />
+                                Sau
                             </button>
                         </div>
                     </div>

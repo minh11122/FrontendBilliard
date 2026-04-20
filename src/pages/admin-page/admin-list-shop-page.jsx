@@ -1,24 +1,31 @@
 import { useEffect, useState } from "react";
-import { Search, Store, MapPin, ChevronLeft, ChevronRight, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { Search, Store, MapPin, ChevronLeft, ChevronRight, CheckCircle2, Clock, XCircle, Filter, X, Ban } from "lucide-react";
 import { getAllClubs } from "@/services/admin.service";
+
 
 const STATUS_STYLE = {
   Approved: { cls: "bg-emerald-100 text-emerald-700 border border-emerald-200", icon: CheckCircle2 },
   Pending:  { cls: "bg-amber-100 text-amber-700 border border-amber-200",   icon: Clock },
   Rejected: { cls: "bg-rose-100 text-rose-700 border border-rose-200",     icon: XCircle },
+  Locked: { cls: "bg-slate-100 text-slate-700 border border-slate-200", icon: Ban },
 };
+
 
 export const ShopManagement = () => {
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
   const [clubs, setClubs] = useState([]);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({});
   const [loading, setLoading] = useState(false);
+  const [selectedClub, setSelectedClub] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+
 
   const fetchClubs = async () => {
     try {
       setLoading(true);
-      const res = await getAllClubs({ page, limit: 10, search });
+      const res = await getAllClubs({ page, limit: 10, search, status: statusFilter });
       setClubs(res.data.data);
       setPagination(res.data.pagination);
     } catch (err) {
@@ -28,15 +35,19 @@ export const ShopManagement = () => {
     }
   };
 
-  useEffect(() => { fetchClubs(); }, [page, search]);
+
+  useEffect(() => { fetchClubs(); }, [page, search, statusFilter]);
+
 
   const totalPages = pagination.totalPages || 1;
   const currentPage = pagination.page || page;
+
 
   const statusCounts = clubs.reduce((acc, c) => {
     acc[c.status] = (acc[c.status] || 0) + 1;
     return acc;
   }, {});
+
 
   return (
     <div className="min-h-screen bg-gray-50/60 p-8">
@@ -45,15 +56,22 @@ export const ShopManagement = () => {
         .shop-root { font-family: 'Plus Jakarta Sans', sans-serif; }
         .shop-row { transition: background 0.12s; }
         .shop-input:focus { outline: none; border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.12); }
+        .modal-overlay { animation: fadeIn 0.18s ease; }
+        .modal-box { animation: slideUp 0.2s ease; }
+        @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+        @keyframes slideUp { from { opacity:0; transform:translateY(16px) } to { opacity:1; transform:translateY(0) } }
       `}</style>
 
+
       <div className="shop-root max-w-6xl mx-auto space-y-6">
+
 
         {/* ── Header ── */}
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600 mb-1">Quản lý</p>
           <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Danh sách quán Billiards</h1>
         </div>
+
 
         {/* ── Stats strip ── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -73,8 +91,9 @@ export const ShopManagement = () => {
           ))}
         </div>
 
+
         {/* ── Search bar ── */}
-        <div className="bg-white border border-gray-100 rounded-2xl px-5 py-4 shadow-sm">
+        <div className="bg-white border border-gray-100 rounded-2xl px-5 py-4 shadow-sm flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
           <div className="relative w-full sm:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
             <input
@@ -85,7 +104,25 @@ export const ShopManagement = () => {
               className="shop-input w-full rounded-xl border border-gray-200 bg-gray-50 pl-9 pr-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 transition-all"
             />
           </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Filter className="h-4 w-4 text-gray-400 shrink-0" />
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setPage(1);
+                setStatusFilter(e.target.value);
+              }}
+              className="shop-input border border-gray-200 bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-700 transition-all"
+            >
+              <option value="ALL">Tat ca trang thai</option>
+              <option value="Approved">Approved</option>
+              <option value="Pending">Pending</option>
+              <option value="Rejected">Rejected</option>
+              <option value="Locked">Locked</option>
+            </select>
+          </div>
         </div>
+
 
         {/* ── Table ── */}
         <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
@@ -99,6 +136,7 @@ export const ShopManagement = () => {
                 ))}
               </tr>
             </thead>
+
 
             <tbody className="divide-y divide-gray-50">
               {loading
@@ -115,7 +153,15 @@ export const ShopManagement = () => {
                     const s = STATUS_STYLE[club.status];
                     const StatusIcon = s?.icon;
                     return (
-                      <tr key={club._id} className="shop-row hover:bg-gray-50/80">
+                      <tr
+                        key={club._id}
+                        className="shop-row hover:bg-gray-50/80 cursor-pointer"
+                        onDoubleClick={() => {
+                          setSelectedClub(club);
+                          setShowModal(true);
+                        }}
+                      >
+
 
                         {/* Club */}
                         <td className="px-6 py-4">
@@ -127,10 +173,12 @@ export const ShopManagement = () => {
                           </div>
                         </td>
 
+
                         {/* Owner */}
                         <td className="px-6 py-4 text-gray-600 font-medium">
                           {club.account_id?.fullname ?? "—"}
                         </td>
+
 
                         {/* Address */}
                         <td className="px-6 py-4">
@@ -139,6 +187,7 @@ export const ShopManagement = () => {
                             <span className="text-xs">{club.address}</span>
                           </div>
                         </td>
+
 
                         {/* Status */}
                         <td className="px-6 py-4">
@@ -152,11 +201,13 @@ export const ShopManagement = () => {
                           )}
                         </td>
 
+
                       </tr>
                     );
                   })}
             </tbody>
           </table>
+
 
           {!loading && clubs.length === 0 && (
             <div className="flex flex-col items-center justify-center py-20 text-gray-400 gap-2">
@@ -166,11 +217,13 @@ export const ShopManagement = () => {
           )}
         </div>
 
+
         {/* ── Pagination ── */}
         <div className="bg-white border border-gray-100 rounded-2xl px-5 py-3 shadow-sm flex items-center justify-between">
           <p className="text-sm text-gray-500 font-medium">
             Trang <span className="font-bold text-gray-800">{currentPage}</span> / {totalPages}
           </p>
+
 
           <div className="flex items-center gap-1.5">
             <button
@@ -180,6 +233,7 @@ export const ShopManagement = () => {
             >
               <ChevronLeft className="w-4 h-4" /> Trước
             </button>
+
 
             <button
               disabled={page === totalPages}
@@ -191,7 +245,166 @@ export const ShopManagement = () => {
           </div>
         </div>
 
+
       </div>
+
+
+      {showModal && selectedClub && (
+        <div
+          className="modal-overlay fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => setShowModal(false)}
+        >
+          <div
+            className="modal-box bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-gradient-to-r from-emerald-500 to-teal-400 px-6 py-5">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+                    <Store className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-emerald-100 text-xs font-semibold uppercase tracking-widest mb-0.5">
+                      Chi tiet quan
+                    </p>
+                    <h2 className="text-white text-lg font-extrabold leading-tight">
+                      {selectedClub.name}
+                    </h2>
+                    <p className="text-emerald-100 text-xs mt-0.5">
+                      {selectedClub.account_id?.email || "Khong co email"}
+                    </p>
+                  </div>
+                </div>
+
+
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 transition-colors text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+
+            <div className="px-6 py-5 space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="col-span-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
+                    Chu quan
+                  </p>
+                  <p className="font-semibold text-gray-800">
+                    {selectedClub.account_id?.fullname || "Khong co"}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {selectedClub.account_id?.phone || "Khong co so dien thoai"}
+                  </p>
+                </div>
+
+
+                <div className="col-span-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
+                    Dia chi
+                  </p>
+                  <div className="flex items-start gap-2 text-gray-700">
+                    <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-gray-400" />
+                    <p className="font-semibold">{selectedClub.address || "Khong co"}</p>
+                  </div>
+                </div>
+
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
+                    Trang thai
+                  </p>
+                  {(() => {
+                    const s = STATUS_STYLE[selectedClub.status];
+                    const StatusIcon = s?.icon;
+                    return s ? (
+                      <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${s.cls}`}>
+                        <StatusIcon className="w-3 h-3" />
+                        {selectedClub.status}
+                      </span>
+                    ) : (
+                      <span className="text-sm font-semibold text-gray-700">
+                        {selectedClub.status || "Khong co"}
+                      </span>
+                    );
+                  })()}
+                </div>
+
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
+                    So dien thoai quan
+                  </p>
+                  <p className="font-semibold text-gray-800">
+                    {selectedClub.phone || "Khong co"}
+                  </p>
+                </div>
+
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
+                    Ma so thue
+                  </p>
+                  <p className="font-semibold text-gray-800">
+                    {selectedClub.tax_code || "Khong co"}
+                  </p>
+                </div>
+
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
+                    Ngay tao
+                  </p>
+                  <p className="font-semibold text-gray-800">
+                    {selectedClub.created_at
+                      ? new Date(selectedClub.created_at).toLocaleString("vi-VN")
+                      : "Khong co"}
+                  </p>
+                </div>
+
+
+                <div className="col-span-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
+                    Mo ta
+                  </p>
+                  <p className="font-semibold text-gray-800">
+                    {selectedClub.description || "Khong co"}
+                  </p>
+                </div>
+
+
+                {selectedClub.reject_reason && (
+                  <div className="col-span-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
+                      Ly do tu choi
+                    </p>
+                    <p className="font-semibold text-rose-600">
+                      {selectedClub.reject_reason}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+
+            <div className="px-6 pb-5">
+              <button
+                onClick={() => setShowModal(false)}
+                className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl transition-colors"
+              >
+                Dong
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
+
+

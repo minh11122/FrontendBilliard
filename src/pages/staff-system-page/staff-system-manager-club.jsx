@@ -7,7 +7,8 @@ import {
 import {
   getClubs, getDashboardData,
   approveClub, rejectClub, lockClub, unlockClub,
-  getStaffNotifications, markStaffNotificationRead, markAllStaffNotificationsRead
+  getStaffNotifications, markStaffNotificationRead, markAllStaffNotificationsRead,
+  createStaffTestNotification
 } from "../../services/staffDashboard.service";
 import { getClubById } from "../../services/club.service";
 
@@ -225,12 +226,7 @@ export const SystemStaff1 = () => {
   useEffect(() => {
     fetchCounts();
     fetchNotifications();
-    // Poll every 10 seconds for new counts and notifications
-    const interval = setInterval(() => {
-      fetchCounts();
-      fetchNotifications();
-    }, 10000);
-    return () => clearInterval(interval);
+    
   }, [fetchCounts, fetchNotifications]);
 
   // Handle click outside to close unread popup
@@ -264,6 +260,18 @@ export const SystemStaff1 = () => {
           await markAllStaffNotificationsRead();
           fetchNotifications();
       } catch (e) { console.error(e); }
+  };
+
+  const handleCreateTestNotification = async () => {
+    try {
+      await createStaffTestNotification();
+      await fetchNotifications();
+      setShowNotificationPopup(true);
+      showToast("Da tao thong bao test");
+    } catch (e) {
+      console.error(e);
+      showToast("Khong tao duoc thong bao test", "error");
+    }
   };
 
   const handleTabChange = (key) => {
@@ -349,6 +357,12 @@ export const SystemStaff1 = () => {
           </div>
         </div>
         <div className="flex items-center gap-4">
+          <button
+            onClick={handleCreateTestNotification}
+            className="px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors"
+          >
+            Tao noti test
+          </button>
           {/* Nút Chuông Thông Báo */}
           <div className="relative" ref={popupRef}>
             <button

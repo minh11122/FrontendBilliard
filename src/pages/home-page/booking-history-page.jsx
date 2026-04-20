@@ -1,11 +1,11 @@
 import { useState, useEffect, useContext } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { MapPin, Clock, Calendar, ChevronRight, X, Star, AlertCircle, CheckCircle2, Loader2, CalendarClock, MessageSquare } from "lucide-react";
+import { MapPin, Clock, Calendar, ChevronLeft, ChevronRight, X, Star, AlertCircle, CheckCircle2, Loader2, CalendarClock, MessageSquare } from "lucide-react";
 import { getMyBookings, verifyBookingPayOSPayment, cancelHold } from "@/services/booking.service";
 import { createFeedback, getFeedbackByBookingId, updateFeedback } from "@/services/feedback.service";
 import { AuthContext } from "@/context/AuthContext";
-import { SiteLogo } from "@/components/common/SiteLogo";
 import toast from "react-hot-toast";
+
 
 const STATUS_CONFIG = {
   Pending: { label: "Chờ thanh toán", color: "bg-amber-100 text-amber-700 border-amber-200", dot: "bg-amber-500" },
@@ -15,6 +15,7 @@ const STATUS_CONFIG = {
   Completed: { label: "Hoàn thành", color: "bg-slate-100 text-slate-600 border-slate-200", dot: "bg-slate-500" },
 };
 
+
 const TABS = [
   { key: "all", label: "Tất cả" },
   { key: "Pending", label: "Chờ thanh toán" },
@@ -23,14 +24,18 @@ const TABS = [
   { key: "Completed", label: "Hoàn thành" },
 ];
 
+
 export const BookingHistoryPage = () => {
+  const ITEMS_PER_PAGE = 10;
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedBooking, setSelectedBooking] = useState(null);
+
 
   useEffect(() => {
     if (!user) {
@@ -41,18 +46,36 @@ export const BookingHistoryPage = () => {
     fetchBookings();
   }, [user, navigate]);
 
+
   // Allow navigating with predefined active tab (e.g., from payment page)
   useEffect(() => {
     if (location.state?.activeTab) {
       setActiveTab(location.state.activeTab);
+      setCurrentPage(1);
     }
   }, [location.state]);
+
 
   const fetchBookings = async () => {
     try {
       setLoading(true);
       const res = await getMyBookings();
-      if (res.success) setBookings(res.data);
+      if (res.success) {
+        setBookings(res.data);
+        
+        // Auto-open specific booking if requested via URL
+        const params = new URLSearchParams(location.search);
+        const bookingId = params.get("bookingId");
+        if (bookingId) {
+          const target = res.data.find(b => String(b._id) === bookingId);
+          if (target) {
+             setSelectedBooking(target);
+             setActiveTab(target.status);
+             // Remove query parameter cleanly
+             navigate(location.pathname, { replace: true, state: location.state });
+          }
+        }
+      }
     } catch {
       toast.error("Không thể tải lịch sử đặt bàn");
     } finally {
@@ -60,10 +83,12 @@ export const BookingHistoryPage = () => {
     }
   };
 
+
   // Auto-refresh khi có Pending bookings (để cập nhật countdown + auto-cancel)
   useEffect(() => {
     const hasPending = bookings.some(b => b.status === "Pending" && b.held_until);
     if (!hasPending) return;
+
 
     const interval = setInterval(() => {
       // Kiểm tra nếu có booking nào vừa hết hạn → refresh
@@ -73,14 +98,34 @@ export const BookingHistoryPage = () => {
       if (expired) fetchBookings();
     }, 5000);
 
+
     return () => clearInterval(interval);
   }, [bookings]);
 
+
   const filtered = activeTab === "all" ? bookings : bookings.filter(b => b.status === activeTab);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const paginatedBookings = filtered.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE,
+  );
   const tabCounts = TABS.map(t => ({
     ...t,
     count: t.key === "all" ? bookings.length : bookings.filter(b => b.status === t.key).length
   }));
+
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab]);
+
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
 
   const handleCardClick = (booking) => {
     if (booking.status === "Pending") {
@@ -88,6 +133,7 @@ export const BookingHistoryPage = () => {
       // Tính số phút còn lại từ held_until
       const remainingMs = booking.held_until ? new Date(booking.held_until).getTime() - Date.now() : 0;
       const remainingMins = Math.max(0, Math.ceil(remainingMs / 60000));
+
 
       navigate(`/payment/${booking._id}`, {
         state: {
@@ -108,14 +154,17 @@ export const BookingHistoryPage = () => {
     }
   };
 
+
   // Khi quay lại từ PayOS (returnUrl có orderCode) -> verify và chuyển Booked
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const orderCode = params.get("orderCode");
     if (!orderCode) return;
 
+
     // Xóa orderCode khỏi URL ngay để tránh lặp lại thông báo khi F5 hoặc quay lại trang
     navigate(location.pathname, { replace: true });
+
 
     const verify = async () => {
       try {
@@ -132,8 +181,10 @@ export const BookingHistoryPage = () => {
       }
     };
 
+
     verify();
   }, [location.pathname, navigate]);
+
 
   if (loading) {
     return (
@@ -143,9 +194,11 @@ export const BookingHistoryPage = () => {
     );
   }
 
+
   return (
     <div className="min-h-screen bg-white text-slate-900">
       <div className="container mx-auto px-6 py-8">
+
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-8 gap-4">
@@ -155,12 +208,16 @@ export const BookingHistoryPage = () => {
           </div>
         </div>
 
+
         {/* Tabs */}
         <div className="flex gap-2 mb-8 overflow-x-auto no-scrollbar pb-1">
           {tabCounts.map(tab => (
             <button
               key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => {
+                setActiveTab(tab.key);
+                setCurrentPage(1);
+              }}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all border ${activeTab === tab.key
                 ? "bg-green-500 text-white border-green-500 shadow-md"
                 : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
@@ -177,6 +234,7 @@ export const BookingHistoryPage = () => {
           ))}
         </div>
 
+
         {/* Booking Cards */}
         <div className="space-y-4">
           {filtered.length === 0 ? (
@@ -187,7 +245,7 @@ export const BookingHistoryPage = () => {
                 Đặt bàn ngay →
               </button>
             </div>
-          ) : filtered.map(booking => {
+          ) : paginatedBookings.map(booking => {
             const sc = STATUS_CONFIG[booking.status] || STATUS_CONFIG.Pending;
             return (
               <div
@@ -205,6 +263,7 @@ export const BookingHistoryPage = () => {
                     </div>
                   )}
                 </div>
+
 
                 {/* Info */}
                 <div className="flex-1 min-w-0 space-y-1.5">
@@ -237,14 +296,14 @@ export const BookingHistoryPage = () => {
                       <Clock className="w-3 h-3" /> {booking.start_time} - {booking.end_time}, {booking.play_date ? new Date(booking.play_date).toLocaleDateString("vi-VN") : "—"}
                     </span>
                     <span className="flex items-center gap-1">
-                      <SiteLogo className="w-4 h-4 rounded-sm" decorative />
-                      <span>Bàn {booking.table_info?.table_number || "—"} ({booking.table_info?.table_type || "Pool"})</span>
+                      🎱 Bàn {booking.table_info?.table_number || "—"} ({booking.table_info?.table_type || "Pool"})
                     </span>
                     <span className="flex items-center gap-1">
                       <MapPin className="w-3 h-3" /> {booking.club?.address || "—"}
                     </span>
                   </div>
                 </div>
+
 
                 {/* Price + Action */}
                 <div className="flex items-center gap-4 flex-shrink-0 sm:flex-col sm:items-end sm:gap-1">
@@ -273,13 +332,43 @@ export const BookingHistoryPage = () => {
             );
           })}
         </div>
+
+
+        {filtered.length > 0 && (
+          <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <p className="text-sm text-slate-500">
+              Trang <span className="font-bold text-slate-900">{currentPage}</span> / {totalPages}
+            </p>
+
+
+            <div className="flex items-center gap-2">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                className="inline-flex items-center gap-1 px-4 py-2 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-4 h-4" /> Truoc
+              </button>
+
+
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                className="inline-flex items-center gap-1 px-4 py-2 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Sau <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
+
 
       {/* Detail Modal */}
       {selectedBooking && (
-        <BookingDetailModal 
-          booking={selectedBooking} 
-          onClose={() => setSelectedBooking(null)} 
+        <BookingDetailModal
+          booking={selectedBooking}
+          onClose={() => setSelectedBooking(null)}
           onRefresh={fetchBookings}
         />
       )}
@@ -287,22 +376,27 @@ export const BookingHistoryPage = () => {
   );
 };
 
+
 // ===== HOLD COUNTDOWN COMPONENT =====
 const HoldCountdown = ({ heldUntil }) => {
   const [timeLeft, setTimeLeft] = useState(0);
 
+
   useEffect(() => {
     const target = new Date(heldUntil).getTime();
+
 
     const updateTimer = () => {
       const remaining = Math.max(0, Math.floor((target - Date.now()) / 1000));
       setTimeLeft(remaining);
     };
 
+
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
   }, [heldUntil]);
+
 
   if (timeLeft <= 0) {
     return (
@@ -312,10 +406,12 @@ const HoldCountdown = ({ heldUntil }) => {
     );
   }
 
+
   const m = Math.floor(timeLeft / 60);
   const s = timeLeft % 60;
   const display = `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   const isWarning = timeLeft <= 60;
+
 
   return (
     <span className={`text-xs font-black px-2.5 py-1 rounded-lg border flex items-center gap-1 tabular-nums ${isWarning
@@ -327,11 +423,12 @@ const HoldCountdown = ({ heldUntil }) => {
   );
 };
 
+
 // ===== DETAIL MODAL =====
 const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
   const sc = STATUS_CONFIG[booking.status] || STATUS_CONFIG.Pending;
   const [cancelling, setCancelling] = useState(false);
-  
+ 
   // Feedback States
   const [feedback, setFeedback] = useState(null);
   const [loadingFeedback, setLoadingFeedback] = useState(false);
@@ -341,11 +438,13 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const [isEditingFeedback, setIsEditingFeedback] = useState(false);
 
+
   useEffect(() => {
     if (booking.status === "Completed") {
       fetchFeedback();
     }
   }, [booking]);
+
 
   const fetchFeedback = async () => {
     try {
@@ -361,10 +460,12 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
     }
   };
 
+
   const handleCancelBooking = async () => {
     if (!window.confirm("Bạn có chắc chắn muốn hủy đơn đặt bàn này không? Bàn sẽ được giải phóng ngay lập tức.")) {
       return;
     }
+
 
     try {
       setCancelling(true);
@@ -383,6 +484,7 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
     }
   };
 
+
   const handleSubmitFeedback = async () => {
     if (rating === 0) {
       toast.error("Vui lòng chọn số sao đánh giá");
@@ -390,7 +492,7 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
     }
     try {
       setSubmittingFeedback(true);
-      
+     
       let res;
       if (isEditingFeedback && feedback?._id) {
         res = await updateFeedback(feedback._id, { rating, comment });
@@ -401,6 +503,7 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
            comment
         });
       }
+
 
       if (res.success) {
         toast.success(isEditingFeedback ? "Cập nhật đánh giá thành công!" : "Cảm ơn bạn đã đánh giá!");
@@ -416,6 +519,7 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
     }
   };
 
+
   // Logic to determine if feedback is editable
   const canEditFeedback = () => {
     if (!feedback) return false;
@@ -426,15 +530,18 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
     return diffDays <= 3;
   };
 
+
   const handleStartEdit = () => {
     setRating(feedback.rating);
     setComment(feedback.comment || "");
     setIsEditingFeedback(true);
   };
 
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+
 
         {/* Header */}
         <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
@@ -444,7 +551,9 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
           </button>
         </div>
 
+
         <div className="p-6 space-y-6">
+
 
           {/* Status Badge */}
           <div className="flex justify-center">
@@ -452,6 +561,7 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
               ● {sc.label}
             </span>
           </div>
+
 
           {/* Cancelled Banner */}
           {booking.status === "Cancelled" && (
@@ -468,6 +578,7 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
             </div>
           )}
 
+
           {/* Completed Banner */}
           {booking.status === "Completed" && (
             <div className="bg-green-50 border border-green-200 rounded-xl p-4">
@@ -482,6 +593,7 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
               </div>
             </div>
           )}
+
 
           {/* Club Info */}
           <div className="flex items-start gap-3 bg-slate-50 p-4 rounded-xl border">
@@ -502,11 +614,13 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
             </div>
           </div>
 
+
           {/* Booking code */}
           <div className="text-center">
             <p className="text-xs text-slate-400 uppercase font-bold">Mã đặt bàn</p>
             <p className="text-lg font-black text-slate-900 tracking-wider mt-1">#{booking.code_number}</p>
           </div>
+
 
           {/* Details Grid */}
           <div className="grid grid-cols-2 gap-4">
@@ -521,10 +635,7 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
               <p className="font-bold text-sm text-slate-900">{booking.start_time} - {booking.end_time}</p>
             </div>
             <div className="bg-slate-50 rounded-xl p-4 border">
-              <p className="text-[10px] text-slate-400 uppercase font-bold mb-1 flex items-center gap-1">
-                <SiteLogo className="w-3.5 h-3.5 rounded-[4px]" decorative />
-                <span>Số bàn</span>
-              </p>
+              <p className="text-[10px] text-slate-400 uppercase font-bold mb-1">🎱 Số bàn</p>
               <p className="font-bold text-sm text-slate-900">Bàn {booking.table_info?.table_number || "—"}</p>
             </div>
             <div className="bg-slate-50 rounded-xl p-4 border">
@@ -532,6 +643,7 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
               <p className="font-bold text-sm text-slate-900">Bàn {booking.table_info?.table_type || "Pool"}</p>
             </div>
           </div>
+
 
           {/* Price Summary */}
           <div className="border-t pt-5 space-y-3">
@@ -549,6 +661,7 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
             </div>
           </div>
 
+
           {/* Feedback Section (Only for Completed) */}
           {booking.status === "Completed" && (
             <div className="border-t pt-5">
@@ -565,15 +678,16 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
                        </div>
                     </div>
                     {feedback.comment && <p className="text-amber-800 text-sm italic">"{feedback.comment}"</p>}
-                    
+                   
                     {canEditFeedback() && (
-                      <button 
+                      <button
                         onClick={handleStartEdit}
                         className="mt-3 text-xs font-bold text-emerald-600 hover:text-emerald-700 underline flex items-center gap-1"
                       >
                          Sửa đánh giá
                       </button>
                     )}
+
 
                     {feedback.reply_content && (
                        <div className="mt-4 pt-4 border-t border-amber-200 text-sm">
@@ -589,7 +703,7 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
                         {isEditingFeedback ? "Sửa đánh giá của bạn" : "⭐ Đánh giá trải nghiệm của bạn"}
                       </h4>
                       {isEditingFeedback && (
-                        <button 
+                        <button
                           onClick={() => setIsEditingFeedback(false)}
                           className="text-xs text-slate-500 hover:text-slate-700 font-bold"
                         >
@@ -597,7 +711,7 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
                         </button>
                       )}
                     </div>
-                    
+                   
                     {isEditingFeedback && (
                       <div className="mb-4 bg-blue-50 text-blue-700 p-3 rounded-lg text-xs border border-blue-200 flex items-start gap-2">
                         <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
@@ -605,10 +719,11 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
                       </div>
                     )}
 
+
                     <div className="flex gap-1 mb-4">
                        {[1,2,3,4,5].map(star => (
-                         <button 
-                           key={star} 
+                         <button
+                           key={star}
                            onMouseEnter={() => setHoverRating(star)}
                            onMouseLeave={() => setHoverRating(0)}
                            onClick={() => setRating(star)}
@@ -618,17 +733,17 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
                          </button>
                        ))}
                     </div>
-                    <textarea 
+                    <textarea
                        value={comment}
                        onChange={(e) => setComment(e.target.value)}
                        placeholder="Để lại vài lời chia sẻ ủng hộ quán nhé (không bắt buộc)..."
                        className="w-full text-sm border-slate-200 rounded-lg p-3 resize-none focus:ring-2 focus:ring-emerald-500 min-h-[80px]"
                     />
-                    <button 
+                    <button
                        onClick={handleSubmitFeedback}
                        disabled={submittingFeedback}
                        className={`mt-3 w-full py-2.5 font-bold rounded-lg text-sm transition-colors flex justify-center items-center gap-2 ${
-                         isEditingFeedback 
+                         isEditingFeedback
                            ? "bg-emerald-600 text-white hover:bg-emerald-700"
                            : "bg-slate-900 text-white hover:bg-slate-800"
                        }`}
@@ -639,6 +754,7 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
                )}
             </div>
           )}
+
 
           {/* Actions */}
           {(booking.status === "Pending" || booking.status === "Booked") && (
@@ -661,3 +777,6 @@ const BookingDetailModal = ({ booking, onClose, onRefresh }) => {
     </div>
   );
 };
+
+
+

@@ -53,6 +53,11 @@ export const OwnerDashboardPage = () => {
   const [tournaments, setTournaments]           = useState([]);
   const [tournamentFilter, setTournamentFilter] = useState("7days");
   const [tournamentLoading, setTournamentLoading] = useState(true);
+  const [upcomingPage, setUpcomingPage]         = useState(1);
+  const [pastPage, setPastPage]                 = useState(1);
+
+  // Khi thay đổi bộ lọc giải đấu thì reset trang
+  useEffect(() => { setPastPage(1); }, [tournamentFilter]);
 
   // Fetch analytics cho dịch vụ theo filter
   const fetchServiceData = useCallback(async (filter) => {
@@ -149,6 +154,36 @@ export const OwnerDashboardPage = () => {
     UPCOMING_STATUSES.includes(t.status) && t.play_date && new Date(t.play_date) > new Date()
   );
   const pastTournaments = filteredTournaments.filter(t => PAST_STATUSES.includes(t.status));
+
+  const itemsPerPage = 10;
+  const paginatedUpcoming = upcomingTournaments.slice((upcomingPage - 1) * itemsPerPage, upcomingPage * itemsPerPage);
+  const paginatedPast = pastTournaments.slice((pastPage - 1) * itemsPerPage, pastPage * itemsPerPage);
+
+  const renderPagination = (currentPage, setPage, totalItems) => {
+    const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+    if (totalItems === 0) return null;
+    return (
+      <div className="flex items-center justify-between px-2 pt-3 mt-3 border-t border-gray-100">
+        <button
+          onClick={() => setPage(p => Math.max(1, p - 1))}
+          disabled={currentPage === 1}
+          className="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-colors"
+        >
+          Trước
+        </button>
+        <span className="text-xs text-gray-500 font-semibold">
+          Trang {currentPage} / {totalPages}
+        </span>
+        <button
+          onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+          disabled={currentPage === totalPages}
+          className="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-colors"
+        >
+          Sau
+        </button>
+      </div>
+    );
+  };
 
   const formatDate = (dateStr) => {
     if (!dateStr) return "Chưa có lịch";
@@ -460,7 +495,7 @@ export const OwnerDashboardPage = () => {
                 <p className="text-sm text-gray-500 italic pl-1">Không có giải đấu nào sắp diễn ra.</p>
               ) : (
                 <div className="space-y-2">
-                  {upcomingTournaments.map(t => {
+                  {paginatedUpcoming.map(t => {
                     const si = TOURNAMENT_STATUS_LABELS[t.status] || { label: t.status, color: "bg-gray-100 text-gray-600" };
                     return (
                       <div key={t._id} className="flex items-center justify-between p-3 bg-green-50/60 border border-green-100 rounded-xl gap-4">
@@ -475,6 +510,7 @@ export const OwnerDashboardPage = () => {
                       </div>
                     );
                   })}
+                  {renderPagination(upcomingPage, setUpcomingPage, upcomingTournaments.length)}
                 </div>
               )}
             </div>
@@ -488,7 +524,7 @@ export const OwnerDashboardPage = () => {
                 <p className="text-sm text-gray-500 italic pl-1">Không có giải đấu nào trong khoảng này.</p>
               ) : (
                 <div className="space-y-2">
-                  {pastTournaments.map(t => {
+                  {paginatedPast.map(t => {
                     const si = TOURNAMENT_STATUS_LABELS[t.status] || { label: t.status, color: "bg-gray-100 text-gray-600" };
                     return (
                       <div key={t._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl gap-4">
@@ -503,6 +539,7 @@ export const OwnerDashboardPage = () => {
                       </div>
                     );
                   })}
+                  {renderPagination(pastPage, setPastPage, pastTournaments.length)}
                 </div>
               )}
             </div>
