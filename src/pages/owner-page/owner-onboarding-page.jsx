@@ -261,7 +261,11 @@ function StepClubImages({ clubId, onNext, onBack }) {
     // Fetch existing images to show if user comes back
     api.get(`/clubs/${clubId}`).then(res => {
       if (res.data?.success && res.data.data.images?.length > 0) {
-        setExistingImages(res.data.data.images.map(img => img.image_url));
+        setExistingImages(
+          res.data.data.images
+            .filter(img => img.image_type !== "legal documents")
+            .map(img => img.image_url)
+        );
       }
     }).catch(() => {});
   }, [clubId]);
@@ -462,8 +466,8 @@ function StepAddStaff({ clubId, onNext, onBack }) {
 function StepAddTable({ clubId, onNext, onSkip, onBack }) {
   const [types, setTypes] = useState([]);
   const [form, setForm] = useState({ table_number: "", table_type_id: "", price: "", description: "" });
-  const [file, setFile] = useState(null);
-  const [preview, setPreview] = useState(null);
+  const [files, setFiles] = useState([]);
+  const [previews, setPreviews] = useState([]);
   const fileInputRef = useRef(null);
   const [saving, setSaving] = useState(false);
   const [added, setAdded] = useState([]);
@@ -478,12 +482,19 @@ function StepAddTable({ clubId, onNext, onSkip, onBack }) {
     }).catch(() => {});
   }, [clubId]);
 
-  const handleFile = (e) => {
-    const f = e.target.files[0];
-    if (f) {
-      setFile(f);
-      setPreview(URL.createObjectURL(f));
-    }
+  const handleFiles = (e) => {
+    const selected = Array.from(e.target.files);
+    if (files.length + selected.length > 5) { toast.error("Tối đa 5 ảnh!"); return; }
+    const newFiles = [...files, ...selected];
+    setFiles(newFiles);
+    setPreviews(newFiles.map(f => URL.createObjectURL(f)));
+    e.target.value = "";
+  };
+
+  const removeFile = (idx) => {
+    const nf = files.filter((_, i) => i !== idx);
+    setFiles(nf);
+    setPreviews(nf.map(f => URL.createObjectURL(f)));
   };
 
   const handleAdd = async () => {
@@ -499,16 +510,16 @@ function StepAddTable({ clubId, onNext, onSkip, onBack }) {
       fd.append("area", "Khu vực chung");
       fd.append("isActive", true);
       
-      if (file) {
-         fd.append("images", file);
+      if (files.length > 0) {
+         files.forEach(f => fd.append("images", f));
       }
 
       await createTable(fd);
       toast.success(`Đã thêm: ${form.table_number}`);
       setAdded(p => [...p, form.table_number]);
       setForm({ table_number: "", table_type_id: "", price: "", description: "" });
-      setFile(null);
-      setPreview(null);
+      setFiles([]);
+      setPreviews([]);
     } catch (e) {
       toast.error(e.response?.data?.message || "Thêm bàn thất bại");
     } finally { setSaving(false); }
@@ -551,23 +562,26 @@ function StepAddTable({ clubId, onNext, onSkip, onBack }) {
           <input className={inputCls} placeholder="Mô tả..." value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} />
         </div>
         <div className="sm:col-span-3">
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Ảnh bàn (tùy chọn)</label>
-          {preview ? (
-            <div className="relative group aspect-video rounded-xl overflow-hidden border border-gray-200 w-48">
-              <img src={preview} alt="" className="w-full h-full object-cover" />
-              <button type="button" onClick={() => { setFile(null); setPreview(null); }}
-                className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                <X size={12} />
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Ảnh bàn (tùy chọn, tối đa 5 ảnh)</label>
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {previews.map((src, idx) => (
+              <div key={idx} className="relative group aspect-video rounded-xl overflow-hidden border border-gray-200 w-32 flex-shrink-0">
+                <img src={src} alt="" className="w-full h-full object-cover" />
+                <button type="button" onClick={() => removeFile(idx)}
+                  className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+            {files.length < 5 && (
+              <button type="button" onClick={() => fileInputRef.current?.click()}
+                className="w-32 h-24 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1.5 text-gray-400 hover:border-blue-400 hover:text-blue-400 transition-Colors cursor-pointer flex-shrink-0">
+                <Upload size={24} />
+                <span className="text-xs font-medium">Thêm ảnh ({files.length}/5)</span>
               </button>
-            </div>
-          ) : (
-            <button type="button" onClick={() => fileInputRef.current?.click()}
-              className="w-48 h-24 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1.5 text-gray-400 hover:border-blue-400 hover:text-blue-400 transition-Colors cursor-pointer">
-              <Upload size={24} />
-              <span className="text-sm font-medium">Thêm ảnh bàn</span>
-            </button>
-          )}
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+            )}
+          </div>
+          <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFiles} />
         </div>
       </div>
       <div className="flex gap-3">
@@ -593,8 +607,8 @@ function StepAddTable({ clubId, onNext, onSkip, onBack }) {
 // ─── Step 6: Thêm dịch vụ ─────────────────────────────────────────────────
 function StepAddService({ clubId, onNext, onSkip, onBack }) {
   const [form, setForm] = useState({ name: "", price: "", description: "" });
-  const [file, setFile] = useState(null);
-  const [preview, setPreview] = useState(null);
+  const [files, setFiles] = useState([]);
+  const [previews, setPreviews] = useState([]);
   const fileInputRef = useRef(null);
   const [saving, setSaving] = useState(false);
   const [added, setAdded] = useState([]);
@@ -612,12 +626,19 @@ function StepAddService({ clubId, onNext, onSkip, onBack }) {
     });
   }, [clubId]);
 
-  const handleFile = (e) => {
-    const f = e.target.files[0];
-    if (f) {
-      setFile(f);
-      setPreview(URL.createObjectURL(f));
-    }
+  const handleFiles = (e) => {
+    const selected = Array.from(e.target.files);
+    if (files.length + selected.length > 5) { toast.error("Tối đa 5 ảnh!"); return; }
+    const newFiles = [...files, ...selected];
+    setFiles(newFiles);
+    setPreviews(newFiles.map(f => URL.createObjectURL(f)));
+    e.target.value = "";
+  };
+
+  const removeFile = (idx) => {
+    const nf = files.filter((_, i) => i !== idx);
+    setFiles(nf);
+    setPreviews(nf.map(f => URL.createObjectURL(f)));
   };
 
   const handleAdd = async () => {
@@ -630,16 +651,16 @@ function StepAddService({ clubId, onNext, onSkip, onBack }) {
       fd.append("price", form.price);
       fd.append("description", form.description);
 
-      if (file) {
-         fd.append("images", file);
+      if (files.length > 0) {
+         files.forEach(f => fd.append("images", f));
       }
 
       await api.post("/services", fd);
       toast.success(`Đã thêm: ${form.name}`);
       setAdded(p => [...p, form.name]);
       setForm({ name: "", price: "", description: "" });
-      setFile(null);
-      setPreview(null);
+      setFiles([]);
+      setPreviews([]);
     } catch (e) {
       toast.error(e.response?.data?.message || "Thêm dịch vụ thất bại");
     } finally { setSaving(false); }
@@ -674,23 +695,26 @@ function StepAddService({ clubId, onNext, onSkip, onBack }) {
           <input className={inputCls} placeholder="Mô tả ngắn về dịch vụ" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} />
         </div>
         <div className="sm:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Ảnh dịch vụ (tùy chọn)</label>
-          {preview ? (
-            <div className="relative group aspect-video rounded-xl overflow-hidden border border-gray-200 w-48">
-              <img src={preview} alt="" className="w-full h-full object-cover" />
-              <button type="button" onClick={() => { setFile(null); setPreview(null); }}
-                className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                <X size={12} />
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Ảnh dịch vụ (tùy chọn, tối đa 5 ảnh)</label>
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {previews.map((src, idx) => (
+              <div key={idx} className="relative group aspect-video rounded-xl overflow-hidden border border-gray-200 w-32 flex-shrink-0">
+                <img src={src} alt="" className="w-full h-full object-cover" />
+                <button type="button" onClick={() => removeFile(idx)}
+                  className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+            {files.length < 5 && (
+              <button type="button" onClick={() => fileInputRef.current?.click()}
+                className="w-32 h-24 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1.5 text-gray-400 hover:border-blue-400 hover:text-blue-400 transition-Colors cursor-pointer flex-shrink-0">
+                <Upload size={24} />
+                <span className="text-xs font-medium">Thêm ảnh ({files.length}/5)</span>
               </button>
-            </div>
-          ) : (
-            <button type="button" onClick={() => fileInputRef.current?.click()}
-              className="w-48 h-24 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1.5 text-gray-400 hover:border-blue-400 hover:text-blue-400 transition-Colors cursor-pointer">
-              <Upload size={24} />
-              <span className="text-sm font-medium">Thêm ảnh</span>
-            </button>
-          )}
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+            )}
+          </div>
+          <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFiles} />
         </div>
       </div>
       <div className="flex gap-3">
