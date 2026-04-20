@@ -96,7 +96,7 @@ export const HeaderHome = () => {
       if (openNoti) {
         fetchNotifications();
       }
-    }, 15000);
+    }, 60000);
 
     return () => clearInterval(interval);
   }, [user, openNoti]);
