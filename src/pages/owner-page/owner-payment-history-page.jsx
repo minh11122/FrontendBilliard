@@ -12,6 +12,12 @@ const TYPE_META = {
   BOOKING_FINAL_PAYMENT_CASH: "Thanh toán nốt (tiền mặt)",
 };
 
+const STATUS_META = {
+  all: "Tất cả trạng thái",
+  SUCCESS: "Thành công",
+  PENDING: "Đang xử lý",
+};
+
 const StatusPill = ({ status }) => {
   const map = {
     PENDING: "bg-amber-50 text-amber-800 border-amber-200",
@@ -29,6 +35,15 @@ const StatusPill = ({ status }) => {
 const formatMoney = (n) => `${(Number(n) || 0).toLocaleString("vi-VN")}đ`;
 const formatDateTime = (d) => (d ? new Date(d).toLocaleString("vi-VN") : "—");
 
+const getContentLabel = (tx) => {
+  const typeLabel = TYPE_META[tx.transaction_type] || "Giao dịch";
+  if (tx.booking?.code_number) {
+    return `${typeLabel} cho booking ${tx.booking.code_number} - bàn ${tx.table?.table_number || "—"}`;
+  }
+  if (tx.description) return `${typeLabel}: ${tx.description}`;
+  return typeLabel;
+};
+
 const CLUB_ID_STORAGE_KEY = "selected_club_id";
 
 export default function OwnerPaymentHistoryPage() {
@@ -39,6 +54,8 @@ export default function OwnerPaymentHistoryPage() {
   const [error, setError] = useState("");
   const [transactions, setTransactions] = useState([]);
   const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
 
   const fetchData = async () => {
@@ -68,15 +85,18 @@ export default function OwnerPaymentHistoryPage() {
     const q = search.trim().toLowerCase();
     if (!q) return transactions;
     return transactions.filter((tx) => {
+      const matchType = typeFilter === "all" || tx.transaction_type === typeFilter;
+      const matchStatus = statusFilter === "all" || tx.status === statusFilter;
+      if (!matchType || !matchStatus) return false;
       const player = tx.player?.fullname || tx.player?.email || "";
       const booking = tx.booking?.code_number || "";
       const table = tx.table?.table_number || "";
       const club = tx.club?.name || "";
-      const type = tx.transaction_type || "";
-      const desc = tx.description || "";
+      const type = TYPE_META[tx.transaction_type] || tx.transaction_type || "";
+      const desc = getContentLabel(tx);
       return `${player} ${booking} ${table} ${club} ${type} ${desc}`.toLowerCase().includes(q);
     });
-  }, [transactions, search]);
+  }, [transactions, search, typeFilter, statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginatedTransactions = useMemo(() => {
@@ -86,7 +106,11 @@ export default function OwnerPaymentHistoryPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search]);
+  }, [search, typeFilter, statusFilter]);
+
+  const transactionTypeOptions = useMemo(() => {
+    return [...new Set(transactions.map((tx) => tx.transaction_type).filter(Boolean))];
+  }, [transactions]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -103,14 +127,27 @@ export default function OwnerPaymentHistoryPage() {
             <p className="text-slate-500 mt-1">Theo dõi giao dịch liên quan đặt bàn của câu lạc bộ đang chọn.</p>
           </div>
 
-          <div className="relative w-full sm:w-[340px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
-              className="w-full pl-9 h-11 rounded-xl bg-white border-slate-200"
-              placeholder="Tìm theo khách, booking, bàn, loại..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <div className="relative w-full sm:w-[340px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                className="w-full pl-9 h-11 rounded-xl bg-white border-slate-200"
+                placeholder="Tìm theo khách, booking, bàn, loại..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm">
+              <option value="all">Tất cả loại giao dịch</option>
+              {transactionTypeOptions.map((type) => (
+                <option key={type} value={type}>{TYPE_META[type] || type}</option>
+              ))}
+            </select>
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm">
+              {Object.entries(STATUS_META).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -146,6 +183,7 @@ export default function OwnerPaymentHistoryPage() {
                     <th className="px-6 py-3 text-xs uppercase text-slate-500 font-bold">Khách</th>
                     <th className="px-6 py-3 text-xs uppercase text-slate-500 font-bold">Booking</th>
                     <th className="px-6 py-3 text-xs uppercase text-slate-500 font-bold">Loại</th>
+                    <th className="px-6 py-3 text-xs uppercase text-slate-500 font-bold">Nội dung</th>
                     <th className="px-6 py-3 text-xs uppercase text-slate-500 font-bold text-right">Số tiền</th>
                     <th className="px-6 py-3 text-xs uppercase text-slate-500 font-bold">Trạng thái</th>
                   </tr>
@@ -170,6 +208,9 @@ export default function OwnerPaymentHistoryPage() {
                       </td>
                       <td className="px-6 py-4 text-sm font-semibold text-slate-800">
                         {TYPE_META[tx.transaction_type] || tx.transaction_type || "—"}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-700">
+                        {getContentLabel(tx)}
                       </td>
                       <td className="px-6 py-4 text-sm text-right font-bold text-emerald-700">
                         {formatMoney(tx.amount)}
