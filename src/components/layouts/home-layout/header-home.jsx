@@ -510,13 +510,13 @@ export const HeaderHome = () => {
             <div className="flex items-center gap-2 ml-2">
               <button
                 onClick={() => navigate("/auth/login")}
-                className="px-4 py-2 text-green-500 font-medium hover:text-green-600 transition-colors"
+                className="px-4 py-2 text-green-500 font-medium hover:text-green-600 transition-colors whitespace-nowrap"
               >
                 Đăng nhập
               </button>
               <button
                 onClick={() => navigate("/auth/register")}
-                className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg"
+                className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg whitespace-nowrap"
               >
                 Đăng ký
               </button>
