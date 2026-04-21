@@ -357,12 +357,6 @@ export const SystemStaff1 = () => {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <button
-            onClick={handleCreateTestNotification}
-            className="px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors"
-          >
-            Tao noti test
-          </button>
           {/* Nút Chuông Thông Báo */}
           <div className="relative" ref={popupRef}>
             <button
