@@ -80,7 +80,7 @@ export function LoginSystem() {
         <Link to="/" className="flex items-center gap-2 font-bold text-lg">
           <SiteLogo className="w-8 h-8 rounded-lg" alt="Billiards Manager logo" />
           <span>
-            Billiards <span className="text-green-600">Manager</span>
+            Billiards <span className="text-green-600">One</span>
           </span>
         </Link>
       </div>

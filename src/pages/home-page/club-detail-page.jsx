@@ -54,17 +54,17 @@ export const ClubDetailPage = () => {
         startTime: selectedStartTime,
         duration: selectedDuration
       };
-      
+
       const res = await getClubById(id, params);
       if (res.success) {
         setClub(res.data);
-        
+
         // If current selected table is no longer available in the new slot, clear it
         if (selectedTable) {
-           const updatedTable = res.data.tables?.find(t => t._id === selectedTable._id);
-           if (updatedTable && updatedTable.status !== "Available") {
-             setSelectedTable(null);
-           }
+          const updatedTable = res.data.tables?.find(t => t._id === selectedTable._id);
+          if (updatedTable && updatedTable.status !== "Available") {
+            setSelectedTable(null);
+          }
         }
       }
     } catch (error) {
@@ -91,16 +91,16 @@ export const ClubDetailPage = () => {
   const generateTimeSlots = (openingTime, closingTime) => {
     const [openH, openM] = (openingTime || "08:00").split(":").map(Number);
     const [closeH, closeM] = (closingTime || "23:30").split(":").map(Number);
-    
+
     const openMinutes = openH * 60 + openM;
     const closeMinutes = closeH * 60 + closeM;
-    
+
     // 24/24: opening === closing means open all day (48 slots)
     const is24h = openMinutes === closeMinutes;
     const totalMinutes = is24h ? 24 * 60 : (
       closeMinutes <= openMinutes ? closeMinutes + 24 * 60 : closeMinutes
     );
-    
+
     const slots = [];
     const limit = is24h ? openMinutes + 24 * 60 : totalMinutes;
     for (let t = openMinutes; t < limit - 29; t += 30) {
@@ -141,21 +141,21 @@ export const ClubDetailPage = () => {
     const [startH, startM] = selectedStartTime.split(":").map(Number);
     const [openH] = (club.opening_time || "08:00").split(":").map(Number);
     const [closeH, closeM] = (club.closing_time || "23:30").split(":").map(Number);
-    
+
     const openMinutes = openH * 60;
     const closeMinutes24 = closeH * 60 + closeM;
     const is24h = openMinutes === closeMinutes24;
-    
+
     if (is24h) return 24;
-    
+
     const isCrossMidnight = closeH <= openH && !is24h;
     let effectiveClose = closeMinutes24;
     if (isCrossMidnight) effectiveClose += 24 * 60;
-    
+
     const startMins = startH * 60 + startM;
     let adjustedStart = startMins;
     if (isCrossMidnight && startH < openH) adjustedStart += 24 * 60;
-    
+
     return Math.max(0.5, (effectiveClose - adjustedStart) / 60);
   })();
 
@@ -234,11 +234,11 @@ export const ClubDetailPage = () => {
   }
 
   // Ảnh avatar chính và danh sách background
-  const avatarImage = club.images?.find((img) => img.image_type === "Avatar")?.image_url || 
-                      club.images?.find((img) => img.image_type === "Banner")?.image_url || null;
-  
+  const avatarImage = club.images?.find((img) => img.image_type === "Avatar")?.image_url ||
+    club.images?.find((img) => img.image_type === "Banner")?.image_url || null;
+
   const backgroundImages = club.images?.filter(img => img.image_type === "Background").map(img => img.image_url) || [];
-  
+
   // Tổng hợp tất cả ảnh: Avatar đầu, sau đó Background
   let displayImages = [];
   if (avatarImage) displayImages.push(avatarImage);
@@ -353,7 +353,6 @@ export const ClubDetailPage = () => {
           {/* Club Info - 1 Col */}
           <div className="bg-white border rounded-2xl shadow-sm p-6 flex flex-col h-full">
             <div className="flex items-center gap-2 mb-2">
-              <span className="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full">PHỔ BIẾN</span>
               {club.rating > 0 ? (
                 <span className="flex items-center gap-1 text-yellow-600 font-bold text-sm bg-yellow-50 px-2 py-1 rounded-full border border-yellow-200">
                   <Star className="w-4 h-4 fill-yellow-500" /> {Number(club.rating).toFixed(1)} <span className="text-yellow-600/70 font-normal text-xs">({club.reviewsCount} đánh giá)</span>
@@ -370,9 +369,9 @@ export const ClubDetailPage = () => {
             <div className="space-y-4 mb-6">
               <p className="flex items-start gap-3 text-sm text-slate-600">
                 <MapPin className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
-                <a 
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(club.address || club.name)}`} 
-                  target="_blank" 
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(club.address || club.name)}`}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-emerald-600 hover:underline cursor-pointer"
                   title="Xem trên bản đồ"
@@ -383,8 +382,8 @@ export const ClubDetailPage = () => {
               <div className="flex justify-between items-center text-sm border-b border-dashed pb-3 pt-2">
                 <span className="text-slate-500">Giờ hoạt động</span>
                 <span className="font-bold text-slate-900">
-                  {(club.opening_time === "00:00" && club.closing_time === "00:00") 
-                    ? "Mở cửa 24/24" 
+                  {(club.opening_time === "00:00" && club.closing_time === "00:00")
+                    ? "Mở cửa 24/24"
                     : `${club.opening_time || "08:00"} - ${club.closing_time || "23:30"}`}
                 </span>
               </div>
@@ -624,13 +623,13 @@ export const ClubDetailPage = () => {
 
                           {/* Dynamic Overlay & Glow based on status/selection */}
                           <div className={`absolute inset-0 transition-all duration-300 ${selectedTable?._id === t._id
-                              ? "bg-emerald-900/40 backdrop-blur-[1px]"
-                              : "bg-black/40 group-hover:bg-black/20"
+                            ? "bg-emerald-900/40 backdrop-blur-[1px]"
+                            : "bg-black/40 group-hover:bg-black/20"
                             }`} />
 
                           <div className={`absolute inset-0 bg-gradient-to-t transition-opacity duration-300 ${selectedTable?._id === t._id
-                              ? "from-emerald-950/9 worst-emerald-900/10 to-transparent opacity-100"
-                              : "from-black/90 via-black/20 to-transparent opacity-90 group-hover:opacity-100"
+                            ? "from-emerald-950/9 worst-emerald-900/10 to-transparent opacity-100"
+                            : "from-black/90 via-black/20 to-transparent opacity-90 group-hover:opacity-100"
                             }`} />
 
                           {/* Selection Checkmark */}
@@ -692,14 +691,14 @@ export const ClubDetailPage = () => {
                     )}
                   </div>
 
-                    {/* Cửa lối vào (Mô phỏng như ảnh) */}
-                    <div className="w-full flex justify-center mt-12 mb-6">
-                      <div className="w-32 h-2 bg-slate-200 rounded-full relative">
-                        <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs text-slate-400 font-bold uppercase tracking-wider">Lối vào</span>
-                      </div>
+                  {/* Cửa lối vào (Mô phỏng như ảnh) */}
+                  <div className="w-full flex justify-center mt-12 mb-6">
+                    <div className="w-32 h-2 bg-slate-200 rounded-full relative">
+                      <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs text-slate-400 font-bold uppercase tracking-wider">Lối vào</span>
                     </div>
                   </div>
                 </div>
+              </div>
             )}
 
             {activeTab === 'info' && (
@@ -801,9 +800,9 @@ export const ClubDetailPage = () => {
 
       {/* Table Detail Modal */}
       {tableDetail && (
-        <TableDetailModal 
-          table={tableDetail} 
-          onClose={() => setTableDetail(null)} 
+        <TableDetailModal
+          table={tableDetail}
+          onClose={() => setTableDetail(null)}
           selectedTableType={selectedTableType}
         />
       )}
@@ -819,7 +818,7 @@ const TableDetailModal = ({ table, onClose, selectedTableType }) => {
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={onClose}>
       <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-        
+
         {/* Header */}
         <div className="p-5 border-b flex justify-between items-center bg-slate-50/50">
           <div className="flex items-center gap-3">
@@ -842,10 +841,10 @@ const TableDetailModal = ({ table, onClose, selectedTableType }) => {
             {/* Main Image Display */}
             <div className="aspect-video bg-slate-100 rounded-2xl border overflow-hidden relative shadow-inner group">
               {images.length > 0 ? (
-                <img 
-                  src={images[activeImg]} 
-                  className="w-full h-full object-cover transition-all duration-500" 
-                  alt={`Bàn ${table.table_number} - ảnh ${activeImg + 1}`} 
+                <img
+                  src={images[activeImg]}
+                  className="w-full h-full object-cover transition-all duration-500"
+                  alt={`Bàn ${table.table_number} - ảnh ${activeImg + 1}`}
                 />
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-2">
@@ -861,13 +860,13 @@ const TableDetailModal = ({ table, onClose, selectedTableType }) => {
               {/* Navigation Arrows for gallery */}
               {images.length > 1 && (
                 <>
-                  <button 
+                  <button
                     onClick={() => setActiveImg(i => (i - 1 + images.length) % images.length)}
                     className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
-                  <button 
+                  <button
                     onClick={() => setActiveImg(i => (i + 1) % images.length)}
                     className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
                   >
@@ -887,9 +886,8 @@ const TableDetailModal = ({ table, onClose, selectedTableType }) => {
                   <button
                     key={i}
                     onClick={() => setActiveImg(i)}
-                    className={`w-16 h-12 rounded-lg overflow-hidden border-2 flex-shrink-0 transition-all ${
-                      activeImg === i ? 'border-emerald-500 scale-[1.05] shadow-md' : 'border-transparent opacity-60 hover:opacity-100'
-                    }`}
+                    className={`w-16 h-12 rounded-lg overflow-hidden border-2 flex-shrink-0 transition-all ${activeImg === i ? 'border-emerald-500 scale-[1.05] shadow-md' : 'border-transparent opacity-60 hover:opacity-100'
+                      }`}
                   >
                     <img src={img} className="w-full h-full object-cover" alt="" />
                   </button>
@@ -916,18 +914,17 @@ const TableDetailModal = ({ table, onClose, selectedTableType }) => {
               <div className={`w-3 h-3 rounded-full ${table.status === 'Available' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></div>
               <span className="text-sm font-bold text-slate-700">Trạng thái hiện tại</span>
             </div>
-            <span className={`text-xs font-black px-3 py-1 rounded-full border ${
-              table.status === 'Available' ? 'bg-white text-emerald-600 border-emerald-200' : 
+            <span className={`text-xs font-black px-3 py-1 rounded-full border ${table.status === 'Available' ? 'bg-white text-emerald-600 border-emerald-200' :
               table.status === 'Holding' ? 'bg-amber-50 text-amber-600 border-amber-200' :
-              'bg-slate-100 text-slate-400'
-            }`}>
+                'bg-slate-100 text-slate-400'
+              }`}>
               {table.status === 'Available' ? 'ĐANG TRỐNG' : table.status === 'Holding' ? 'ĐANG GIỮ CHỖ' : 'BẢO TRÌ'}
             </span>
           </div>
         </div>
 
         <div className="p-5 bg-slate-50/50 border-t">
-          <button 
+          <button
             onClick={onClose}
             className="w-full py-3 bg-white border font-black text-slate-500 rounded-2xl hover:bg-slate-100 transition-all active:scale-[0.98]"
           >

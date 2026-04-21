@@ -168,9 +168,10 @@ export const HeaderHome = () => {
           </button>
         </div>
       )}
-      <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+      <div className="w-full px-6 lg:px-12 py-4 flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="group transition-all">
+        <div className="flex-1 flex justify-start">
+          <Link to="/" className="group transition-all">
           <div className="flex items-center gap-3">
             <SiteLogo
               className="w-10 h-10 group-hover:scale-105 transition-transform"
@@ -183,9 +184,10 @@ export const HeaderHome = () => {
             </div>
           </div>
         </Link>
+        </div>
 
         {/* Menu - Desktop */}
-        <nav className="hidden md:flex items-center gap-1">
+        <nav className="hidden lg:flex shrink-0 items-center justify-center gap-6 xl:gap-8">
           <NavLink
             to="/"
             className={({ isActive }) =>
@@ -337,37 +339,33 @@ export const HeaderHome = () => {
         </nav>
 
         {/* Right Section */}
-        <div className="flex items-center gap-2">
+        <div className="flex-1 flex items-center justify-end gap-3">
           {/* Theme Switch */}
           <label
-            className="theme-switch"
+            htmlFor="theme-toggle"
+            className="w-10 h-10 grid rounded-full relative place-items-center cursor-pointer transition-transform duration-200 leading-none overflow-hidden active:scale-95"
             title={darkMode ? "Chuyển sang sáng" : "Chuyển sang tối"}
           >
             <input
+              id="theme-toggle"
               type="checkbox"
+              className="hidden peer"
               checked={darkMode}
               onChange={() => setDarkMode((prev) => !prev)}
               aria-label={darkMode ? "Chuyển sang sáng" : "Chuyển sang tối"}
             />
-            <span className="theme-slider" />
-            <svg
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-              className="theme-sun-icon"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <path d="M12,17c-2.76,0-5-2.24-5-5s2.24-5,5-5,5,2.24,5,5-2.24,5-5,5ZM13,0h-2V5h2V0Zm0,19h-2v5h2v-5ZM5,11H0v2H5v-2Zm19,0h-5v2h5v-2Zm-2.81-6.78l-1.41-1.41-3.54,3.54,1.41,1.41,3.54-3.54ZM7.76,17.66l-1.41-1.41-3.54,3.54,1.41,1.41,3.54-3.54Zm0-11.31l-3.54-3.54-1.41,1.41,3.54,3.54,1.41-1.41Zm13.44,13.44l-3.54-3.54-1.41,1.41,3.54,3.54,1.41-1.41Z" />
-            </svg>
-            <svg
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-              className="theme-moon-icon"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <path d="M12.009,24A12.067,12.067,0,0,1,.075,10.725,12.121,12.121,0,0,1,10.1.152a13,13,0,0,1,5.03.206,2.5,2.5,0,0,1,1.8,1.8,2.47,2.47,0,0,1-.7,2.425c-4.559,4.168-4.165,10.645.807,14.412h0a2.5,2.5,0,0,1-.7,4.319A13.875,13.875,0,0,1,12.009,24Zm.074-22a10.776,10.776,0,0,0-1.675.127,10.1,10.1,0,0,0-8.344,8.8A9.928,9.928,0,0,0,4.581,18.7a10.473,10.473,0,0,0,11.093,2.734.5.5,0,0,0,.138-.856h0C9.883,16.1,9.417,8.087,14.865,3.124a.459.459,0,0,0,.127-.465.491.491,0,0,0-.356-.362A10.68,10.68,0,0,0,12.083,2ZM20.5,12a1,1,0,0,1-.97-.757l-.358-1.43L17.74,9.428a1,1,0,0,1,.035-1.94l1.4-.325.351-1.406a1,1,0,0,1,1.94,0l.355,1.418,1.418.355a1,1,0,0,1,0,1.94l-1.418.355-.355,1.418A1,1,0,0,1,20.5,12ZM16,14a1,1,0,0,0,2,0A1,1,0,0,0,16,14Zm6,4a1,1,0,0,0,2,0A1,1,0,0,0,22,18Z" />
-            </svg>
+            {/* Moon icon (Dark Mode on) */}
+            <div className="col-start-1 row-start-1 w-full h-full grid place-items-center z-[2] origin-center transition-all duration-500 text-[#212121] bg-[#e8e8e8] rounded-full scale-0 opacity-0 rotate-0 peer-checked:rotate-[360deg] peer-checked:scale-100 peer-checked:opacity-100 pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                <path fillRule="evenodd" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 01.818.162z" clipRule="evenodd" />
+              </svg>
+            </div>
+            {/* Sun icon */}
+            <div className="col-start-1 row-start-1 w-full h-full grid place-items-center z-[2] origin-center transition-all duration-500 text-[#e8e8e8] bg-[#212121] rounded-full rotate-[360deg] scale-100 opacity-100 peer-checked:rotate-0 peer-checked:scale-0 peer-checked:opacity-0 pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z" />
+              </svg>
+            </div>
           </label>
 
           {/* Notifications */}

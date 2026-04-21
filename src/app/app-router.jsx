@@ -14,9 +14,8 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PlanProtectedRoute } from "@/components/PlanProtectedRoute";
 
 import {
-  LoginForm,
-  RegisterForm,
   ForgotPasswordForm,
+  AuthPage,
   HomePage,
   TournamentPage,
   TournamentDetailPage,
@@ -89,8 +88,8 @@ export const router = createBrowserRouter([
         path: "auth",
         element: <AuthLayout />,
         children: [
-          { path: "login", element: <LoginForm /> },
-          { path: "register", element: <RegisterForm /> },
+          { path: "login", element: <AuthPage /> },
+          { path: "register", element: <AuthPage /> },
           { path: "forgot-password", element: <ForgotPasswordForm /> },
           { path: "login-system/adminstration", element: <LoginSystem /> },
           { path: "forbidden", element: <Forbidden /> },

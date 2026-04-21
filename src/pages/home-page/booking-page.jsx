@@ -132,7 +132,7 @@ export const BookingPage = () => {
       (club.address?.toLowerCase() || "").includes(searchTerm.toLowerCase());
 
     const matchProvince = selectedProvinceCode === "all" || String(club.province_code) === String(selectedProvinceCode);
-    
+
     const matchDistrict = selectedDistrictCode === "all" || String(club.district_code) === String(selectedDistrictCode);
 
     const matchRating = filterRating ? club.rating >= 4.0 : true;
@@ -367,9 +367,6 @@ export const BookingPage = () => {
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-400">Chưa có ảnh</div>
                     )}
-                    <div className="absolute top-3 left-3 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-lg shadow-sm">
-                      PHỔ BIẾN
-                    </div>
                     {club.rating > 0 && (
                       <div className="absolute top-3 right-3 bg-white/95 backdrop-blur text-gray-900 text-sm font-bold px-2 py-1 rounded-lg flex items-center gap-1 shadow-md">
                         <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" /> {Number(club.rating).toFixed(1)}

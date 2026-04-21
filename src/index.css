@@ -355,100 +355,40 @@
   background-color: #374151 !important;
 }
 
-/* Theme toggle switch */
-.theme-switch {
+/* Animated Card for Owner CTA */
+.owner-cta-card {
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  width: 110px;
-  height: 50px;
-  flex-shrink: 0;
+  background: linear-gradient(0deg, #0f172a, #030712);
 }
 
-.theme-switch input {
+.owner-cta-card:before, .owner-cta-card:after {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: -2px;
+  border-radius: 1.5rem; /* Matches Tailwind's rounded-3xl */
+  background: linear-gradient(45deg, #fb0094, #0000ff, #00ff00, #ffff00, #ff0000, #fb0094, #0000ff, #00ff00, #ffff00, #ff0000);
+  background-size: 400%;
+  width: calc(100% + 4px);
+  height: calc(100% + 4px);
+  z-index: -1;
+  animation: steam 20s linear infinite;
   pointer-events: none;
-  position: fixed;
-  opacity: 0;
 }
 
-.theme-slider {
-  position: absolute;
-  cursor: pointer;
-  inset: 0;
-  overflow: hidden;
-  border-radius: 9999px;
-  background-color: #ffffff;
-  box-shadow: 0 1px 3px rgb(15 23 42 / 0.16);
-  transition: background-color 0.3s ease;
+.owner-cta-card:after {
+  filter: blur(25px);
 }
 
-.theme-slider:after {
-  position: absolute;
-  content: "";
-  top: 5px;
-  left: 5px;
-  width: 40px;
-  height: 40px;
-  border-radius: 9999px;
-  background: linear-gradient(to right, #f97316, #facc15);
-  box-shadow: 0 4px 6px rgb(15 23 42 / 0.16);
-  transition:
-    left 0.3s ease,
-    transform 0.3s ease,
-    width 0.3s ease,
-    background 0.3s ease;
+@keyframes steam {
+  0% {
+    background-position: 0 0;
+  }
+  50% {
+    background-position: 400% 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
 }
-
-.theme-switch:active .theme-slider:after {
-  width: 50px;
-}
-
-.theme-switch input:checked+.theme-slider {
-  background-color: #71717a;
-}
-
-.theme-switch input:checked+.theme-slider:after {
-  left: 105px;
-  transform: translateX(-100%);
-  background: linear-gradient(to right, #18181b, #18181b);
-}
-
-.theme-switch input:focus-visible+.theme-slider {
-  outline: 2px solid #22c55e;
-  outline-offset: 3px;
-}
-
-.theme-sun-icon,
-.theme-moon-icon {
-  pointer-events: none;
-  position: absolute;
-  z-index: 1;
-  width: 24px;
-  height: 24px;
-  transition:
-    fill 0.3s ease,
-    opacity 0.3s ease;
-}
-
-.theme-sun-icon {
-  left: 13px;
-  fill: #ffffff;
-}
-
-.theme-moon-icon {
-  right: 13px;
-  fill: #000000;
-  opacity: 0.6;
-}
-
-.theme-switch input:checked~.theme-sun-icon {
-  opacity: 0.6;
-}
-
-.theme-switch input:checked~.theme-moon-icon {
-  fill: #ffffff;
-  opacity: 0.7;
-}
-
-
 

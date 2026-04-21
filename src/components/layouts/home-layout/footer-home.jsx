@@ -124,7 +124,7 @@ export const FooterHome = () => {
       <div className="container mx-auto px-6 py-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 text-sm text-gray-600 dark:text-gray-400">
           <p>
-            © 2024 FPT University Capstone Project. All rights reserved.
+            © 2026 FPT University Capstone Project. All rights reserved.
           </p>
           <div className="flex gap-6">
             <a href="#" className="hover:text-green-500 transition-colors">

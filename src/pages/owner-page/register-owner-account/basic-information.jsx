@@ -454,11 +454,12 @@ export function RegisterOwnerAccount() {
         {/* RIGHT HERO */}
         <div className="relative hidden md:block">
           <img
-            src="https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?q=80&w=1600"
+            src="/img-home/club.jpg"
             className="absolute inset-0 w-full h-full object-cover"
+            alt="club background"
           />
 
-          <div className="absolute inset-0 bg-gradient-to-br from-green-900/90 to-black/80" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
           <div className="relative h-full p-10 text-white flex flex-col justify-center">
             <h3 className="text-3xl font-bold mb-4">

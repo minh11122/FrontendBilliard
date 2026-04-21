@@ -38,7 +38,7 @@ export function ForgotPasswordForm() {
         <Link to="/" className="flex items-center gap-2 font-bold text-lg">
           <SiteLogo className="w-8 h-8 rounded-lg" alt="Billiards Manager logo" />
           <span>
-            Billiards <span className="text-green-600">Manager</span>
+            Billiards <span className="text-green-600">One</span>
           </span>
         </Link>
       </div>
@@ -71,11 +71,10 @@ export function ForgotPasswordForm() {
                   placeholder="Nhập email của bạn"
                   {...formik.getFieldProps("email")}
                   className={`w-full pl-10 pr-4 py-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-green-600
-                  ${
-                    formik.touched.email && formik.errors.email
+                  ${formik.touched.email && formik.errors.email
                       ? "border-red-500"
                       : ""
-                  }`}
+                    }`}
                 />
               </div>
 
@@ -128,10 +127,11 @@ export function ForgotPasswordForm() {
         {/* RIGHT HERO */}
         <div className="relative hidden md:block">
           <img
-            src="https://images.unsplash.com/photo-1603297631954-df2d0f7f4d7c?q=80&w=1600"
+            src="/img-home/backgroundauth.png"
             className="absolute inset-0 w-full h-full object-cover"
+            alt="auth background"
           />
-          <div className="absolute inset-0 bg-gradient-to-br from-green-900/90 to-black/80" />
+          <div className="absolute inset-0 bg-gradient-to-br from-green-900/80 to-black/80" />
 
           <div className="relative h-full p-10 text-white flex flex-col justify-center">
             <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center mb-6">

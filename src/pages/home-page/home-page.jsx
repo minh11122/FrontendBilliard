@@ -9,6 +9,8 @@ import {
   TrendingUp,
   Quote,
   ArrowRight,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -34,14 +36,17 @@ export const HomePage = () => {
 
   const [index, setIndex] = useState(0);
 
+  const nextSlide = () => setIndex((prev) => (prev + 1) % images.length);
+  const prevSlide = () => setIndex((prev) => (prev - 1 + images.length) % images.length);
+
   // auto chuyển ảnh
   useEffect(() => {
     const interval = setInterval(() => {
-      setIndex((prev) => (prev + 1) % images.length);
-    }, 3000);
+      nextSlide();
+    }, 5000); // Chậm hơn, 5 giây
 
     return () => clearInterval(interval);
-  }, []);
+  }, [images.length]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -99,18 +104,22 @@ export const HomePage = () => {
     {
       title: "Đặt bàn nhanh chóng",
       description: "Chỉ cần vài click để tìm và đặt bàn yêu thích của bạn",
+      icon: Zap,
     },
     {
       title: "Quản lý giải đấu dễ dàng",
       description: "Công cụ quản lý giải đấu chuyên nghiệp cho các CLB",
+      icon: Trophy,
     },
     {
       title: "Xếp hạng cơ thủ",
       description: "Theo dõi xếp hạng và tiến bộ của các cơ thủ hàng đầu",
+      icon: TrendingUp,
     },
     {
       title: "Cộng đồng sôi động",
       description: "Kết nối với cơ thủ khác và chia sẻ kinh nghiệm",
+      icon: Users,
     },
   ];
 
@@ -146,13 +155,33 @@ export const HomePage = () => {
             </button>
           </div>
 
+          {/* Next/Prev Buttons */}
+          <button 
+            onClick={prevSlide}
+            className="absolute top-1/2 left-4 md:left-8 -translate-y-1/2 w-10 h-10 rounded-full bg-black/20 hover:bg-black/50 flex items-center justify-center text-white backdrop-blur-sm transition-all z-10"
+            aria-label="Previous image"
+          >
+            <ChevronLeft size={24} />
+          </button>
+          
+          <button 
+            onClick={nextSlide}
+            className="absolute top-1/2 right-4 md:right-8 -translate-y-1/2 w-10 h-10 rounded-full bg-black/20 hover:bg-black/50 flex items-center justify-center text-white backdrop-blur-sm transition-all z-10"
+            aria-label="Next image"
+          >
+            <ChevronRight size={24} />
+          </button>
+
           {/* dots */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-10">
             {images.map((_, i) => (
-              <div
+              <button
                 key={i}
-                className={`w-3 h-3 rounded-full ${i === index ? "bg-white" : "bg-white/40"
-                  }`}
+                onClick={() => setIndex(i)}
+                className={`h-3 rounded-full cursor-pointer transition-all ${
+                  i === index ? "bg-white w-8" : "bg-white/40 w-3 hover:bg-white/80"
+                }`}
+                aria-label={`Go to slide ${i + 1}`}
               />
             ))}
           </div>
@@ -160,27 +189,42 @@ export const HomePage = () => {
       </section>
 
       {/* STATS */}
-      <section className="container mx-auto px-6 py-10">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          <div>
-            <Users className="mx-auto text-green-500 mb-2" />
-            <p className="text-2xl font-bold dark:text-white">50+</p>
-            <p className="text-gray-500 dark:text-gray-400 text-sm">Câu lạc bộ liên kết</p>
+      <section className="container mx-auto px-6 py-12 relative z-20">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Card 1 */}
+          <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 lg:p-8 text-center border border-gray-100 dark:border-gray-700 shadow-xl shadow-gray-200/50 dark:shadow-none hover:shadow-2xl hover:shadow-green-500/10 transition-all duration-300 hover:-translate-y-2 group">
+            <div className="w-16 h-16 mx-auto bg-green-50 dark:bg-green-900/30 rounded-2xl flex items-center justify-center mb-5 group-hover:bg-green-500 transition-colors duration-300">
+              <Users className="w-8 h-8 text-green-500 group-hover:text-white transition-colors" />
+            </div>
+            <p className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white mb-2">50+</p>
+            <p className="text-gray-600 dark:text-gray-400 font-medium text-sm md:text-base">Câu lạc bộ liên kết</p>
           </div>
-          <div>
-            <Trophy className="mx-auto text-green-500 mb-2" />
-            <p className="text-2xl font-bold dark:text-white">200+</p>
-            <p className="text-gray-500 dark:text-gray-400 text-sm">Bàn bida chất lượng</p>
+
+          {/* Card 2 */}
+          <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 lg:p-8 text-center border border-gray-100 dark:border-gray-700 shadow-xl shadow-gray-200/50 dark:shadow-none hover:shadow-2xl hover:shadow-green-500/10 transition-all duration-300 hover:-translate-y-2 group">
+            <div className="w-16 h-16 mx-auto bg-green-50 dark:bg-green-900/30 rounded-2xl flex items-center justify-center mb-5 group-hover:bg-green-500 transition-colors duration-300">
+              <Trophy className="w-8 h-8 text-green-500 group-hover:text-white transition-colors" />
+            </div>
+            <p className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white mb-2">200+</p>
+            <p className="text-gray-600 dark:text-gray-400 font-medium text-sm md:text-base">Bàn bida chất lượng</p>
           </div>
-          <div>
-            <Star className="mx-auto text-green-500 mb-2" />
-            <p className="text-2xl font-bold dark:text-white">1000+</p>
-            <p className="text-gray-500 dark:text-gray-400 text-sm">Thành viên hoạt động</p>
+
+          {/* Card 3 */}
+          <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 lg:p-8 text-center border border-gray-100 dark:border-gray-700 shadow-xl shadow-gray-200/50 dark:shadow-none hover:shadow-2xl hover:shadow-green-500/10 transition-all duration-300 hover:-translate-y-2 group">
+            <div className="w-16 h-16 mx-auto bg-green-50 dark:bg-green-900/30 rounded-2xl flex items-center justify-center mb-5 group-hover:bg-green-500 transition-colors duration-300">
+              <Star className="w-8 h-8 text-green-500 group-hover:text-white transition-colors" />
+            </div>
+            <p className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white mb-2">1000+</p>
+            <p className="text-gray-600 dark:text-gray-400 font-medium text-sm md:text-base">Thành viên hoạt động</p>
           </div>
-          <div>
-            <Clock className="mx-auto text-green-500 mb-2" />
-            <p className="text-2xl font-bold dark:text-white">24/7</p>
-            <p className="text-gray-500 dark:text-gray-400 text-sm">Hỗ trợ đặt bàn</p>
+
+          {/* Card 4 */}
+          <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 lg:p-8 text-center border border-gray-100 dark:border-gray-700 shadow-xl shadow-gray-200/50 dark:shadow-none hover:shadow-2xl hover:shadow-green-500/10 transition-all duration-300 hover:-translate-y-2 group">
+            <div className="w-16 h-16 mx-auto bg-green-50 dark:bg-green-900/30 rounded-2xl flex items-center justify-center mb-5 group-hover:bg-green-500 transition-colors duration-300">
+              <Clock className="w-8 h-8 text-green-500 group-hover:text-white transition-colors" />
+            </div>
+            <p className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white mb-2">24/7</p>
+            <p className="text-gray-600 dark:text-gray-400 font-medium text-sm md:text-base">Hỗ trợ đặt bàn</p>
           </div>
         </div>
       </section>
@@ -196,43 +240,72 @@ export const HomePage = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {tournaments.map((tour) => (
             <div
               key={tour._id}
-              className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-xl transition-all"
+              className="card group h-[420px] w-full rounded-[1.5em] relative flex justify-end flex-col p-[1.5em] z-[1] overflow-hidden shadow-[0px_4px_16px_0px_#22c55e44] hover:shadow-[0px_4px_24px_0px_#22c55e66] transition-all duration-500 cursor-pointer"
+              onClick={() => navigate(`/tournament/${tour._id}`)}
             >
-              <img
-                src={tour.banner || "/img-home/page1.png"}
-                className="w-full h-44 object-cover"
-              />
+              {/* Background Image & Overlay */}
+              <div className="absolute top-0 left-0 h-full w-full bg-[#111111]">
+                <img
+                  src={tour.banner || "/img-home/page1.png"}
+                  className="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-700"
+                  alt={tour.name}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+              </div>
 
-              <div className="p-5">
-                <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-2">
-                  {tour.name}
-                </h3>
-
-                <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">
-                  {tour.description || "Chưa có mô tả"}
-                </p>
-
-                <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1 mb-4">
-                  <p>
-                    📅{" "}
-                    {tour.play_date
-                      ? new Date(tour.play_date).toLocaleDateString()
-                      : "Chưa có ngày"}
-                  </p>
-                  <p>
-                    👥 {tour.registered_player}/{tour.max_players}
-                  </p>
+              {/* Content Container */}
+              <div className="container text-white z-[2] relative flex flex-col gap-2">
+                <div className="h-fit w-full">
+                  <h1
+                    className="text-[1.8em] leading-tight uppercase tracking-wider mb-1"
+                    style={{
+                      fontWeight: 900,
+                      WebkitTextFillColor: "transparent",
+                      WebkitTextStrokeWidth: "1px",
+                      WebkitTextStrokeColor: "#fff",
+                      textShadow: "0 0 10px rgba(255,255,255,0.5)",
+                    }}
+                  >
+                    {tour.name}
+                  </h1>
+                  <div className="flex flex-col gap-1">
+                    <p className="text-sm font-bold opacity-80 flex items-center gap-1">
+                      <Clock size={14} className="text-green-400" />
+                      📅 {tour.play_date ? new Date(tour.play_date).toLocaleDateString() : "Chưa có ngày"}
+                    </p>
+                    <p className="text-sm font-bold opacity-80 flex items-center gap-1">
+                      <Users size={14} className="text-green-400" />
+                      👥 {tour.registered_player}/{tour.max_players} cơ thủ
+                    </p>
+                  </div>
                 </div>
 
+                {/* Tags */}
+                <div className="flex flex-wrap items-center h-fit w-fit gap-2 mt-1">
+                  <div className="border border-white/30 rounded-[0.5em] text-white text-[10px] font-bold px-2 py-0.5 hover:bg-white hover:text-black duration-300">
+                    Giải đấu mới
+                  </div>
+                  <div className="border border-white/30 rounded-[0.5em] text-white text-[10px] font-bold px-2 py-0.5 hover:bg-white hover:text-black duration-300">
+                    Sắp khởi tranh
+                  </div>
+                </div>
+              </div>
+
+              {/* Reveal Description on Hover */}
+              <p className="text-white/80 text-sm font-medium relative h-0 group-hover:h-[80px] mt-0 group-hover:mt-4 leading-relaxed duration-500 overflow-hidden line-clamp-3 z-[2]">
+                {tour.description || "Tham gia giải đấu bida chuyên nghiệp với cơ hội giao lưu và nhận những giải thưởng hấp dẫn."}
+              </p>
+
+              {/* Bottom Action */}
+              <div className="z-[2] mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                 <button
-                  onClick={() => navigate(`/tournament/${tour._id}`)}
-                  className="w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded-xl font-semibold"
+                  className="w-full bg-green-500 hover:bg-green-600 text-black font-black py-2 rounded-lg text-sm uppercase tracking-tighter"
                 >
-                  Xem chi tiết
+                  XEM CHI TIẾT
                 </button>
               </div>
             </div>
@@ -256,28 +329,31 @@ export const HomePage = () => {
 
           {/* grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feature, idx) => (
-              <div
-                key={idx}
-                className="group bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
-              >
-                {/* icon */}
-                <div className="w-14 h-14 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center mb-4 group-hover:bg-green-500 transition-all">
-                  <TrendingUp
-                    className="text-green-500 group-hover:text-white transition-all"
-                    size={26}
-                  />
-                </div>
+            {features.map((feature, idx) => {
+              const Icon = feature.icon;
+              return (
+                <div
+                  key={idx}
+                  className="group bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                >
+                  {/* icon */}
+                  <div className="w-14 h-14 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center mb-4 group-hover:bg-green-500 transition-all">
+                    <Icon
+                      className="text-green-500 group-hover:text-white transition-all"
+                      size={26}
+                    />
+                  </div>
 
-                {/* content */}
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-2 text-lg">
-                  {feature.title}
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                  {feature.description}
-                </p>
-              </div>
-            ))}
+                  {/* content */}
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2 text-lg">
+                    {feature.title}
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                    {feature.description}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -514,38 +590,66 @@ export const HomePage = () => {
             </button>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {posts.map((post) => (
               <div
                 key={post._id}
-                className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-xl transition"
+                className="card group h-[420px] w-full rounded-[1.5em] relative flex justify-end flex-col p-[1.5em] z-[1] overflow-hidden shadow-[0px_4px_16px_0px_#22c55e44] hover:shadow-[0px_4px_24px_0px_#22c55e66] transition-all duration-500 cursor-pointer"
+                onClick={() => navigate("/posts")}
               >
-                <img
-                  src={
-                    post.image ||
-                    `https://source.unsplash.com/400x300/?billiards&sig=${post._id}`
-                  }
-                  className="w-full h-44 object-cover"
-                />
+                {/* Background Image & Overlay */}
+                <div className="absolute top-0 left-0 h-full w-full bg-[#111111]">
+                  <img
+                    src={post.image || `https://source.unsplash.com/400x300/?billiards&sig=${post._id}`}
+                    className="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-700"
+                    alt={post.title}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                </div>
 
-                <div className="p-5">
-                  <span className="text-xs font-semibold text-green-600 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded">
-                    {post.club_name}
-                  </span>
+                {/* Content Container */}
+                <div className="container text-white z-[2] relative flex flex-col gap-2">
+                  <div className="h-fit w-full">
+                    <h1
+                      className="text-[1.8em] leading-tight uppercase tracking-wider mb-1 line-clamp-2"
+                      style={{
+                        fontWeight: 900,
+                        WebkitTextFillColor: "transparent",
+                        WebkitTextStrokeWidth: "1px",
+                        WebkitTextStrokeColor: "#fff",
+                        textShadow: "0 0 10px rgba(255,255,255,0.5)",
+                      }}
+                    >
+                      {post.title}
+                    </h1>
+                    <p className="text-sm font-bold opacity-80 flex items-center gap-1">
+                      <Zap size={14} className="text-green-400" />
+                      {post.club_name}
+                    </p>
+                  </div>
 
-                  <h3 className="font-semibold text-lg mt-3 mb-2 line-clamp-2 dark:text-white">
-                    {post.title}
-                  </h3>
+                  {/* Tags */}
+                  <div className="flex flex-wrap items-center h-fit w-fit gap-2 mt-1">
+                    <div className="border border-white/30 rounded-[0.5em] text-white text-[10px] font-bold px-2 py-0.5 hover:bg-white hover:text-black duration-300">
+                      Tin tức
+                    </div>
+                    <div className="border border-white/30 rounded-[0.5em] text-white text-[10px] font-bold px-2 py-0.5 hover:bg-white hover:text-black duration-300">
+                      Mẹo chơi
+                    </div>
+                  </div>
+                </div>
 
-                  <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-3 mb-4">
-                    {post.content}
-                  </p>
+                {/* Reveal Description on Hover */}
+                <p className="text-white/80 text-sm font-medium relative h-0 group-hover:h-[80px] mt-0 group-hover:mt-4 leading-relaxed duration-500 overflow-hidden line-clamp-3 z-[2]">
+                  {post.content || "Khám phá những tin tức và mẹo chơi bida mới nhất từ cộng đồng BilliardOne."}
+                </p>
 
+                {/* Bottom Action */}
+                <div className="z-[2] mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                   <button
-                    onClick={() => navigate("/posts")}
-                    className="text-green-500 hover:text-green-600 font-semibold text-sm flex items-center gap-1"
+                    className="w-full bg-green-500 hover:bg-green-600 text-black font-black py-2 rounded-lg text-sm uppercase tracking-tighter"
                   >
-                    Đọc tiếp <ArrowRight size={14} />
+                    ĐỌC TIẾP
                   </button>
                 </div>
               </div>
@@ -555,34 +659,24 @@ export const HomePage = () => {
       </section>
 
       {/* OWNER CTA */}
-      <section className="container mx-auto px-6 pb-16 pt-14">
-        <div className="bg-gradient-to-r from-blue-600 to-blue-500 rounded-3xl p-8 md:p-12 text-white flex flex-col md:flex-row items-center justify-between gap-8">
-          <div>
-            <span className="inline-block bg-white/20 px-3 py-1 rounded-full text-sm font-semibold mb-3">
-              Dành cho chủ CLB
-            </span>
-            <h3 className="text-3xl md:text-4xl font-bold mb-3">
-              Mở rộng kinh doanh cùng chúng tôi
-            </h3>
-            <p className="text-white/90 text-lg mb-6 max-w-lg">
-              Trở thành đối tác của BilliardOne để tiếp cận hàng ngàn khách
-              hàng tiềm năng và quản lý CLB hiệu quả hơn.
-            </p>
-            <div className="flex gap-4">
-              <Link to="/register-owner-account">
-                <button className="bg-white text-blue-600 font-semibold px-8 py-3 rounded-xl hover:bg-gray-100 transition-all">
-                  Đăng ký đối tác
-                </button>
-              </Link>
-              <button className="border-2 border-white text-white font-semibold px-8 py-3 rounded-xl hover:bg-white/10 transition-all">
-                Xem tài liệu
+      <section className="container mx-auto px-6 pb-16 pt-14 relative z-20">
+        <div className="owner-cta-card rounded-3xl p-8 md:p-12 text-white flex flex-col items-center text-center gap-6 max-w-4xl mx-auto shadow-2xl">
+          <span className="inline-block bg-white/10 px-6 py-2 rounded-full text-sm font-bold uppercase tracking-widest border border-white/20">
+            Dành cho chủ CLB
+          </span>
+          <h3 className="text-3xl md:text-5xl font-black mt-2">
+            Mở rộng kinh doanh cùng chúng tôi
+          </h3>
+          <p className="text-white/80 text-lg md:text-xl font-medium max-w-2xl">
+            Trở thành đối tác của BilliardOne để tiếp cận hàng ngàn khách
+            hàng tiềm năng và quản lý CLB hiệu quả hơn.
+          </p>
+          <div className="mt-4">
+            <Link to="/register-owner-account">
+              <button className="bg-gradient-to-r from-green-400 to-green-500 text-black font-black px-10 py-4 rounded-xl hover:scale-105 transition-all duration-300 uppercase tracking-widest shadow-[0_0_20px_rgba(34,197,94,0.4)] hover:shadow-[0_0_30px_rgba(34,197,94,0.6)]">
+                Đăng ký đối tác
               </button>
-            </div>
-          </div>
-          <div className="flex-shrink-0 hidden md:block">
-            <div className="w-48 h-48 md:w-80 md:h-80 bg-white/10 rounded-2xl flex items-center justify-center">
-              <Users className="w-32 h-32 text-white/20" />
-            </div>
+            </Link>
           </div>
         </div>
       </section>
