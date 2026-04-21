@@ -6,7 +6,7 @@ import { Loader2, TrendingUp, CreditCard, DollarSign, Trophy, Users, Calendar } 
 import {
   LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
-  BarChart, Bar, Cell, PieChart, Pie
+  BarChart, Bar, Cell
 } from "recharts";
 
 // Màu sắc theo trạng thái giải đấu
@@ -113,16 +113,6 @@ export default function OwnerReportsPage() {
     }))
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 6);
-
-  // Biểu đồ Pie
-  const pieData = Object.entries(
-    filteredTournaments.reduce((acc, t) => {
-      const status = t.status || "Unknown";
-      const rev = (t.fee || 0) * (t.registered_player || 0);
-      if (rev > 0) acc[status] = (acc[status] || 0) + rev;
-      return acc;
-    }, {})
-  ).map(([name, value]) => ({ name, value }));
 
   // Filter Pills component
   const FilterPills = ({ value, onChange }) => (
@@ -254,7 +244,7 @@ export default function OwnerReportsPage() {
             </div>
 
             {tournamentChartData.length > 0 ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6">
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                   <h3 className="text-base font-bold text-gray-900 mb-6 flex items-center gap-2">
                     <TrendingUp size={16} className="text-yellow-500" /> Doanh thu theo giải đấu
@@ -274,41 +264,6 @@ export default function OwnerReportsPage() {
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
-                </div>
-
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                  <h3 className="text-base font-bold text-gray-900 mb-6 flex items-center gap-2">
-                    📊 Cơ cấu doanh thu theo trạng thái
-                  </h3>
-                  {pieData.length > 0 ? (
-                    <div className="h-[280px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={pieData}
-                            innerRadius={60}
-                            outerRadius={80}
-                            paddingAngle={5}
-                            dataKey="value"
-                          >
-                            {pieData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={TOURNAMENT_STATUS_INFO[entry.name]?.bar || "#cbd5e1"} />
-                            ))}
-                          </Pie>
-                          <RechartsTooltip formatter={(v) => formatMoney(v)} />
-                          <Legend 
-                            formatter={(val) => TOURNAMENT_STATUS_INFO[val]?.label || val} 
-                            layout="vertical" verticalAlign="middle" align="right" 
-                            wrapperStyle={{ fontSize: 11 }}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  ) : (
-                    <div className="h-[280px] flex items-center justify-center">
-                      <p className="text-gray-400 italic text-sm">Chưa có dữ liệu doanh thu</p>
-                    </div>
-                  )}
                 </div>
               </div>
             ) : (
