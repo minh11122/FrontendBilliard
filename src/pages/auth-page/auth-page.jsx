@@ -19,6 +19,7 @@ import {
   resendOtp,
 } from "@/services/auth.service";
 import { AuthContext } from "@/context/AuthContext";
+import { SiteLogo } from "@/components/common/SiteLogo";
 import "./auth-page.css";
 
 export function AuthPage() {
@@ -193,7 +194,20 @@ export function AuthPage() {
   };
 
   return (
-    <div className="auth-container">
+    <div className="auth-container relative">
+      {/* Home Logo */}
+      <div className="absolute top-6 left-6 z-50">
+        <Link 
+          to="/" 
+          className="flex items-center gap-2 font-bold text-xl bg-white/90 backdrop-blur-sm px-4 py-2 hover:px-5 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300"
+        >
+          <SiteLogo className="w-8 h-8 rounded-lg" alt="Billiards Manager logo" />
+          <span className="text-gray-800 tracking-tight">
+            Billiards <span className="text-green-600">One</span>
+          </span>
+        </Link>
+      </div>
+
       <div className={`auth-card ${!isLogin ? "right-panel-active" : ""}`}>
 
         {/* Register Side (Always on the same side in DOM, CSS handles position) */}
