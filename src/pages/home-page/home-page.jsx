@@ -156,15 +156,15 @@ export const HomePage = () => {
           </div>
 
           {/* Next/Prev Buttons */}
-          <button 
+          <button
             onClick={prevSlide}
             className="absolute top-1/2 left-4 md:left-8 -translate-y-1/2 w-10 h-10 rounded-full bg-black/20 hover:bg-black/50 flex items-center justify-center text-white backdrop-blur-sm transition-all z-10"
             aria-label="Previous image"
           >
             <ChevronLeft size={24} />
           </button>
-          
-          <button 
+
+          <button
             onClick={nextSlide}
             className="absolute top-1/2 right-4 md:right-8 -translate-y-1/2 w-10 h-10 rounded-full bg-black/20 hover:bg-black/50 flex items-center justify-center text-white backdrop-blur-sm transition-all z-10"
             aria-label="Next image"
@@ -178,9 +178,8 @@ export const HomePage = () => {
               <button
                 key={i}
                 onClick={() => setIndex(i)}
-                className={`h-3 rounded-full cursor-pointer transition-all ${
-                  i === index ? "bg-white w-8" : "bg-white/40 w-3 hover:bg-white/80"
-                }`}
+                className={`h-3 rounded-full cursor-pointer transition-all ${i === index ? "bg-white w-8" : "bg-white/40 w-3 hover:bg-white/80"
+                  }`}
                 aria-label={`Go to slide ${i + 1}`}
               />
             ))}
@@ -363,7 +362,7 @@ export const HomePage = () => {
         <div className="flex justify-between items-end mb-10">
           <div>
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">
-              Câu lạc bộ nổi bật
+              Câu lạc bộ hiện có
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mt-2">
               Khám phá những CLB uy tín gần bạn
