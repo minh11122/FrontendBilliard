@@ -15,7 +15,7 @@ const alignClassMap = {
 
 export function PostBlocksRenderer({ blocks = [], fallbackContent = "", fallbackImage = "", title = "" }) {
   const normalizedBlocks = Array.isArray(blocks)
-    ? blocks.filter((b) => b && (b.type === "text" || b.type === "image"))
+    ? blocks.filter((b) => b && (b.type === "text" || b.type === "image" || b.type === "heading"))
     : [];
 
   if (normalizedBlocks.length === 0) {
@@ -34,6 +34,14 @@ export function PostBlocksRenderer({ blocks = [], fallbackContent = "", fallback
   return (
     <div className="space-y-5">
       {normalizedBlocks.map((block, idx) => {
+        if (block.type === "heading") {
+          return (
+            <h3 key={`heading-${idx}`} className="text-lg font-bold text-gray-900 leading-relaxed">
+              {block.text}
+            </h3>
+          );
+        }
+
         if (block.type === "text") {
           return (
             <p key={`text-${idx}`} className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
@@ -48,6 +56,11 @@ export function PostBlocksRenderer({ blocks = [], fallbackContent = "", fallback
             className={`rounded-2xl overflow-hidden border border-gray-200 bg-gray-50 ${widthClassMap[block.image_width] || widthClassMap.wide} ${alignClassMap[block.image_align] || alignClassMap.center}`}
           >
             <img src={block.image_url} alt={`${title} ${idx + 1}`} className="w-full h-auto object-cover" />
+            {block.image_caption ? (
+              <div className="px-3 py-2 text-xs text-gray-500 bg-white border-t border-gray-200">
+                {block.image_caption}
+              </div>
+            ) : null}
           </div>
         );
       })}

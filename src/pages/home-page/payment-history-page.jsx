@@ -20,6 +20,12 @@ const TYPE_META = {
   SUBSCRIPTION: "Thanh toán gói subscription",
 };
 
+const STATUS_META = {
+  all: "Tất cả trạng thái",
+  SUCCESS: "Thành công",
+  PENDING: "Đang xử lý",
+};
+
 
 const StatusPill = ({ status }) => {
   const map = {
@@ -50,12 +56,14 @@ const formatDateTime = (d) => {
 
 
 const getContentLabel = (tx) => {
+  const typeLabel = TYPE_META[tx.transaction_type] || "Giao dịch";
   if (tx.booking?.code_number) {
     const tablePart = tx.table?.table_number ? ` - Bàn ${tx.table.table_number}` : "";
     const clubPart = tx.club?.name ? ` (${tx.club.name})` : "";
-    return `Booking ${tx.booking.code_number}${tablePart}${clubPart}`;
+    return `${typeLabel} cho booking ${tx.booking.code_number}${tablePart}${clubPart}`;
   }
-  if (tx.description) return tx.description;
+  if (tx.tournament?.name) return `${typeLabel}: ${tx.tournament.name}`;
+  if (tx.description) return `${typeLabel}: ${tx.description}`;
   return "—";
 };
 
@@ -70,6 +78,8 @@ export const PaymentHistoryPage = () => {
   const [error, setError] = useState("");
   const [transactions, setTransactions] = useState([]);
   const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
 
 
@@ -105,12 +115,16 @@ export const PaymentHistoryPage = () => {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return transactions;
     return transactions.filter((tx) => {
-      const text = `${tx.transaction_type || ""} ${tx.description || ""} ${getContentLabel(tx)}`.toLowerCase();
+      const matchType = typeFilter === "all" || tx.transaction_type === typeFilter;
+      const matchStatus = statusFilter === "all" || tx.status === statusFilter;
+      if (!matchType || !matchStatus) return false;
+      if (!q) return true;
+      const typeText = TYPE_META[tx.transaction_type] || tx.transaction_type || "";
+      const text = `${typeText} ${tx.transaction_type || ""} ${tx.description || ""} ${getContentLabel(tx)}`.toLowerCase();
       return text.includes(q);
     });
-  }, [transactions, search]);
+  }, [transactions, search, typeFilter, statusFilter]);
 
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
@@ -126,7 +140,12 @@ export const PaymentHistoryPage = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search]);
+  }, [search, typeFilter, statusFilter]);
+
+  const transactionTypeOptions = useMemo(() => {
+    const uniqueTypes = [...new Set(transactions.map((tx) => tx.transaction_type).filter(Boolean))];
+    return uniqueTypes;
+  }, [transactions]);
 
 
   useEffect(() => {
@@ -148,17 +167,42 @@ export const PaymentHistoryPage = () => {
           </div>
 
 
-          <div className="relative w-full sm:w-[320px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
-              className="w-full pl-9 h-11 rounded-xl bg-white border-slate-200"
-              placeholder="Tìm theo mô tả hoặc loại giao dịch..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setCurrentPage(1);
-              }}
-            />
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <div className="relative w-full sm:w-[320px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                className="w-full pl-9 h-11 rounded-xl bg-white border-slate-200"
+                placeholder="Tìm theo nội dung hoặc loại giao dịch..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setCurrentPage(1);
+                }}
+              />
+            </div>
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm"
+            >
+              <option value="all">Tất cả loại giao dịch</option>
+              {transactionTypeOptions.map((type) => (
+                <option key={type} value={type}>
+                  {TYPE_META[type] || type}
+                </option>
+              ))}
+            </select>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm"
+            >
+              {Object.entries(STATUS_META).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 

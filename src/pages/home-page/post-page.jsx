@@ -12,6 +12,8 @@ export const PostPage = () => {
   const [error, setError] = useState("");
 
   const [search, setSearch] = useState("");
+  const [clubFilter, setClubFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
 
   const fetchPosts = async () => {
     try {
@@ -32,15 +34,33 @@ export const PostPage = () => {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return posts;
-    return posts.filter((p) => {
+    const result = posts.filter((p) => {
+      const matchClub = clubFilter === "all" || p.club_id?._id === clubFilter;
+      if (!matchClub) return false;
+      if (!q) return true;
       const t = p.title?.toLowerCase() || "";
       const c = p.content?.toLowerCase() || "";
       const club = p.club_id?.name?.toLowerCase() || "";
       const addr = p.club_id?.address?.toLowerCase() || "";
       return t.includes(q) || c.includes(q) || club.includes(q) || addr.includes(q);
     });
-  }, [posts, search]);
+    result.sort((a, b) => {
+      const timeA = new Date(a.published_at || a.created_at || 0).getTime();
+      const timeB = new Date(b.published_at || b.created_at || 0).getTime();
+      return sortBy === "oldest" ? timeA - timeB : timeB - timeA;
+    });
+    return result;
+  }, [posts, search, clubFilter, sortBy]);
+
+  const clubOptions = useMemo(() => {
+    const map = new Map();
+    posts.forEach((p) => {
+      if (p.club_id?._id && p.club_id?.name && !map.has(p.club_id._id)) {
+        map.set(p.club_id._id, p.club_id.name);
+      }
+    });
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [posts]);
 
   const formatDate = (d) => {
     if (!d) return "—";
@@ -61,14 +81,34 @@ export const PostPage = () => {
             <p className="text-gray-600 text-sm mt-1">Tin tức và chia sẻ kinh nghiệm từ các câu lạc bộ.</p>
           </div>
 
-          <div className="relative w-full md:w-[340px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 h-11 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-green-300 focus:ring-2 focus:ring-green-100 text-sm"
-              placeholder="Tìm theo tiêu đề hoặc CLB..."
-            />
+          <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+            <div className="relative w-full md:w-[340px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-9 pr-3 h-11 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-green-300 focus:ring-2 focus:ring-green-100 text-sm"
+                placeholder="Tìm theo tiêu đề hoặc CLB..."
+              />
+            </div>
+            <select
+              value={clubFilter}
+              onChange={(e) => setClubFilter(e.target.value)}
+              className="h-11 rounded-xl border border-gray-200 bg-white px-3 text-sm"
+            >
+              <option value="all">Tất cả CLB</option>
+              {clubOptions.map((club) => (
+                <option key={club.id} value={club.id}>{club.name}</option>
+              ))}
+            </select>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="h-11 rounded-xl border border-gray-200 bg-white px-3 text-sm"
+            >
+              <option value="newest">Mới nhất</option>
+              <option value="oldest">Cũ nhất</option>
+            </select>
           </div>
         </div>
 

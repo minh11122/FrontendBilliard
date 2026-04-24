@@ -3,10 +3,12 @@ import { Link } from "react-router-dom";
 import { MapPin, Search, Star, ChevronRight, ChevronLeft, Navigation } from "lucide-react";
 import axios from "axios";
 import { getAllClubs } from "@/services/club.service";
+import { getTableTypes } from "@/services/billiardTable.service";
 import { getProvinces, getDistrictsByProvince, getCurrentPosition, calculateDistance, formatDistance } from "@/services/location.service";
 
 export const BookingPage = () => {
   const [clubs, setClubs] = useState([]);
+  const [tableTypeOptions, setTableTypeOptions] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Administrative units state
@@ -31,8 +33,23 @@ export const BookingPage = () => {
   // Initial data fetch
   useEffect(() => {
     fetchClubs();
+    fetchTableTypes();
     fetchInitialLocations();
   }, []);
+
+  const fetchTableTypes = async () => {
+    try {
+      const res = await getTableTypes();
+      if (res?.data?.success) {
+        const names = (res.data.data || [])
+          .map((type) => type?.name?.trim())
+          .filter(Boolean);
+        setTableTypeOptions([...new Set(names)]);
+      }
+    } catch (error) {
+      console.error("Error fetching table types:", error);
+    }
+  };
 
   const fetchInitialLocations = async () => {
     try {
@@ -106,14 +123,26 @@ export const BookingPage = () => {
     setCurrentPage(1);
   }, [searchTerm, selectedTypes, selectedProvinceCode, selectedDistrictCode, filterRating, filterPrice, sortByLocation]);
 
-  // Helper map Table DB Types to UI Types
+  // Keep matching flexible between club payload and table_type names.
   const mapTypeToUI = (dbType) => {
-    if (!dbType) return "Pool";
-    const type = dbType.toLowerCase();
-    if (type.includes("3c") || type.includes("carom")) return "3C";
-    if (type.includes("snooker")) return "Snooker";
-    return "Pool";
+    if (!dbType) return "";
+    const rawType = String(dbType).trim();
+    const normalizedRawType = rawType.toLowerCase();
+
+    const matchedOption = tableTypeOptions.find((option) => {
+      const normalizedOption = option.toLowerCase();
+      return normalizedRawType === normalizedOption
+        || normalizedRawType.includes(normalizedOption)
+        || normalizedOption.includes(normalizedRawType);
+    });
+
+    if (matchedOption) return matchedOption;
+    return rawType;
   };
+  const displayedTypeOptions = tableTypeOptions.length > 0
+    ? tableTypeOptions
+    : [...new Set(clubs.flatMap((club) => (club.tableTypes || []).map(mapTypeToUI)).filter(Boolean))];
+
 
   const handleTypeClick = (type) => {
     if (type === "Tất cả") {
@@ -276,7 +305,7 @@ export const BookingPage = () => {
 
               {/* Multi-select type buttons */}
               <div className="flex bg-white p-1 rounded-lg border border-gray-300 shadow-sm">
-                {["Tất cả", "Pool", "3C", "Libre"].map((type) => {
+                {["Tất cả", ...displayedTypeOptions].map((type) => {
                   const isActive = type === "Tất cả"
                     ? selectedTypes.length === 0
                     : selectedTypes.includes(type);

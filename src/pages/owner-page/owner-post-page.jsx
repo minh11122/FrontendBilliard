@@ -68,6 +68,7 @@ export const OwnerPostPage = () => {
   const [error, setError] = useState("");
 
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
 
   const [selectedPost, setSelectedPost] = useState(null);
@@ -105,13 +106,15 @@ export const OwnerPostPage = () => {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return posts;
     return posts.filter((p) => {
+      const matchStatus = statusFilter === "all" || p.status === statusFilter;
+      if (!matchStatus) return false;
+      if (!q) return true;
       const t = p.title?.toLowerCase() || "";
       const c = p.content?.toLowerCase() || "";
       return t.includes(q) || c.includes(q);
     });
-  }, [posts, search]);
+  }, [posts, search, statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginatedPosts = useMemo(() => {
@@ -121,7 +124,7 @@ export const OwnerPostPage = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search]);
+  }, [search, statusFilter]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -237,9 +240,10 @@ export const OwnerPostPage = () => {
     setBlocks((prev) => prev.map((b, i) => (i === idx ? { ...b, ...patch } : b)));
   };
 
+  const addHeadingBlock = () => setBlocks((prev) => [...prev, { type: "heading", text: "" }]);
   const addTextBlock = () => setBlocks((prev) => [...prev, { type: "text", text: "" }]);
   const addImageBlock = () =>
-    setBlocks((prev) => [...prev, { type: "image", image_url: "", image_width: "wide", image_align: "center" }]);
+    setBlocks((prev) => [...prev, { type: "image", image_url: "", image_width: "wide", image_align: "center", image_caption: "" }]);
   const removeBlock = (idx) => setBlocks((prev) => prev.filter((_, i) => i !== idx));
   const moveBlock = (idx, dir) => {
     setBlocks((prev) => {
@@ -311,6 +315,16 @@ export const OwnerPostPage = () => {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm"
+            >
+              <option value="all">Tất cả trạng thái</option>
+              <option value="Pending">Chờ duyệt</option>
+              <option value="Approved">Đã duyệt</option>
+              <option value="Rejected">Từ chối</option>
+            </select>
 
             <Button
               onClick={openCreate}
@@ -588,6 +602,9 @@ export const OwnerPostPage = () => {
                     <div className="text-xs text-slate-500">Bạn có thể trộn đoạn chữ và ảnh theo ý muốn.</div>
                   </div>
                   <div className="flex items-center gap-2">
+                    <Button type="button" variant="outline" onClick={addHeadingBlock} className="rounded-xl">
+                      + Tiêu đề
+                    </Button>
                     <Button type="button" variant="outline" onClick={addTextBlock} className="rounded-xl">
                       + Đoạn chữ
                     </Button>
@@ -602,7 +619,7 @@ export const OwnerPostPage = () => {
                     <div key={idx} className="rounded-xl border border-slate-200 p-3 space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="text-xs font-semibold text-slate-600">
-                          Block {idx + 1}: {block.type === "text" ? "Đoạn chữ" : "Ảnh"}
+                          Block {idx + 1}: {block.type === "heading" ? "Tiêu đề" : block.type === "text" ? "Đoạn chữ" : "Ảnh"}
                         </div>
                         <div className="flex items-center gap-1">
                           <button type="button" onClick={() => moveBlock(idx, -1)} className="p-1.5 rounded hover:bg-slate-100">
@@ -617,7 +634,14 @@ export const OwnerPostPage = () => {
                         </div>
                       </div>
 
-                      {block.type === "text" ? (
+                      {block.type === "heading" ? (
+                        <Input
+                          value={block.text || ""}
+                          onChange={(e) => updateBlock(idx, { text: e.target.value })}
+                          className="bg-slate-50"
+                          placeholder="Nhập tiêu đề nhỏ cho phần nội dung..."
+                        />
+                      ) : block.type === "text" ? (
                         <Textarea
                           rows={5}
                           value={block.text || ""}
@@ -654,6 +678,12 @@ export const OwnerPostPage = () => {
                               <option value="right">Canh phải</option>
                             </select>
                           </div>
+                          <Input
+                            value={block.image_caption || ""}
+                            onChange={(e) => updateBlock(idx, { image_caption: e.target.value })}
+                            className="bg-slate-50"
+                            placeholder="Ghi chú ảnh (caption) - tùy chọn"
+                          />
                           {block.image_url ? (
                             <div className="rounded-xl border border-slate-200 overflow-hidden">
                               <img src={block.image_url} alt={`block-${idx}`} className="w-full max-h-[240px] object-cover" />

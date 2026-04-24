@@ -22,6 +22,7 @@ export const ClubDetailPage = () => {
   const [selectedTable, setSelectedTable] = useState(null);
   const [tableDetail, setTableDetail] = useState(null); // Table for detail modal
   const [tablePage, setTablePage] = useState(0);
+  const [fullscreenImage, setFullscreenImage] = useState(null);
   const TABLES_PER_PAGE = 6;
 
   const getTodayStr = () => {
@@ -293,9 +294,12 @@ export const ClubDetailPage = () => {
           <div className="lg:col-span-2">
             <div className="bg-white p-2 border rounded-2xl shadow-sm space-y-2">
               {/* Avatar / Main image — fixed, no navigation */}
-              <div className="aspect-[2/1] bg-slate-200 rounded-xl overflow-hidden relative">
+              <div 
+                className="aspect-[2/1] bg-slate-200 rounded-xl overflow-hidden relative cursor-pointer group"
+                onClick={() => { if(avatarImage) setFullscreenImage(avatarImage); }}
+              >
                 {avatarImage ? (
-                  <img src={avatarImage} alt={club.name} className="w-full h-full object-cover" />
+                  <img src={avatarImage} alt={club.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-slate-400">Không có ảnh</div>
                 )}
@@ -313,7 +317,7 @@ export const ClubDetailPage = () => {
                       const img = backgroundImages[bgIdx];
                       return (
                         <div key={offset} className="aspect-square rounded-lg overflow-hidden border border-slate-100 relative group cursor-pointer"
-                          onClick={() => setGalleryIdx(bgIdx)}
+                          onClick={() => setFullscreenImage(img)}
                         >
                           <img src={img} className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
                           {offset === 3 && backgroundImages.length > 4 && (
@@ -805,6 +809,28 @@ export const ClubDetailPage = () => {
           onClose={() => setTableDetail(null)}
           selectedTableType={selectedTableType}
         />
+      )}
+
+      {/* Fullscreen Image Modal */}
+      {fullscreenImage && (
+        <div 
+          className="fixed inset-0 z-[110] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm cursor-zoom-out animate-in fade-in duration-200"
+          onClick={() => setFullscreenImage(null)}
+        >
+          <button 
+            className="absolute top-6 right-6 text-white hover:text-emerald-400 bg-white/10 hover:bg-white/20 rounded-full p-2 transition-all z-50"
+            onClick={() => setFullscreenImage(null)}
+          >
+            <X className="w-6 h-6" />
+          </button>
+          
+          <img 
+            src={fullscreenImage} 
+            alt="Fullscreen View" 
+            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-200 cursor-default"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
       )}
     </div>
   );
