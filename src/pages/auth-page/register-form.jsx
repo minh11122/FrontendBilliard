@@ -153,7 +153,7 @@ export function RegisterForm() {
       {step === "register" && (
         <div className="max-w-6xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden grid md:grid-cols-2">
           {/* LEFT */}
-          <div className="p-8 md:p-10">
+          <div className="p-6 sm:p-8 md:p-10">
             <h2 className="text-2xl font-bold mb-2">Tạo tài khoản</h2>
             <p className="text-gray-500 mb-6">
               Đăng ký để sử dụng hệ thống quản lý billiards.
@@ -305,7 +305,7 @@ export function RegisterForm() {
 
       {/* ===== VERIFY ===== */}
       {step === "verify" && (
-        <div className="max-w-md mx-auto bg-white rounded-3xl shadow-xl p-8">
+        <div className="max-w-md mx-auto bg-white rounded-3xl shadow-xl p-6 sm:p-8">
           {isSuccess ? (
             <div className="text-center">
               <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />

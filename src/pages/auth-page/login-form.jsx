@@ -138,7 +138,7 @@ export function LoginForm() {
       </div>
 
       <div className="max-w-6xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden grid md:grid-cols-2">
-        <div className="p-8 md:p-10">
+        <div className="p-6 sm:p-8 md:p-10">
           <h2 className="text-2xl font-bold mb-2">Chào mừng trở lại!</h2>
           <p className="text-gray-500 mb-6">
             Đăng nhập để truy cập hệ thống quản lý billiards.
