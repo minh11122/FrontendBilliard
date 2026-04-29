@@ -260,7 +260,7 @@ export const HomePage = () => {
               <div className="container text-white z-[2] relative flex flex-col gap-2">
                 <div className="h-fit w-full">
                   <h1
-                    className="text-[1.8em] leading-tight uppercase tracking-wider mb-1"
+                    className="text-[1.4em] sm:text-[1.6em] md:text-[1.8em] leading-tight uppercase tracking-wider mb-1"
                     style={{
                       fontWeight: 900,
                       WebkitTextFillColor: "transparent",
@@ -398,7 +398,7 @@ export const HomePage = () => {
               <div className="container text-white z-[2] relative flex flex-col gap-2">
                 <div className="h-fit w-full">
                   <h1
-                    className="text-[1.8em] leading-tight uppercase tracking-wider mb-1"
+                    className="text-[1.4em] sm:text-[1.6em] md:text-[1.8em] leading-tight uppercase tracking-wider mb-1"
                     style={{
                       fontWeight: 900,
                       WebkitTextFillColor: "transparent",
@@ -610,7 +610,7 @@ export const HomePage = () => {
                 <div className="container text-white z-[2] relative flex flex-col gap-2">
                   <div className="h-fit w-full">
                     <h1
-                      className="text-[1.8em] leading-tight uppercase tracking-wider mb-1 line-clamp-2"
+                      className="text-[1.4em] sm:text-[1.6em] md:text-[1.8em] leading-tight uppercase tracking-wider mb-1 line-clamp-2"
                       style={{
                         fontWeight: 900,
                         WebkitTextFillColor: "transparent",

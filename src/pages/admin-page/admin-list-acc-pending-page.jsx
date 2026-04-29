@@ -1,12 +1,8 @@
 import { useEffect, useState } from "react";
 import {
   Package,
-  DollarSign,
-  Plus,
-  MoreVertical,
   X,
   Pencil,
-  Trash2,
   Eye,
   ChevronLeft,
   ChevronRight,
@@ -17,8 +13,6 @@ import toast from "react-hot-toast";
 
 import {
   getAllSubscriptions,
-  deleteSubscription,
-  createSubscription,
   updateSubscription,
   getSubscriptionById,
 } from "@/services/admin.service";
@@ -38,6 +32,14 @@ export const AccPendingManagement = () => {
     price: "",
     description: "",
     discount_percent: 0,
+    duration_days: 30,
+    post_limit: 0,
+    is_active: true,
+    features: {
+      allow_priority_post: false,
+      allow_highlight: false,
+      allow_pin_post: false,
+    },
   });
 
   const fetchPackages = async () => {
@@ -46,7 +48,7 @@ export const AccPendingManagement = () => {
       const res = await getAllSubscriptions({ page, limit: 10 });
       setPackages(res.data.data);
       setPagination(res.data.pagination);
-    } catch (err) {
+    } catch {
       toast.error("Lỗi load dữ liệu");
     } finally {
       setLoading(false);
@@ -55,72 +57,43 @@ export const AccPendingManagement = () => {
 
   useEffect(() => {
     fetchPackages();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
   const formatPrice = (price) => price?.toLocaleString("vi-VN") + "đ";
 
-  const handleDelete = (id) => {
-    toast(
-      (t) => (
-        <div className="flex flex-col gap-3">
-          <p className="font-semibold text-gray-800">
-            Bạn có chắc muốn xóa gói này?
-          </p>
-
-          <div className="flex justify-end gap-2">
-            <button
-              onClick={() => toast.dismiss(t.id)}
-              className="px-3 py-1 text-sm text-gray-500 hover:text-gray-700"
-            >
-              Hủy
-            </button>
-
-            <button
-              onClick={async () => {
-                toast.dismiss(t.id);
-                try {
-                  await deleteSubscription(id);
-                  toast.success("Xóa thành công");
-                  fetchPackages();
-                } catch {
-                  toast.error("Xóa thất bại");
-                }
-              }}
-              className="px-3 py-1 text-sm bg-red-500 hover:bg-red-600 text-white rounded"
-            >
-              Xóa
-            </button>
-          </div>
-        </div>
-      ),
-      {
-        duration: 5000,
-      },
-    );
-  };
-
-  const handleOpenCreate = () => {
-    setEditing(null);
-    setForm({ name: "", price: "", description: "", discount_percent: 0 });
-    setOpenModal(true);
-  };
-
   const handleEdit = (pkg) => {
     setEditing(pkg);
-    setForm(pkg);
+    setForm({
+      name: pkg?.name || "",
+      price: pkg?.price ?? "",
+      description: pkg?.description || "",
+      discount_percent: pkg?.discount_percent ?? 0,
+      duration_days: pkg?.duration_days ?? 30,
+      post_limit: pkg?.post_limit ?? 0,
+      is_active: pkg?.is_active ?? true,
+      features: {
+        allow_priority_post: !!pkg?.features?.allow_priority_post,
+        allow_highlight: !!pkg?.features?.allow_highlight,
+        allow_pin_post: !!pkg?.features?.allow_pin_post,
+      },
+    });
     setOpenModal(true);
   };
 
   const handleSubmit = async () => {
     try {
-      if (!form.name || !form.price) return toast.error("Nhập thiếu dữ liệu");
-      if (editing) {
-        await updateSubscription(editing._id, form);
-        toast.success("Cập nhật thành công");
-      } else {
-        await createSubscription(form);
-        toast.success("Tạo gói thành công");
-      }
+      if (!form.name || !form.price || !form.duration_days)
+        return toast.error("Nhập thiếu dữ liệu");
+      if (!editing?._id) return toast.error("Không tìm thấy gói để cập nhật");
+      await updateSubscription(editing._id, {
+        ...form,
+        price: Number(form.price),
+        discount_percent: Number(form.discount_percent) || 0,
+        duration_days: Number(form.duration_days),
+        post_limit: Number(form.post_limit) || 0,
+      });
+      toast.success("Cập nhật thành công");
       setOpenModal(false);
       fetchPackages();
     } catch {
@@ -205,13 +178,6 @@ export const AccPendingManagement = () => {
             </h1>
           </div>
 
-          <button
-            onClick={handleOpenCreate}
-            className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-semibold px-5 py-2.5 rounded-xl shadow-md shadow-emerald-200 transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            Tạo gói mới
-          </button>
         </div>
 
         {/* ── Stats strip ── */}
@@ -229,17 +195,17 @@ export const AccPendingManagement = () => {
               icon: Sparkles,
               color: "text-violet-600 bg-violet-50",
             },
-          ].map(({ label, value, icon: Icon, color }) => (
+          ].map((item) => (
             <div
-              key={label}
+              key={item.label}
               className="bg-white border border-gray-100 rounded-2xl px-4 py-3 flex items-center gap-3 shadow-sm"
             >
-              <div className={`p-2 rounded-xl ${color}`}>
-                <Icon className="w-4 h-4" />
+              <div className={`p-2 rounded-xl ${item.color}`}>
+                <item.icon className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-xs text-gray-400 font-medium">{label}</p>
-                <p className="text-sm font-bold text-gray-800">{value}</p>
+                <p className="text-xs text-gray-400 font-medium">{item.label}</p>
+                <p className="text-sm font-bold text-gray-800">{item.value}</p>
               </div>
             </div>
           ))}
@@ -300,12 +266,33 @@ export const AccPendingManagement = () => {
                     </span>
                   </div>
 
-                  {/* Description */}
-                  {pkg.description && (
-                    <p className="text-sm text-gray-500 leading-relaxed line-clamp-2">
-                      {pkg.description}
+                  <div className="flex flex-wrap gap-1.5">
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-white/80 text-gray-700">
+                      {pkg.duration_days || 0} ngày
+                    </span>
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-white/80 text-gray-700">
+                      {pkg.post_limit || 0} bài đăng
+                    </span>
+                    <span
+                      className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                        pkg.is_active
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-gray-200 text-gray-600"
+                      }`}
+                    >
+                      {pkg.is_active ? "Đang hoạt động" : "Đã tắt"}
+                    </span>
+                  </div>
+
+                  {/* Note */}
+                  <div className="rounded-xl bg-white/70 border border-white/70 px-3 py-2">
+                    <p className="text-[11px] uppercase tracking-wide font-semibold text-gray-400 mb-0.5">
+                      Chú thích
                     </p>
-                  )}
+                    <p className="text-sm text-gray-600 leading-relaxed line-clamp-2">
+                      {pkg.description || "Chưa có chú thích cho gói này."}
+                    </p>
+                  </div>
 
                   {/* Divider */}
                   <div className={`border-t ${accent.border} mt-auto`} />
@@ -323,12 +310,6 @@ export const AccPendingManagement = () => {
                       className="pkg-btn-icon flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-800 px-2.5 py-1.5 rounded-lg"
                     >
                       <Pencil className="w-3.5 h-3.5" /> Sửa
-                    </button>
-                    <button
-                      onClick={() => handleDelete(pkg._id)}
-                      className="pkg-btn-icon flex items-center gap-1.5 text-xs font-semibold text-rose-500 hover:text-rose-700 px-2.5 py-1.5 rounded-lg ml-auto"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" /> Xóa
                     </button>
                   </div>
                 </div>
@@ -373,12 +354,10 @@ export const AccPendingManagement = () => {
             <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100">
               <div>
                 <h2 className="font-extrabold text-lg text-gray-900">
-                  {editing ? "Cập nhật gói" : "Tạo gói mới"}
+                  Cập nhật gói
                 </h2>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  {editing
-                    ? "Chỉnh sửa thông tin gói dịch vụ"
-                    : "Điền đầy đủ thông tin gói"}
+                  Chỉnh sửa thông tin gói dịch vụ
                 </p>
               </div>
               <button
@@ -420,6 +399,34 @@ export const AccPendingManagement = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
+                    Số ngày hiệu lực *
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={form.duration_days}
+                    onChange={(e) =>
+                      setForm({ ...form, duration_days: e.target.value })
+                    }
+                    className="pkg-input w-full border border-gray-200 bg-gray-50 rounded-xl px-3.5 py-2.5 text-sm text-gray-800"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
+                    Giới hạn bài đăng
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={form.post_limit}
+                    onChange={(e) =>
+                      setForm({ ...form, post_limit: e.target.value })
+                    }
+                    className="pkg-input w-full border border-gray-200 bg-gray-50 rounded-xl px-3.5 py-2.5 text-sm text-gray-800"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
                     Giảm giá (%)
                   </label>
                   <input
@@ -435,12 +442,69 @@ export const AccPendingManagement = () => {
               </div>
 
               <div>
+                <p className="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">
+                  Tính năng
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <label className="flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={!!form.features?.allow_priority_post}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          features: {
+                            ...form.features,
+                            allow_priority_post: e.target.checked,
+                          },
+                        })
+                      }
+                    />
+                    Bài đăng ưu tiên
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={!!form.features?.allow_highlight}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          features: {
+                            ...form.features,
+                            allow_highlight: e.target.checked,
+                          },
+                        })
+                      }
+                    />
+                    Làm nổi bật
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={!!form.features?.allow_pin_post}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          features: {
+                            ...form.features,
+                            allow_pin_post: e.target.checked,
+                          },
+                        })
+                      }
+                    />
+                    Ghim bài đăng
+                  </label>
+                  
+                </div>
+              </div>
+
+              <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
-                  Mô tả
+                  Chú thích
                 </label>
                 <textarea
                   rows={3}
-                  placeholder="Mô tả ngắn về gói dịch vụ..."
+                  placeholder="Nhập chú thích ngắn về gói dịch vụ..."
                   value={form.description}
                   onChange={(e) =>
                     setForm({ ...form, description: e.target.value })
@@ -462,7 +526,7 @@ export const AccPendingManagement = () => {
                 onClick={handleSubmit}
                 className="px-5 py-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white text-sm font-semibold rounded-xl shadow-md shadow-emerald-200 transition-all"
               >
-                {editing ? "Lưu thay đổi" : "Tạo gói"}
+                Lưu thay đổi
               </button>
             </div>
           </div>
@@ -506,10 +570,45 @@ export const AccPendingManagement = () => {
                 </div>
               )}
 
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="bg-gray-50 rounded-lg px-3 py-2">
+                  <p className="text-xs text-gray-400">Hiệu lực</p>
+                  <p className="font-semibold text-gray-800">
+                    {viewDetail.duration_days || 0} ngày
+                  </p>
+                </div>
+                <div className="bg-gray-50 rounded-lg px-3 py-2">
+                  <p className="text-xs text-gray-400">Giới hạn bài đăng</p>
+                  <p className="font-semibold text-gray-800">
+                    {viewDetail.post_limit || 0}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-1.5">
+                  Tính năng
+                </p>
+                <ul className="text-sm text-gray-700 space-y-1">
+                  <li>
+                    Ưu tiên: {viewDetail.features?.allow_priority_post ? "Có" : "Không"}
+                  </li>
+                  <li>
+                    Nổi bật: {viewDetail.features?.allow_highlight ? "Có" : "Không"}
+                  </li>
+                  <li>
+                    Ghim bài: {viewDetail.features?.allow_pin_post ? "Có" : "Không"}
+                  </li>
+                  <li>
+                    Trạng thái: {viewDetail.is_active ? "Đang hoạt động" : "Đã tắt"}
+                  </li>
+                </ul>
+              </div>
+
               {viewDetail.description && (
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-1.5">
-                    Mô tả
+                    Chú thích
                   </p>
                   <p className="text-sm text-gray-700 leading-relaxed">
                     {viewDetail.description}

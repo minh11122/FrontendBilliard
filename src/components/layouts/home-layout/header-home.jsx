@@ -1,5 +1,5 @@
 import { useState, useContext, useEffect } from "react";
-import { User, LogOut, Bell, ChevronDown, Trophy } from "lucide-react";
+import { User, LogOut, Bell, ChevronDown, Trophy, Menu, X } from "lucide-react";
 import { useNavigate, Link, NavLink, useLocation } from "react-router-dom";
 import { AuthContext } from "@/context/AuthContext";
 import { SiteLogo } from "@/components/common/SiteLogo";
@@ -18,6 +18,7 @@ export const HeaderHome = () => {
   const [openMenu, setOpenMenu] = useState(false);
   const [openUserMenu, setOpenUserMenu] = useState(false);
   const [openNoti, setOpenNoti] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem("theme");
@@ -56,7 +57,7 @@ export const HeaderHome = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const isSolidHeader = scrolled || location.pathname !== "/";
+  const isSolidHeader = scrolled || location.pathname !== "/" || isMobileMenuOpen;
   const { user, logout } = useContext(AuthContext);
   const [isIncomplete, setIsIncomplete] = useState(false);
 
@@ -510,7 +511,7 @@ export const HeaderHome = () => {
             <div className="flex items-center gap-2 ml-2">
               <button
                 onClick={() => navigate("/auth/login")}
-                className="px-4 py-2 text-green-500 font-medium hover:text-green-600 transition-colors whitespace-nowrap"
+                className="px-4 py-2 text-green-500 font-medium hover:text-green-600 transition-colors whitespace-nowrap hidden sm:block"
               >
                 Đăng nhập
               </button>
@@ -522,8 +523,145 @@ export const HeaderHome = () => {
               </button>
             </div>
           )}
+
+          {/* Mobile Menu Toggle */}
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className={`lg:hidden p-2 rounded-lg transition-colors ${
+              isSolidHeader
+                ? "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                : "text-white/90 hover:bg-white/10"
+            }`}
+          >
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile Navigation Menu */}
+      {isMobileMenuOpen && (
+        <div className="lg:hidden absolute top-full left-0 right-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-xl overflow-y-auto max-h-[calc(100vh-70px)] z-[9999]">
+          <nav className="flex flex-col p-4 font-medium">
+            <NavLink
+              to="/"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={({ isActive }) =>
+                `px-4 py-3 rounded-xl mb-1 ${
+                  isActive
+                    ? "bg-green-50 dark:bg-green-900/20 text-green-500"
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                }`
+              }
+            >
+              Trang chủ
+            </NavLink>
+
+            <NavLink
+              to="/booking"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={({ isActive }) =>
+                `px-4 py-3 rounded-xl mb-1 ${
+                  isActive
+                    ? "bg-green-50 dark:bg-green-900/20 text-green-500"
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                }`
+              }
+            >
+              CLB
+            </NavLink>
+
+            {/* Giải đấu Parent in Mobile */}
+            <div className="flex flex-col mb-1">
+              <div className="px-4 py-3 font-semibold text-gray-400 text-sm uppercase tracking-wider">
+                Giải đấu
+              </div>
+              <NavLink
+                to="/tournament"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={({ isActive }) =>
+                  `px-8 py-3 rounded-xl mb-1 ${
+                    isActive
+                      ? "bg-green-50 dark:bg-green-900/20 text-green-500"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  }`
+                }
+              >
+                Giải đấu cộng đồng
+              </NavLink>
+              <NavLink
+                to="/my-tournaments"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={({ isActive }) =>
+                  `px-8 py-3 rounded-xl mb-1 ${
+                    isActive
+                      ? "bg-green-50 dark:bg-green-900/20 text-green-500"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  }`
+                }
+              >
+                Giải của tôi
+              </NavLink>
+            </div>
+
+            <NavLink
+              to="/posts"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={({ isActive }) =>
+                `px-4 py-3 rounded-xl mb-1 ${
+                  isActive
+                    ? "bg-green-50 dark:bg-green-900/20 text-green-500"
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                }`
+              }
+            >
+              Bài viết
+            </NavLink>
+
+            <NavLink
+              to="/my-bookings"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={({ isActive }) =>
+                `px-4 py-3 rounded-xl mb-1 ${
+                  isActive
+                    ? "bg-green-50 dark:bg-green-900/20 text-green-500"
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                }`
+              }
+            >
+              Lịch sử đặt bàn
+            </NavLink>
+
+            <NavLink
+              to="/payment-history"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={({ isActive }) =>
+                `px-4 py-3 rounded-xl mb-4 ${
+                  isActive
+                    ? "bg-green-50 dark:bg-green-900/20 text-green-500"
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                }`
+              }
+            >
+              Lịch sử chuyển khoản
+            </NavLink>
+
+            {/* Mobile Auth Buttons (if not logged in) */}
+            {!user && (
+              <div className="flex flex-col gap-2 pt-4 border-t border-gray-100 dark:border-gray-700">
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    navigate("/auth/login");
+                  }}
+                  className="w-full px-4 py-3 text-center text-green-500 font-semibold rounded-xl bg-green-50 dark:bg-green-900/20"
+                >
+                  Đăng nhập
+                </button>
+              </div>
+            )}
+          </nav>
+        </div>
+      )}
     </header>
   );
 };

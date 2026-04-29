@@ -10,7 +10,7 @@ import {
   CalendarDays, BadgeCheck, Circle, CheckCircle2, Info, Bell
 } from "lucide-react";
 
-import bookingService, { checkInBooking, getClubBookings, confirmPayment, createWalkInBooking } from "@/services/booking.service";
+import bookingService, { checkInBooking, getClubBookings, createWalkInBooking } from "@/services/booking.service";
 import { getTables, updateTable } from "@/services/billiardTable.service";
 import { getServices } from "@/services/service.service";
 import useDebounce from "@/hooks/useDebounce";
@@ -731,22 +731,6 @@ const BookingListSection = () => {
 
   useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
-  // Xử lý xác nhận thanh toán
-  const handleConfirmPayment = async (bookingId) => {
-    try {
-      setProcessingId(bookingId);
-      const res = await confirmPayment(bookingId);
-      if (res.success) {
-        toast.success("Xác nhận thanh toán thành công!");
-        fetchBookings(); // Refresh lại danh sách
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Lỗi xác nhận thanh toán");
-    } finally {
-      setProcessingId(null);
-    }
-  };
-
   const getStatusBadge = (status) => {
     const cfg = {
       Pending: { label: "Chờ thanh toán", cls: "bg-amber-100 text-amber-700" },
@@ -960,23 +944,6 @@ const BookingListSection = () => {
                     <TableCell className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         {getStatusBadge(booking.status)}
-                        {booking.status === "Pending" && (
-                          <Button
-                            size="sm"
-                            className="h-7 px-2 bg-green-500 hover:bg-green-600 text-white text-xs font-medium"
-                            onClick={() => handleConfirmPayment(booking._id)}
-                            disabled={processingId === booking._id}
-                          >
-                            {processingId === booking._id ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : (
-                              <>
-                                <CheckCircle className="w-3 h-3 mr-1" />
-                                Xác nhận
-                              </>
-                            )}
-                          </Button>
-                        )}
                       </div>
                     </TableCell>
                     <TableCell className="px-6 py-4 text-right">

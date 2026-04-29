@@ -10,6 +10,11 @@ import api from "@/lib/axios";
 import { createTable, getTableTypes } from "@/services/billiardTable.service";
 import { staffClubService } from "@/services/staff-club.service";
 import { uploadImages } from "@/utils/cloudinary";
+import step1 from "@/assets/guide/step1.png";
+import step2 from "@/assets/guide/step2.png";
+import step3 from "@/assets/guide/step3.png";
+import step4 from "@/assets/guide/step4.png";
+import step5 from "@/assets/guide/step5.png";
 
 const STEPS = [
   { id: 1, label: "Tài khoản ngân hàng", icon: CreditCard, required: true },
@@ -21,11 +26,21 @@ const STEPS = [
   { id: 7, label: "Tiện ích", icon: Sparkles, required: false },
 ];
 
+const PAYOS_GUIDE_STEPS = [
+  { title: "Bước 1: Đăng nhập PayOS", image: step1 },
+  { title: "Bước 2: Xác thực tài khoản", image: step2 },
+  { title: "Bước 3: Xác thực ngân hàng", image: step3 },
+  { title: "Bước 4: Tạo kênh thanh toán", image: step4 },
+  { title: "Bước 5: Copy API Key", image: step5 }
+];
+
 // ─── Step 1: Tài khoản ngân hàng (PayOS) ───────────────────────────────────
 function StepBankAccount({ clubId, onNext }) {
   const [form, setForm] = useState({ payos_client_id: "", payos_api_key: "", payos_checksum_key: "" });
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showGuide, setShowGuide] = useState(false);
+  const [guideStep, setGuideStep] = useState(0);
 
   useEffect(() => {
     getClubBank(clubId).then(res => {
@@ -81,6 +96,51 @@ function StepBankAccount({ clubId, onNext }) {
           >
             Đăng ký & Lấy mã ngay
           </a>
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={() => setShowGuide((prev) => !prev)}
+        className="text-sm text-blue-600 underline underline-offset-2"
+      >
+        {showGuide ? "Ẩn hướng dẫn lấy key PayOS" : "Xem hướng dẫn lấy key PayOS"}
+      </button>
+
+      {showGuide && (
+        <div className="rounded-xl border border-blue-100 bg-white p-4 space-y-3">
+          <p className="font-semibold text-gray-900 text-center">{PAYOS_GUIDE_STEPS[guideStep].title}</p>
+          <img
+            src={PAYOS_GUIDE_STEPS[guideStep].image}
+            alt={PAYOS_GUIDE_STEPS[guideStep].title}
+            className="w-full h-[280px] object-contain rounded-lg border bg-white"
+          />
+          <div className="flex justify-center gap-1">
+            {PAYOS_GUIDE_STEPS.map((_, index) => (
+              <div
+                key={index}
+                className={`w-2 h-2 rounded-full ${index === guideStep ? "bg-blue-600" : "bg-gray-300"}`}
+              />
+            ))}
+          </div>
+          <div className="flex justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => setGuideStep((prev) => Math.max(0, prev - 1))}
+              disabled={guideStep === 0}
+              className="px-3 py-1.5 text-sm rounded-lg bg-gray-100 disabled:opacity-50"
+            >
+              Trước
+            </button>
+            <button
+              type="button"
+              onClick={() => setGuideStep((prev) => Math.min(PAYOS_GUIDE_STEPS.length - 1, prev + 1))}
+              disabled={guideStep === PAYOS_GUIDE_STEPS.length - 1}
+              className="px-3 py-1.5 text-sm rounded-lg bg-blue-600 text-white disabled:opacity-50"
+            >
+              Sau
+            </button>
+          </div>
         </div>
       )}
 
@@ -173,7 +233,7 @@ function StepSubscription({ clubId, selectedPlan, onSelect, onNext, onBack }) {
           window.location.href = res.data.data.checkoutUrl;
           return; // Wait for redirect
         }
-      } catch (err) {
+      } catch {
         toast.error("Lỗi khi tạo mã thanh toán, vui lòng thử lại.");
         return;
       }
@@ -298,7 +358,7 @@ function StepClubImages({ clubId, onNext, onBack }) {
       await api.put(`/clubs/${clubId}`, { avatar, backgrounds });
       toast.success("Đã lưu ảnh quán");
       onNext();
-    } catch (e) {
+    } catch {
       toast.error("Upload ảnh thất bại. Vui lòng thử lại.");
     } finally {
       setUploading(false);
@@ -776,7 +836,7 @@ function StepAddAmenity({ clubId, onFinish, onBack }) {
       await api.put(`/clubs/${clubId}`, { amenities: selected });
       toast.success("Đã lưu tiện ích");
       onFinish();
-    } catch (e) {
+    } catch {
       toast.error("Lưu thất bại");
     } finally { setSaving(false); }
   };
@@ -872,7 +932,7 @@ export default function OwnerOnboardingPage() {
       localStorage.setItem("selected_club_plan", realPlan);
       toast.success("Thiết lập hoàn tất! Chào mừng bạn 🎉");
       navigate("/owner/dashboard");
-    } catch (e) {
+    } catch {
       toast.error("Có lỗi khi hoàn tất. Vui lòng thử lại.");
     }
   };

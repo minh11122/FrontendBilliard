@@ -211,8 +211,8 @@ export function AuthPage() {
       <div className={`auth-card ${!isLogin ? "right-panel-active" : ""}`}>
 
         {/* Register Side (Always on the same side in DOM, CSS handles position) */}
-        <div className="form-container register-container">
-          <div className={`auth-form-wrapper ${!isLogin ? "form-active" : ""}`}>
+        <div className={`form-container register-container ${!isLogin ? "form-active" : ""}`}>
+          <div className="auth-form-wrapper">
             {registerStep === "register" ? (
               <form onSubmit={registerFormik.handleSubmit}>
                 <h1 className="text-3xl text-green-600">Đăng ký</h1>
@@ -253,6 +253,16 @@ export function AuthPage() {
                     />
                   )}
                 </div>
+
+                {/* Mobile Toggle Button */}
+                <div className="mt-6 text-center md:hidden">
+                  <p className="text-sm text-gray-600 font-medium">
+                    Đã có tài khoản?{" "}
+                    <button type="button" onClick={toggleForm} className="text-green-600 hover:underline font-bold">
+                      Đăng nhập
+                    </button>
+                  </p>
+                </div>
               </form>
             ) : (
               <div className="text-center py-6">
@@ -278,8 +288,8 @@ export function AuthPage() {
         </div>
 
         {/* Login Side */}
-        <div className="form-container login-container">
-          <div className={`auth-form-wrapper ${isLogin ? "form-active" : ""}`}>
+        <div className={`form-container login-container ${isLogin ? "form-active" : ""}`}>
+          <div className="auth-form-wrapper">
             <form onSubmit={loginFormik.handleSubmit}>
               <h1 className="text-3xl text-green-600">Đăng nhập</h1>
               <p className="text-gray-500">Chào mừng đến với Billiards Club</p>
@@ -316,6 +326,16 @@ export function AuthPage() {
                     onError={() => toast.error("Đăng nhập Google thất bại")}
                   />
                 )}
+              </div>
+
+              {/* Mobile Toggle Button */}
+              <div className="mt-6 text-center md:hidden">
+                <p className="text-sm text-gray-600 font-medium">
+                  Chưa có tài khoản?{" "}
+                  <button type="button" onClick={toggleForm} className="text-green-600 hover:underline font-bold">
+                    Đăng ký ngay
+                  </button>
+                </p>
               </div>
             </form>
           </div>

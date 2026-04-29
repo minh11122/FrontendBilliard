@@ -99,17 +99,6 @@ export const getClubBookings = async (params = {}) => {
   }
 };
 
-// Xác nhận thanh toán (Dành cho STAFF / OWNER)
-export const confirmPayment = async (bookingId) => {
-  try {
-    const response = await api.post(`/bookings/${bookingId}/confirm-payment`);
-    return response.data;
-  } catch (error) {
-    console.error("Error in confirmPayment:", error);
-    throw error;
-  }
-};
-
 // Thanh toán kết thúc lượt chơi (Dành cho STAFF / OWNER)
 export const checkOutBooking = async (bookingId) => {
   try {
@@ -208,7 +197,6 @@ export const bookingService = {
   checkInBooking,
   getClubBookings,
   createWalkInBooking,
-  confirmPayment,
   createPayOSBookingPayment,
   verifyBookingPayOSPayment,
   getBookingById,
