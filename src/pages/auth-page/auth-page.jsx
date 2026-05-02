@@ -22,6 +22,11 @@ import { AuthContext } from "@/context/AuthContext";
 import { SiteLogo } from "@/components/common/SiteLogo";
 import "./auth-page.css";
 
+const PASSWORD_REGEX =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{6,}$/;
+const PASSWORD_POLICY_MESSAGE =
+  "Mật khẩu ≥6 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt";
+
 export function AuthPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -167,7 +172,7 @@ export function AuthPage() {
         .required("Vui lòng nhập email"),
       password: Yup.string()
         .trim()
-        .min(6, "Mật khẩu tối thiểu 6 ký tự")
+        .matches(PASSWORD_REGEX, PASSWORD_POLICY_MESSAGE)
         .required("Vui lòng nhập mật khẩu"),
       confirmPassword: Yup.string()
         .trim()
@@ -202,7 +207,7 @@ export function AuthPage() {
         await handleLoginSuccess(token, role, fullname);
       } else {
         await registerGoogle(tokenId);
-        toast.success("Đăng ký Google thành công!");
+        toast.success("Đăng ký Google thành công. Mật khẩu đã được gửi về email.");
         setIsLogin(true);
         navigate("/auth/login");
       }
@@ -293,7 +298,7 @@ export function AuthPage() {
     try {
       await resendOtp(emailForOtp);
       setOtp(["", "", "", "", "", ""]);
-      setCountdown(60);
+      setCountdown(300);
       toast.success("Đã gửi OTP mới!");
       otpInputRefs.current[0]?.focus();
     } catch (error) {
