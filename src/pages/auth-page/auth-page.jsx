@@ -27,14 +27,10 @@ export function AuthPage() {
   const location = useLocation();
   const { login: loginContext } = useContext(AuthContext);
 
-  // Toggle state
   const [isLogin, setIsLogin] = useState(location.pathname !== "/auth/register");
-
-  // Register steps: register, verify
   const [registerStep, setRegisterStep] = useState("register");
   const [showPassword, setShowPassword] = useState(false);
 
-  // OTP State
   const [emailForOtp, setEmailForOtp] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [isResending, setIsResending] = useState(false);
@@ -42,12 +38,10 @@ export function AuthPage() {
   const [isVerifySuccess, setIsVerifySuccess] = useState(false);
   const otpInputRefs = useRef([]);
 
-  // Sync state with URL
   useEffect(() => {
     setIsLogin(location.pathname !== "/auth/register");
   }, [location.pathname]);
 
-  // Countdown for OTP
   useEffect(() => {
     if (registerStep === "verify" && countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
@@ -55,13 +49,18 @@ export function AuthPage() {
     }
   }, [countdown, registerStep]);
 
-  // --- LOGIN LOGIC ---
   const savedEmail = Cookies.get("rememberedEmail") || "";
   const savedPassword = Cookies.get("rememberedPassword") || "";
 
   const loginValidationSchema = Yup.object({
-    email: Yup.string().email("Email không hợp lệ").required("Vui lòng nhập email"),
-    password: Yup.string().min(6, "Mật khẩu tối thiểu 6 ký tự").required("Vui lòng nhập mật khẩu"),
+    email: Yup.string()
+      .trim()
+      .email("Email không hợp lệ")
+      .required("Vui lòng nhập email"),
+    password: Yup.string()
+      .trim()
+      .min(6, "Mật khẩu tối thiểu 6 ký tự")
+      .required("Vui lòng nhập mật khẩu"),
   });
 
   const getDefaultRouteByRole = (role) => {
@@ -79,7 +78,10 @@ export function AuthPage() {
 
     if (userRole === "OWNER" || userRole === "STAFF_CLUB" || userRole === "CUSTOMER") {
       toast.success("Đăng nhập thành công!");
-      navigate(userRole === "OWNER" ? "/owner/select-club" : (userRole === "STAFF_CLUB" ? "/staff/dashboard" : "/"), { replace: true });
+      navigate(
+        userRole === "OWNER" ? "/owner/select-club" : userRole === "STAFF_CLUB" ? "/staff/dashboard" : "/",
+        { replace: true },
+      );
     } else {
       toast.error("Bạn không có quyền truy cập hệ thống");
     }
@@ -92,27 +94,65 @@ export function AuthPage() {
       rememberMe: !!savedEmail,
     },
     validationSchema: loginValidationSchema,
-    onSubmit: async (values, { setSubmitting }) => {
+    onSubmit: async (values, { setSubmitting, setFieldTouched, setFieldError }) => {
+      const normalizedEmail = values.email.trim();
+      const normalizedPassword = values.password.trim();
+
+      if (!normalizedEmail) {
+        setFieldTouched("email", true, false);
+        setFieldError("email", "Vui lòng nhập email");
+        setSubmitting(false);
+        return;
+      }
+
+      if (!normalizedPassword) {
+        setFieldTouched("password", true, false);
+        setFieldError("password", "Vui lòng nhập mật khẩu");
+        setSubmitting(false);
+        return;
+      }
+
       try {
-        const res = await login(values);
+        const res = await login({
+          ...values,
+          email: normalizedEmail,
+          password: normalizedPassword,
+        });
         const { token, role, fullname } = res.data;
+
         if (values.rememberMe) {
-          Cookies.set("rememberedEmail", values.email, { expires: 7 });
-          Cookies.set("rememberedPassword", values.password, { expires: 7 });
+          Cookies.set("rememberedEmail", normalizedEmail, { expires: 7 });
+          Cookies.set("rememberedPassword", normalizedPassword, { expires: 7 });
         } else {
           Cookies.remove("rememberedEmail");
           Cookies.remove("rememberedPassword");
         }
+
         await handleLoginSuccess(token, role, fullname);
       } catch (error) {
-        toast.error(error.response?.data?.message || "Đăng nhập thất bại");
+        const errorMessage = error.response?.data?.message || "Đăng nhập thất bại";
+
+        if (
+          error.response?.status === 403 &&
+          errorMessage.toLowerCase().includes("kích hoạt")
+        ) {
+          await openOtpVerification(normalizedEmail, true);
+          setSubmitting(false);
+          return;
+        }
+
+        toast.error(errorMessage);
       } finally {
         setSubmitting(false);
       }
     },
   });
 
-  // --- REGISTER LOGIC ---
+  const shouldShowLoginEmailError =
+    (loginFormik.touched.email || loginFormik.submitCount > 0) && !!loginFormik.errors.email;
+  const shouldShowLoginPasswordError =
+    (loginFormik.touched.password || loginFormik.submitCount > 0) && !!loginFormik.errors.password;
+
   const registerFormik = useFormik({
     initialValues: {
       email: "",
@@ -121,20 +161,30 @@ export function AuthPage() {
       agreeToTerms: false,
     },
     validationSchema: Yup.object({
-      email: Yup.string().email("Email không hợp lệ").required("Vui lòng nhập email"),
-      password: Yup.string().min(6, "Mật khẩu tối thiểu 6 ký tự").required("Vui lòng nhập mật khẩu"),
-      confirmPassword: Yup.string().oneOf([Yup.ref("password"), null], "Mật khẩu xác nhận không khớp").required("Vui lòng nhập lại mật khẩu"),
+      email: Yup.string()
+        .trim()
+        .email("Email không hợp lệ")
+        .required("Vui lòng nhập email"),
+      password: Yup.string()
+        .trim()
+        .min(6, "Mật khẩu tối thiểu 6 ký tự")
+        .required("Vui lòng nhập mật khẩu"),
+      confirmPassword: Yup.string()
+        .trim()
+        .oneOf([Yup.ref("password"), null], "Mật khẩu xác nhận không khớp")
+        .required("Vui lòng nhập lại mật khẩu"),
     }),
     onSubmit: async (values, { setSubmitting }) => {
       try {
+        const normalizedEmail = values.email.trim();
+
         await register({
-          email: values.email,
+          email: normalizedEmail,
           password: values.password,
           confirmPassword: values.confirmPassword,
         });
-        setEmailForOtp(values.email);
         toast.success("Đăng ký thành công! Vui lòng xác thực OTP.");
-        setRegisterStep("verify");
+        await openOtpVerification(normalizedEmail, false);
       } catch (error) {
         toast.error(error.response?.data?.message || "Đăng ký thất bại");
       } finally {
@@ -143,7 +193,6 @@ export function AuthPage() {
     },
   });
 
-  // --- GOOGLE LOGIN ---
   const handleGoogleLogin = async (credentialResponse, action = "login") => {
     try {
       const tokenId = credentialResponse.credential;
@@ -158,23 +207,66 @@ export function AuthPage() {
         navigate("/auth/login");
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || `Thao tác Google thất bại`);
+      toast.error(error.response?.data?.message || "Thao tác Google thất bại");
     }
   };
 
-  // --- OTP LOGIC ---
   const handleOtpChange = (index, value) => {
-    if (value && !/^\d$/.test(value)) return;
+    const digit = value.replace(/\D/g, "").slice(-1);
+    if (value && !digit) return;
     const newOtp = [...otp];
-    newOtp[index] = value;
+    newOtp[index] = digit;
     setOtp(newOtp);
-    if (value && index < 5) otpInputRefs.current[index + 1]?.focus();
+    if (digit && index < 5) otpInputRefs.current[index + 1]?.focus();
+  };
+
+  const handleOtpKeyDown = (index, e) => {
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").slice(0, 6);
+    if (!/^\d+$/.test(pasted)) return;
+
+    const newOtp = [...otp];
+    pasted.split("").forEach((char, index) => {
+      if (index < 6) newOtp[index] = char;
+    });
+    setOtp(newOtp);
+  };
+
+  const openOtpVerification = async (email, shouldResend = false) => {
+    setEmailForOtp(email);
+    setOtp(["", "", "", "", "", ""]);
+    setRegisterStep("verify");
+    setIsLogin(false);
+    navigate("/auth/register");
+
+    if (!shouldResend) {
+      setCountdown(0);
+      setTimeout(() => otpInputRefs.current[0]?.focus(), 0);
+      return;
+    }
+
+    try {
+      await resendOtp(email);
+      setCountdown(60);
+      toast.success("Đã gửi OTP mới. Vui lòng xác thực tài khoản.");
+    } catch (error) {
+      setCountdown(0);
+      toast.error(error.response?.data?.message || "Không thể gửi OTP");
+    } finally {
+      setTimeout(() => otpInputRefs.current[0]?.focus(), 0);
+    }
   };
 
   const handleOtpVerify = async (e) => {
     e.preventDefault();
     try {
-      await verifyOtp({ email: emailForOtp, otp_code: otp.join("") });
+      await verifyOtp({ email: emailForOtp, otp_code: otp.join("").trim() });
       toast.success("Xác thực thành công!");
       setIsVerifySuccess(true);
       setTimeout(() => {
@@ -184,7 +276,30 @@ export function AuthPage() {
         navigate("/auth/login");
       }, 2000);
     } catch (error) {
-      toast.error(error.response?.data?.message || "OTP không hợp lệ");
+      const errorMsg = error.response?.data?.message || "OTP không hợp lệ";
+      toast.error(errorMsg);
+
+      if (error.response?.status === 400 && errorMsg !== "OTP sai") {
+        setCountdown(0);
+        setOtp(["", "", "", "", "", ""]);
+      }
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (countdown > 0) return;
+
+    setIsResending(true);
+    try {
+      await resendOtp(emailForOtp);
+      setOtp(["", "", "", "", "", ""]);
+      setCountdown(60);
+      toast.success("Đã gửi OTP mới!");
+      otpInputRefs.current[0]?.focus();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Không thể gửi OTP");
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -195,10 +310,9 @@ export function AuthPage() {
 
   return (
     <div className="auth-container relative">
-      {/* Home Logo */}
       <div className="absolute top-6 left-6 z-50">
-        <Link 
-          to="/" 
+        <Link
+          to="/"
           className="flex items-center gap-2 font-bold text-xl bg-white/90 backdrop-blur-sm px-4 py-2 hover:px-5 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300"
         >
           <SiteLogo className="w-8 h-8 rounded-lg" alt="Billiards Manager logo" />
@@ -208,9 +322,11 @@ export function AuthPage() {
         </Link>
       </div>
 
-      <div className={`auth-card ${!isLogin ? "right-panel-active" : ""}`}>
-
-        {/* Register Side (Always on the same side in DOM, CSS handles position) */}
+      <div
+        className={`auth-card ${!isLogin ? "right-panel-active" : ""} ${
+          registerStep === "verify" ? "verification-mode" : ""
+        }`}
+      >
         <div className={`form-container register-container ${!isLogin ? "form-active" : ""}`}>
           <div className="auth-form-wrapper">
             {registerStep === "register" ? (
@@ -220,13 +336,28 @@ export function AuthPage() {
 
                 <div className="mb-4">
                   <label className="text-sm font-semibold text-gray-700 block mb-1">Email</label>
-                  <input name="email" placeholder="Vui lòng nhập email của bạn tại đây" value={registerFormik.values.email} onChange={registerFormik.handleChange} className="auth-input" />
+                  <input
+                    name="email"
+                    placeholder="Vui lòng nhập email của bạn tại đây"
+                    value={registerFormik.values.email}
+                    onChange={registerFormik.handleChange}
+                    onBlur={registerFormik.handleBlur}
+                    className="auth-input"
+                  />
                 </div>
 
                 <div className="mb-4">
                   <label className="text-sm font-semibold text-gray-700 block mb-1">Mật khẩu</label>
                   <div className="relative">
-                    <input name="password" type={showPassword ? "text" : "password"} placeholder="••••••••" value={registerFormik.values.password} onChange={registerFormik.handleChange} className="auth-input pr-12" />
+                    <input
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={registerFormik.values.password}
+                      onChange={registerFormik.handleChange}
+                      onBlur={registerFormik.handleBlur}
+                      className="auth-input pr-12"
+                    />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="password-toggle-btn">
                       {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                     </button>
@@ -236,7 +367,15 @@ export function AuthPage() {
                 <div className="mb-4">
                   <label className="text-sm font-semibold text-gray-700 block mb-1">Xác nhận mật khẩu</label>
                   <div className="relative">
-                    <input name="confirmPassword" type={showPassword ? "text" : "password"} placeholder="••••••••" value={registerFormik.values.confirmPassword} onChange={registerFormik.handleChange} className="auth-input pr-12" />
+                    <input
+                      name="confirmPassword"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={registerFormik.values.confirmPassword}
+                      onChange={registerFormik.handleChange}
+                      onBlur={registerFormik.handleBlur}
+                      className="auth-input pr-12"
+                    />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="password-toggle-btn">
                       {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                     </button>
@@ -254,7 +393,6 @@ export function AuthPage() {
                   )}
                 </div>
 
-                {/* Mobile Toggle Button */}
                 <div className="mt-6 text-center md:hidden">
                   <p className="text-sm text-gray-600 font-medium">
                     Đã có tài khoản?{" "}
@@ -276,10 +414,36 @@ export function AuthPage() {
                     <h2 className="text-2xl font-bold">Xác nhận OTP</h2>
                     <div className="flex justify-center gap-2 my-6">
                       {otp.map((d, i) => (
-                        <input key={i} ref={(el) => (otpInputRefs.current[i] = el)} value={d} onChange={(e) => handleOtpChange(i, e.target.value)} className="w-10 h-10 text-center border rounded-lg" />
+                        <input
+                          key={i}
+                          ref={(el) => (otpInputRefs.current[i] = el)}
+                          value={d}
+                          onChange={(e) => handleOtpChange(i, e.target.value)}
+                          onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                          onPaste={handleOtpPaste}
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete={i === 0 ? "one-time-code" : "off"}
+                          maxLength={1}
+                          className="w-10 h-10 text-center border rounded-lg"
+                        />
                       ))}
                     </div>
                     <button type="submit" className="btn-solid w-full">Xác thực</button>
+                    <div className="mt-4 text-sm">
+                      <button
+                        type="button"
+                        onClick={handleResendOtp}
+                        disabled={countdown > 0 || isResending}
+                        className="text-green-600 font-medium disabled:text-gray-400"
+                      >
+                        {isResending
+                          ? "Đang gửi..."
+                          : countdown > 0
+                            ? `Gửi lại sau ${countdown}s`
+                            : "Gửi lại OTP"}
+                      </button>
+                    </div>
                   </form>
                 )}
               </div>
@@ -287,7 +451,6 @@ export function AuthPage() {
           </div>
         </div>
 
-        {/* Login Side */}
         <div className={`form-container login-container ${isLogin ? "form-active" : ""}`}>
           <div className="auth-form-wrapper">
             <form onSubmit={loginFormik.handleSubmit}>
@@ -296,17 +459,38 @@ export function AuthPage() {
 
               <div className="mb-4">
                 <label className="text-sm font-semibold text-gray-700 block mb-1">Email</label>
-                <input name="email" placeholder="Vui lòng nhập email của bạn tại đây" value={loginFormik.values.email} onChange={loginFormik.handleChange} className="auth-input" />
+                <input
+                  name="email"
+                  placeholder="Vui lòng nhập email của bạn tại đây"
+                  value={loginFormik.values.email}
+                  onChange={loginFormik.handleChange}
+                  onBlur={loginFormik.handleBlur}
+                  className="auth-input"
+                />
+                {shouldShowLoginEmailError && (
+                  <p className="mt-1 text-sm text-red-500">{loginFormik.errors.email}</p>
+                )}
               </div>
 
               <div className="mb-4">
                 <label className="text-sm font-semibold text-gray-700 block mb-1">Mật khẩu</label>
                 <div className="relative">
-                  <input name="password" type={showPassword ? "text" : "password"} placeholder="••••••••" value={loginFormik.values.password} onChange={loginFormik.handleChange} className="auth-input pr-12" />
+                  <input
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={loginFormik.values.password}
+                    onChange={loginFormik.handleChange}
+                    onBlur={loginFormik.handleBlur}
+                    className="auth-input pr-12"
+                  />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="password-toggle-btn">
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
                 </div>
+                {shouldShowLoginPasswordError && (
+                  <p className="mt-1 text-sm text-red-500">{loginFormik.errors.password}</p>
+                )}
               </div>
 
               <div className="flex justify-between items-center mb-6">
@@ -328,7 +512,6 @@ export function AuthPage() {
                 )}
               </div>
 
-              {/* Mobile Toggle Button */}
               <div className="mt-6 text-center md:hidden">
                 <p className="text-sm text-gray-600 font-medium">
                   Chưa có tài khoản?{" "}
@@ -341,7 +524,6 @@ export function AuthPage() {
           </div>
         </div>
 
-        {/* Overlay */}
         <div className="overlay-container">
           <div className="overlay">
             <div className="overlay-panel overlay-left">
@@ -356,7 +538,6 @@ export function AuthPage() {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );
