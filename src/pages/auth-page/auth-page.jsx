@@ -299,7 +299,7 @@ export function AuthPage() {
       await resendOtp(emailForOtp);
       setOtp(["", "", "", "", "", ""]);
       setCountdown(300);
-      toast.success("Đã gửi OTP mới!");
+      toast.success("Đã gửi OTP mới!"); 
       otpInputRefs.current[0]?.focus();
     } catch (error) {
       toast.error(error.response?.data?.message || "Không thể gửi OTP");
