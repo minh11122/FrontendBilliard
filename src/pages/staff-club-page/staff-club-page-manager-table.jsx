@@ -221,6 +221,35 @@ const TableDetailModal = ({ table, booking, isBookingActive, allTables, onClose,
 
   const isTableAvailable = !booking && table.status === "Available";
 
+  const isTimeOver = useMemo(() => {
+    if (!booking || booking.status !== "Playing" || !booking.end_time || !booking.play_date) return false;
+    
+    const [eH, eM] = booking.end_time.split(":").map(Number);
+    const [sH, sM] = (booking.start_time || "00:00").split(":").map(Number);
+    
+    const endTimeObj = new Date(booking.play_date);
+    endTimeObj.setHours(eH, eM, 0, 0);
+    
+    // Nếu chơi qua đêm
+    if (eH < sH || (eH === sH && eM < sM)) {
+      endTimeObj.setDate(endTimeObj.getDate() + 1);
+    }
+    
+    return currentTime >= endTimeObj;
+  }, [booking, currentTime]);
+
+  const isNotStarted = useMemo(() => {
+    if (!booking || !booking.start_time || !booking.play_date) return false;
+    
+    const [sH, sM] = booking.start_time.split(":").map(Number);
+    const startTimeObj = new Date(booking.play_date);
+    startTimeObj.setHours(sH, sM, 0, 0);
+    
+    return currentTime < startTimeObj;
+  }, [booking, currentTime]);
+
+  const isTransferDisabled = isTimeOver || isNotStarted;
+
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
@@ -511,7 +540,8 @@ const TableDetailModal = ({ table, booking, isBookingActive, allTables, onClose,
                             setShowOrderPanel(false);
                             setShowExtendPanel(false);
                           }}
-                          className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${showChangeTablePanel ? 'bg-green-600 border-green-600 text-white shadow-lg' : 'bg-white border-gray-200 text-green-600 hover:bg-green-50'}`}
+                          disabled={isTransferDisabled}
+                          className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${isTransferDisabled ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-60' : showChangeTablePanel ? 'bg-green-600 border-green-600 text-white shadow-lg' : 'bg-white border-gray-200 text-green-600 hover:bg-green-50'}`}
                         >
                           <ArrowLeftRight size={24} />
                           <span className="text-[11px] font-bold uppercase">ĐỔI BÀN</span>
@@ -562,7 +592,9 @@ const TableDetailModal = ({ table, booking, isBookingActive, allTables, onClose,
                                  <SelectValue placeholder="Bàn trống..." />
                               </SelectTrigger>
                               <SelectContent>
-                                 {allTables?.filter(t => t.status === "Available").map(t => (
+                                 {allTables?.filter(t => 
+                                   String(table.table_type_id?._id || table.table_type_id) === String(t.table_type_id?._id || t.table_type_id)
+                                 ).map(t => (
                                    <SelectItem key={t._id} value={t._id}>
                                       Bàn {t.table_number} ({t.table_type_id?.name || "Bàn"})
                                    </SelectItem>
