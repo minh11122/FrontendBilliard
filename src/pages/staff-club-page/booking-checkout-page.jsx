@@ -21,7 +21,7 @@ const computeInvoice = (booking, services = []) => {
 
   const startMin = timeToMinutes(booking.start_time);
   let endMin = timeToMinutes(booking.end_time);
-  if (endMin <= startMin) endMin += 24 * 60;
+  if (endMin < startMin) endMin += 24 * 60;
 
   const durationHours = (endMin - startMin) / 60;
   const playCost = Math.round(durationHours * (booking.hour_price || 0));
@@ -31,11 +31,12 @@ const computeInvoice = (booking, services = []) => {
     0
   );
 
-  const totalBill = playCost + serviceTotal;
+  const carryOver = Number(booking.carry_over_amount || 0);
+  const totalBill = playCost + serviceTotal + carryOver;
   const deposit = Number(booking.deposit || 0);
   const dueAmount = Math.max(0, totalBill - deposit);
 
-  return { playCost, serviceTotal, totalBill, deposit, dueAmount };
+  return { playCost, serviceTotal, carryOver, totalBill, deposit, dueAmount };
 };
 
 export default function BookingCheckoutPage() {
@@ -185,6 +186,14 @@ export default function BookingCheckoutPage() {
                 {invoice.serviceTotal.toLocaleString("vi-VN")} VNĐ
               </span>
             </div>
+            {invoice.carryOver > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-600">Tiền từ bàn cũ</span>
+                <span className="font-bold text-slate-900">
+                  {invoice.carryOver.toLocaleString("vi-VN")} VNĐ
+                </span>
+              </div>
+            )}
             <div className="flex justify-between text-sm">
               <span className="text-slate-600">Tiền cọc</span>
               <span className="font-bold text-slate-900">

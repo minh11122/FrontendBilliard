@@ -13,6 +13,8 @@ import useDebounce from "@/hooks/useDebounce";
 import { getTables, getTableTypes, updateTable } from "@/services/billiardTable.service";
 import bookingService from "@/services/booking.service";
 import { getServices } from "@/services/service.service";
+import { getClubById } from "@/services/club.service";
+import useAuth from "@/hooks/useAuth";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,7 +72,7 @@ const roundMinutes = (m, step = 5) => Math.max(0, Math.floor(m / step) * step);
 const isTableBusyAt = (tableId, date, startTime, endTime, bookings) => {
   const newStart = timeToMinutes(startTime);
   let newEnd = timeToMinutes(endTime);
-  if (newEnd <= newStart && newEnd !== 0) newEnd += 24 * 60; // Next day
+  if (newEnd < newStart && newEnd !== 0) newEnd += 24 * 60; // Next day
   const target = new Date(date);
   target.setHours(0, 0, 0, 0);
 
@@ -93,7 +95,7 @@ const isTableBusyAt = (tableId, date, startTime, endTime, bookings) => {
     let e = b.end_time ? timeToMinutes(b.end_time) : s + 60;
     
     // Normalize overnight
-    if (e <= s) e += 24 * 60;
+    if (e < s) e += 24 * 60;
 
     // Adjust for date difference
     s -= diffDays * 24 * 60;
@@ -125,7 +127,7 @@ const getBlockStyle = (booking, currentDate) => {
   if (displayEndTime) {
     const [eh, em] = displayEndTime.split(':').map(Number);
     endMinutes = eh * 60 + em;
-    if (endMinutes <= startMinutes && endMinutes !== 0) endMinutes += 24 * 60; // Next day
+    if (endMinutes < startMinutes && endMinutes !== 0) endMinutes += 24 * 60; // Next day
   } else {
     endMinutes = startMinutes + 60;
   }
@@ -183,7 +185,7 @@ const getTableDerivedStatus = (table, dateFilter, bookingsForTable) => {
       
       let startMin = sh * 60 + sm;
       let endMin = eh * 60 + em;
-      if (endMin <= startMin) endMin += 24 * 60;
+      if (endMin < startMin) endMin += 24 * 60;
       
       startMin -= diffDays * 24 * 60;
       endMin -= diffDays * 24 * 60;
@@ -412,11 +414,12 @@ const TableDetailModal = ({ table, booking, isBookingActive, allTables, onClose,
                             ? (() => {
                                 const startMin = timeToMinutes(booking.start_time);
                                 let endMin = timeToMinutes(booking.end_time);
-                                if (endMin <= startMin && endMin !== 0) endMin += 24 * 60;
+                                if (endMin < startMin && endMin !== 0) endMin += 24 * 60;
                                 const dur = Math.max(0, (endMin - startMin) / 60);
                                 const playCost = dur * (booking.hour_price || 0);
                                 const serviceTotal = bookingServices.reduce((sum, s) => sum + (s.unit_price * s.quantity), 0);
-                                return Math.round(playCost + serviceTotal).toLocaleString("vi-VN");
+                                const carryOver = Number(booking.carry_over_amount || 0);
+                                return Math.round(playCost + serviceTotal + carryOver).toLocaleString("vi-VN");
                               })()
                             : (booking.total_bill || 0)?.toLocaleString("vi-VN")
                           }đ
@@ -626,7 +629,7 @@ const TableDetailModal = ({ table, booking, isBookingActive, allTables, onClose,
             </section>
           ) : (
             <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-400">
-              Nhấn vào thời gian trống để tạo đơn mới nhanh (Walk-in)
+              Bàn hiện đang trống. Nhấn nút "Tạo đặt bàn" để tạo đơn mới.
             </div>
           )}
 
@@ -704,29 +707,56 @@ const TimeSelect = ({ value, onChange }) => {
   )
 };
 
-const QuickCreateModal = ({ open, tables, tableTypes, date, bookings, onCreate, onClose }) => {
+const QuickCreateModal = ({ open, tables, tableTypes, date, bookings, club, onCreate, onClose }) => {
   const [form, setForm] = useState({
     guest_name: "",
     table_id: "",
     table_type_id: "",
     play_date: formatDateInput(date || new Date()),
     start_time: minutesToTime(roundMinutes(new Date().getHours()*60 + new Date().getMinutes(),5)),
-    end_time: minutesToTime(roundMinutes(new Date().getHours()*60 + new Date().getMinutes() + 60,5))
+    duration: 1
   });
   const [loading, setLoading] = useState(false);
+
+  const maxAllowedDuration = useMemo(() => {
+    if (!club || !form.start_time) return 4; // Default to 4h instead of 24h if loading
+    const [startH, startM] = form.start_time.split(":").map(Number);
+    const [openH] = (club.opening_time || "08:00").split(":").map(Number);
+    const [closeH, closeM] = (club.closing_time || "23:30").split(":").map(Number);
+
+    const openMinutes = openH * 60;
+    const closeMinutes24 = closeH * 60 + closeM;
+    const is24h = openMinutes === closeMinutes24;
+
+    if (is24h) return 24;
+
+    const isCrossMidnight = closeH <= openH && !is24h;
+    let effectiveClose = closeMinutes24;
+    if (isCrossMidnight) effectiveClose += 24 * 60;
+
+    const startMins = startH * 60 + startM;
+    let adjustedStart = startMins;
+    if (isCrossMidnight && startH < openH) adjustedStart += 24 * 60;
+
+    return Math.max(0.5, (effectiveClose - adjustedStart) / 60);
+  }, [club, form.start_time]);
+
+  useEffect(() => {
+    if (form.duration > maxAllowedDuration) {
+      setForm(f => ({ ...f, duration: maxAllowedDuration }));
+    }
+  }, [maxAllowedDuration]);
 
   useEffect(() => {
     if (open) {
       const initialTableId = window._quickCreateTableId || "";
       const initialStartTime = window._quickCreateStartTime || minutesToTime(roundMinutes(new Date().getHours()*60 + new Date().getMinutes(),5));
-      const [h, m] = initialStartTime.split(":").map(Number);
-      const initialEndTime = minutesToTime(h * 60 + m + 60);
 
       setForm(f => ({
         ...f,
         play_date: formatDateInput(date || new Date()),
         start_time: initialStartTime,
-        end_time: initialEndTime,
+        duration: 1,
         table_id: initialTableId,
         table_type_id: initialTableId ? (tables.find(t => t._id === initialTableId)?.table_type_id?._id || "") : ""
       }));
@@ -743,10 +773,11 @@ const QuickCreateModal = ({ open, tables, tableTypes, date, bookings, onCreate, 
   const handleSubmit = async () => {
     if (!form.guest_name.trim()) return toast.error("Nhập tên khách");
     if (!form.table_id) return toast.error("Chọn bàn");
-    if (!form.start_time) return toast.error("Chọn giờ bắt đầu");
-    if (!form.end_time) return toast.error("Chọn giờ kết thúc");
+    if (!form.start_time) return toast.error("Có lỗi: thiếu giờ bắt đầu");
 
-    const busy = isTableBusyAt(form.table_id, form.play_date, form.start_time, form.end_time, bookings);
+    const end_time = minutesToTime(timeToMinutes(form.start_time) + form.duration * 60);
+
+    const busy = isTableBusyAt(form.table_id, form.play_date, form.start_time, end_time, bookings);
     if (busy) return toast.error("Bàn đã có khách trong khung giờ này");
 
     try {
@@ -756,7 +787,7 @@ const QuickCreateModal = ({ open, tables, tableTypes, date, bookings, onCreate, 
         guest_name: form.guest_name.trim(),
         play_date: form.play_date,
         start_time: form.start_time,
-        end_time: form.end_time,
+        end_time: end_time,
         table_number: table?.table_number
       });
       toast.success("Tạo đặt bàn thành công");
@@ -818,11 +849,28 @@ const QuickCreateModal = ({ open, tables, tableTypes, date, bookings, onCreate, 
             <div className="grid grid-cols-2 gap-2">
                <div>
                   <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Bắt đầu</label>
-                  <TimeSelect value={form.start_time} onChange={(val) => setForm(f => ({...f, start_time: val}))} />
+                  <Input value={form.start_time} readOnly className="h-10 bg-gray-100 text-gray-600 font-bold" />
                </div>
                <div>
-                  <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Kết thúc</label>
-                  <TimeSelect value={form.end_time} onChange={(val) => setForm(f => ({...f, end_time: val}))} />
+                  <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Thời lượng</label>
+                  <Select value={form.duration.toString()} onValueChange={(val) => setForm(f => ({...f, duration: Number(val)}))}>
+                    <SelectTrigger className="h-10 bg-white border-gray-200">
+                      <SelectValue placeholder="Thời lượng" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[200px]">
+                      {Array.from({ length: Math.min(48, Math.floor(maxAllowedDuration * 2)) }).map((_, i) => {
+                        const val = (i + 1) * 0.5;
+                        const h = Math.floor(val);
+                        const m = val % 1 !== 0 ? 30 : 0;
+                        let label;
+                        if (val === 24) label = 'Cả ngày (24 Giờ)';
+                        else if (h === 0) label = '30 Phút';
+                        else if (m === 0) label = `${h} Giờ`;
+                        else label = `${h} Giờ 30`;
+                        return <SelectItem key={val} value={val.toString()}>{label}</SelectItem>;
+                      })}
+                    </SelectContent>
+                  </Select>
                </div>
             </div>
           </div>
@@ -838,11 +886,13 @@ const QuickCreateModal = ({ open, tables, tableTypes, date, bookings, onCreate, 
 };
 
 export const StaffClubPageManagerTable = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const PAGE_SIZE = 10;
   const [tables, setTables] = useState([]);
   const [tableTypes, setTableTypes] = useState([]);
   const [bookings, setBookings] = useState([]);
+  const [clubInfo, setClubInfo] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const [search, setSearch] = useState("");
@@ -863,6 +913,15 @@ export const StaffClubPageManagerTable = () => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const cid = localStorage.getItem("selected_club_id") || user?.clubId;
+    if (cid) {
+      getClubById(cid).then(res => {
+         if (res.success) setClubInfo(res.data);
+      });
+    }
+  }, [user?.clubId]);
 
   const fetchTables = async () => {
     try {
@@ -1032,6 +1091,7 @@ export const StaffClubPageManagerTable = () => {
         tableTypes={tableTypes}
         date={currentDate}
         bookings={bookings}
+        club={clubInfo}
         onCreate={loadData}
         onClose={() => setQuickCreateOpen(false)}
       />
@@ -1143,16 +1203,7 @@ export const StaffClubPageManagerTable = () => {
                       return (
                         <div 
                           key={`grid-${table._id}`} 
-                          className="h-[90px] border-b border-gray-100 flex items-center relative hover:bg-gray-50/20 transition-colors w-full cursor-crosshair"
-                          onClick={(e) => {
-                             if (e.target !== e.currentTarget) return;
-                             const rect = e.currentTarget.getBoundingClientRect();
-                             const startTime = minutesToTime(roundMinutes((e.clientX - rect.left) / HOUR_WIDTH * 60, 15));
-                             setModalTarget(null);
-                             window._quickCreateStartTime = startTime;
-                             window._quickCreateTableId = table._id;
-                             setQuickCreateOpen(true);
-                          }}
+                          className="h-[90px] border-b border-gray-100 flex items-center relative hover:bg-gray-50/20 transition-colors w-full"
                         >
                            {tableBookings.map(booking => {
                               if (booking.status === "Cancelled") return null;

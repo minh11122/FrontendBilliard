@@ -20,6 +20,11 @@ import {
 import { GoogleLogin } from "@react-oauth/google";
 import { SiteLogo } from "@/components/common/SiteLogo";
 
+const PASSWORD_REGEX =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{6,}$/;
+const PASSWORD_POLICY_MESSAGE =
+  "Mật khẩu ≥6 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt";
+
 export function RegisterForm() {
   const navigate = useNavigate();
   const [step, setStep] = useState("register");
@@ -46,7 +51,7 @@ export function RegisterForm() {
       .email("Email không hợp lệ")
       .required("Vui lòng nhập email"),
     password: Yup.string()
-      .min(6, "Mật khẩu tối thiểu 6 ký tự")
+      .matches(PASSWORD_REGEX, PASSWORD_POLICY_MESSAGE)
       .required("Vui lòng nhập mật khẩu"),
     confirmPassword: Yup.string()
       .oneOf([Yup.ref("password"), null], "Mật khẩu xác nhận không khớp")
@@ -164,7 +169,7 @@ export function RegisterForm() {
                 onSuccess={async (res) => {
                   try {
                     await registerGoogle(res.credential);
-                    toast.success("Đăng ký Google thành công!");
+                    toast.success("Đăng ký Google thành công. Mật khẩu đã được gửi về email.");
                     navigate("/auth/login");
                   } catch (error) {
                     toast.error(

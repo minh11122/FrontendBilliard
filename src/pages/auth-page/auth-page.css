@@ -58,6 +58,14 @@
   pointer-events: all;
 }
 
+.auth-card.verification-mode .register-container {
+  z-index: 120;
+}
+
+.auth-card.verification-mode .overlay-container {
+  pointer-events: none;
+}
+
 .overlay-container {
   position: absolute;
   top: 0;
