@@ -21,7 +21,7 @@ const computeInvoice = (booking, services = []) => {
 
   const startMin = timeToMinutes(booking.start_time);
   let endMin = timeToMinutes(booking.end_time);
-  if (endMin <= startMin) endMin += 24 * 60;
+  if (endMin < startMin) endMin += 24 * 60;
 
   const durationHours = (endMin - startMin) / 60;
   const playCost = Math.round(durationHours * (booking.hour_price || 0));

@@ -291,7 +291,7 @@ const BookingDetailModal = ({ table, booking, allTables, onClose, onRefresh }) =
                           ? (() => {
                               const startMin = timeToMinutes(booking.start_time);
                               let endMin = timeToMinutes(booking.end_time);
-                              if (endMin <= startMin && endMin !== 0) endMin += 24 * 60;
+                              if (endMin < startMin && endMin !== 0) endMin += 24 * 60;
                               const dur = Math.max(0, (endMin - startMin) / 60);
                               const playCost = dur * (booking.hour_price || 0);
                               const serviceTotal = bookingServices.reduce((sum, s) => sum + (s.unit_price * s.quantity), 0);

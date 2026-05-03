@@ -72,7 +72,7 @@ const roundMinutes = (m, step = 5) => Math.max(0, Math.floor(m / step) * step);
 const isTableBusyAt = (tableId, date, startTime, endTime, bookings) => {
   const newStart = timeToMinutes(startTime);
   let newEnd = timeToMinutes(endTime);
-  if (newEnd <= newStart && newEnd !== 0) newEnd += 24 * 60; // Next day
+  if (newEnd < newStart && newEnd !== 0) newEnd += 24 * 60; // Next day
   const target = new Date(date);
   target.setHours(0, 0, 0, 0);
 
@@ -95,7 +95,7 @@ const isTableBusyAt = (tableId, date, startTime, endTime, bookings) => {
     let e = b.end_time ? timeToMinutes(b.end_time) : s + 60;
     
     // Normalize overnight
-    if (e <= s) e += 24 * 60;
+    if (e < s) e += 24 * 60;
 
     // Adjust for date difference
     s -= diffDays * 24 * 60;
@@ -127,7 +127,7 @@ const getBlockStyle = (booking, currentDate) => {
   if (displayEndTime) {
     const [eh, em] = displayEndTime.split(':').map(Number);
     endMinutes = eh * 60 + em;
-    if (endMinutes <= startMinutes && endMinutes !== 0) endMinutes += 24 * 60; // Next day
+    if (endMinutes < startMinutes && endMinutes !== 0) endMinutes += 24 * 60; // Next day
   } else {
     endMinutes = startMinutes + 60;
   }
@@ -185,7 +185,7 @@ const getTableDerivedStatus = (table, dateFilter, bookingsForTable) => {
       
       let startMin = sh * 60 + sm;
       let endMin = eh * 60 + em;
-      if (endMin <= startMin) endMin += 24 * 60;
+      if (endMin < startMin) endMin += 24 * 60;
       
       startMin -= diffDays * 24 * 60;
       endMin -= diffDays * 24 * 60;
@@ -414,7 +414,7 @@ const TableDetailModal = ({ table, booking, isBookingActive, allTables, onClose,
                             ? (() => {
                                 const startMin = timeToMinutes(booking.start_time);
                                 let endMin = timeToMinutes(booking.end_time);
-                                if (endMin <= startMin && endMin !== 0) endMin += 24 * 60;
+                                if (endMin < startMin && endMin !== 0) endMin += 24 * 60;
                                 const dur = Math.max(0, (endMin - startMin) / 60);
                                 const playCost = dur * (booking.hour_price || 0);
                                 const serviceTotal = bookingServices.reduce((sum, s) => sum + (s.unit_price * s.quantity), 0);
