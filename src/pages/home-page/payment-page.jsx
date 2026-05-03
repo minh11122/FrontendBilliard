@@ -453,7 +453,7 @@ export const PaymentPage = () => {
               <p className="text-slate-700 leading-relaxed font-medium text-sm">
                 Bằng việc xác nhận thanh toán, bạn đồng ý với điều khoản:
                 <span className="text-rose-600 font-bold ml-1 italic">
-                  "Nếu quá giờ đặt bàn mà bạn không đến, tiền cọc sẽ bị mất hoàn toàn để giữ quyền lợi cho quán."
+                  "Nếu quá 15 phút khi đến giờ chơi mà bạn không đến, tiền cọc sẽ bị mất hoàn toàn."
                 </span>
               </p>
             </div>

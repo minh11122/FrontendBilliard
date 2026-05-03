@@ -358,11 +358,6 @@ export default function OwnerTournamentListPage() {
                         <button onClick={() => navigate(`/owner/tournaments/${t._id}/players`)} className="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:bg-slate-50 transition">
                           <Users size={14} /> Người chơi
                         </button>
-                        {t.registered_player > 0 && (
-                          <button onClick={() => handleCancel(t)} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:bg-red-100 transition">
-                            <XCircle size={14} /> Hủy giải
-                          </button>
-                        )}
                       </>
                     )}
 
