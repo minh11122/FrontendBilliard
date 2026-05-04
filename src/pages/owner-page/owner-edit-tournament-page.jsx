@@ -6,6 +6,7 @@ import {
   DollarSign, Award, Settings2, ChevronLeft, Loader2
 } from "lucide-react";
 import { getTournamentById, updateTournament } from "@/services/tournament.service";
+import { getTables } from "@/services/billiardTable.service";
 
 export default function OwnerEditTournamentPage() {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ export default function OwnerEditTournamentPage() {
   const [bannerPreview, setBannerPreview] = useState("");
   const [errors, setErrors] = useState({});
   const [canEdit, setCanEdit] = useState(true);
+  const [tableTypes, setTableTypes] = useState([]);
 
   const formatDateTimeLocal = (date) => {
     if (!date) return "";
@@ -40,6 +42,7 @@ export default function OwnerEditTournamentPage() {
     registration_deadline: "",
     play_date: "",
     auto_bracket: true,
+    table_type_id: "",
   });
 
   const formatOptions = [
@@ -52,6 +55,27 @@ export default function OwnerEditTournamentPage() {
 
   // Fetch existing data
   useEffect(() => {
+    const fetchTableTypes = async () => {
+      try {
+        const CLUB_ID = localStorage.getItem("selected_club_id");
+        if (!CLUB_ID) return;
+        const res = await getTables({ club_id: CLUB_ID, limit: 100 });
+        if (res?.data?.success) {
+          const allTables = res.data.data || [];
+          const uniqueTypesMap = new Map();
+          allTables.forEach((t) => {
+            if (t.table_type_id && t.table_type_id._id) {
+              uniqueTypesMap.set(t.table_type_id._id, t.table_type_id);
+            }
+          });
+          setTableTypes(Array.from(uniqueTypesMap.values()));
+        }
+      } catch (err) {
+        console.error("Failed to fetch tables to extract types", err);
+      }
+    };
+    fetchTableTypes();
+
     const fetchData = async () => {
       try {
         const res = await getTournamentById(id);
@@ -68,6 +92,7 @@ export default function OwnerEditTournamentPage() {
             registration_deadline: t.registration_deadline ? formatDateTimeLocal(t.registration_deadline) : "",
             play_date: t.play_date ? formatDateTimeLocal(t.play_date) : "",
             auto_bracket: t.auto_bracket !== undefined ? t.auto_bracket : true,
+            table_type_id: t.table_type_id?._id || t.table_type_id || "",
           });
           setCanEdit((t.registered_player || 0) === 0);
           // Only show valid remote URLs (not blob: from old data)
@@ -156,6 +181,11 @@ export default function OwnerEditTournamentPage() {
       return;
     }
 
+    if (!form.table_type_id) {
+      toast.error("Vui lòng chọn loại bàn thi đấu");
+      return;
+    }
+
     if (!String(form.prize_pool ?? "").trim()) {
       toast.error("Vui lòng nhập tiền thưởng");
       return;
@@ -176,6 +206,7 @@ export default function OwnerEditTournamentPage() {
       formData.append("fee", Number(form.fee) || 0);
       formData.append("prize_pool", String(form.prize_pool).trim());
       formData.append("auto_bracket", form.auto_bracket);
+      if (form.table_type_id) formData.append("table_type_id", form.table_type_id);
       if (form.registration_open) formData.append("registration_open", form.registration_open);
       if (form.registration_deadline) formData.append("registration_deadline", form.registration_deadline);
       if (form.play_date) formData.append("play_date", form.play_date);
@@ -267,6 +298,17 @@ export default function OwnerEditTournamentPage() {
                 placeholder="Mô tả chi tiết về giải đấu..."
                 rows={4} className={`${inputClass} resize-none`} />
               <p className="text-xs text-slate-400 mt-1 text-right">{form.description.length}/1000</p>
+            </div>
+            <div>
+              <label className={labelClass}>Loại bàn thi đấu <span className="text-red-500">*</span></label>
+              <select name="table_type_id" value={form.table_type_id} onChange={handleChange} className={inputClass}>
+                <option value="">Chọn loại bàn...</option>
+                {tableTypes.map((type) => (
+                  <option key={type._id} value={type._id}>
+                    {type.name}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
