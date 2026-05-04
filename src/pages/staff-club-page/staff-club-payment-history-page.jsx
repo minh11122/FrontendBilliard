@@ -117,7 +117,7 @@ export default function StaffClubPaymentHistoryPage() {
       <div className="max-w-5xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-black">Lịch sử chuyển khoản của CLB</h1>
+            <h1 className="text-3xl font-black">Lịch sử giao dịch của CLB</h1>
             <p className="text-slate-500 mt-1">Theo dõi giao dịch liên quan đặt bàn.</p>
           </div>
 
