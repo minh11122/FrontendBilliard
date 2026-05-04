@@ -644,9 +644,9 @@ const TableDetailModal = ({ table, booking, isBookingActive, allTables, onClose,
                   {!booking.note?.includes("TournamentMatch:") ? (
                     <Button 
                       variant="default" 
-                      className="w-full bg-green-600 hover:bg-green-700 text-white font-bold h-12 shadow-lg rounded-xl mt-2"
+                      className={`w-full font-bold h-12 shadow-lg rounded-xl mt-2 transition-all ${isNotStarted ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-60' : 'bg-green-600 hover:bg-green-700 text-white'}`}
                       onClick={handleCheckoutClick}
-                      disabled={loading}
+                      disabled={loading || isNotStarted}
                     >
                       <CheckCircle2 size={18} className="mr-2" /> Thanh toán / Kết thúc
                     </Button>

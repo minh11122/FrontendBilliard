@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import axios from "@/lib/axios";
@@ -125,6 +125,35 @@ const BookingDetailModal = ({ table, booking, allTables, onClose, onRefresh }) =
   const [extendMinutes, setExtendMinutes] = useState(30);
   const [showChangeTablePanel, setShowChangeTablePanel] = useState(false);
   const [selectedNewTable, setSelectedNewTable] = useState("");
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  const isTimeOver = useMemo(() => {
+    if (!booking || booking.status !== "Playing" || !booking.end_time || !booking.play_date) return false;
+    const [eH, eM] = booking.end_time.split(":").map(Number);
+    const [sH, sM] = (booking.start_time || "00:00").split(":").map(Number);
+    const endTimeObj = new Date(booking.play_date);
+    endTimeObj.setHours(eH, eM, 0, 0);
+    if (eH < sH || (eH === sH && eM < sM)) {
+      endTimeObj.setDate(endTimeObj.getDate() + 1);
+    }
+    return currentTime >= endTimeObj;
+  }, [booking, currentTime]);
+
+  const isNotStarted = useMemo(() => {
+    if (!booking || !booking.start_time || !booking.play_date) return false;
+    const [sH, sM] = booking.start_time.split(":").map(Number);
+    const startTimeObj = new Date(booking.play_date);
+    startTimeObj.setHours(sH, sM, 0, 0);
+    return currentTime < startTimeObj;
+  }, [booking, currentTime]);
+
+  const isTransferDisabled = isTimeOver || isNotStarted;
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
 
   useEffect(() => {
     if (booking) {
@@ -351,7 +380,15 @@ const BookingDetailModal = ({ table, booking, allTables, onClose, onRefresh }) =
                     <div className="grid grid-cols-3 gap-3">
                       <button onClick={() => { setShowOrderPanel(!showOrderPanel); setShowExtendPanel(false); setShowChangeTablePanel(false); }} className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${showOrderPanel ? 'bg-green-600 border-green-600 text-white shadow-lg' : 'bg-white border-gray-200 text-green-600 hover:bg-green-50'}`}><ShoppingCart size={24} /><span className="text-[11px] font-bold uppercase">ORDER</span></button>
                       <button onClick={() => { setShowExtendPanel(!showExtendPanel); setShowOrderPanel(false); setShowChangeTablePanel(false); }} className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${showExtendPanel ? 'bg-green-600 border-green-600 text-white shadow-lg' : 'bg-white border-gray-200 text-green-600 hover:bg-green-50'}`}><RotateCcw size={24} /><span className="text-[11px] font-bold uppercase">GIA HẠN</span></button>
-                      <button onClick={() => { setShowChangeTablePanel(!showChangeTablePanel); setShowOrderPanel(false); setShowExtendPanel(false); }} className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${showChangeTablePanel ? 'bg-green-600 border-green-600 text-white shadow-lg' : 'bg-white border-gray-200 text-green-600 hover:bg-green-50'}`}><ArrowLeftRight size={24} /><span className="text-[11px] font-bold uppercase">ĐỔI BÀN</span></button>
+                      <button 
+                        onClick={() => { setShowChangeTablePanel(!showChangeTablePanel); setShowOrderPanel(false); setShowExtendPanel(false); }} 
+                        disabled={isTransferDisabled}
+                        className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${isTransferDisabled ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-60' : showChangeTablePanel ? 'bg-green-600 border-green-600 text-white shadow-lg' : 'bg-white border-gray-200 text-green-600 hover:bg-green-50'}`}
+                      >
+                        <ArrowLeftRight size={24} />
+                        <span className="text-[11px] font-bold uppercase">ĐỔI BÀN</span>
+                      </button>
+
                     </div>
 
                     {showExtendPanel && (
@@ -402,9 +439,14 @@ const BookingDetailModal = ({ table, booking, allTables, onClose, onRefresh }) =
                 )}
 
                 {!booking.note?.includes("TournamentMatch:") ? (
-                  <Button className="w-full bg-green-600 hover:bg-green-700 text-white font-bold h-12 shadow-lg rounded-xl" onClick={handleCheckout} disabled={loading}>
+                  <Button 
+                    className={`w-full font-bold h-12 shadow-lg rounded-xl transition-all ${isNotStarted ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-60' : 'bg-green-600 hover:bg-green-700 text-white'}`}
+                    onClick={handleCheckout} 
+                    disabled={loading || isNotStarted}
+                  >
                     <CheckCircle2 size={18} className="mr-2" /> Thanh toán / Kết thúc
                   </Button>
+
                 ) : (
                   <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-center">
                     <p className="text-sm font-bold text-blue-700">Trận đấu giải đang diễn ra</p>
