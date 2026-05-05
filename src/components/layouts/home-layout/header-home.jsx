@@ -335,7 +335,7 @@ export const HeaderHome = () => {
               }`
             }
           >
-            Lịch sử chuyển khoản
+            Lịch sử giao dịch
           </NavLink>
         </nav>
 
@@ -642,7 +642,7 @@ export const HeaderHome = () => {
                 }`
               }
             >
-              Lịch sử chuyển khoản
+              Lịch sử giao dịch
             </NavLink>
 
             {/* Mobile Auth Buttons (if not logged in) */}

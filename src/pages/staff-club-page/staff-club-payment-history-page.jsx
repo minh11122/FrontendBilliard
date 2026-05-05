@@ -9,6 +9,7 @@ const TYPE_META = {
   BOOKING_DEPOSIT: "Cọc đặt bàn",
   BOOKING_FINAL_PAYMENT_TRANSFER: "Chuyển khoản thanh toán nốt",
   BOOKING_FINAL_PAYMENT_CASH: "Thanh toán nốt (tiền mặt)",
+  TOURNAMENT_FEE: "Lệ phí tham gia giải đấu",
 };
 
 const STATUS_META = {
@@ -38,6 +39,9 @@ const getContentLabel = (tx) => {
   const typeLabel = TYPE_META[tx.transaction_type] || "Giao dịch";
   if (tx.booking?.code_number) {
     return `${typeLabel} cho booking ${tx.booking.code_number} - bàn ${tx.table?.table_number || "—"}`;
+  }
+  if (tx.tournament?.name) {
+    return `${typeLabel}: ${tx.tournament.name}`;
   }
   if (tx.description) return `${typeLabel}: ${tx.description}`;
   return typeLabel;
@@ -77,18 +81,19 @@ export default function StaffClubPaymentHistoryPage() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return transactions;
     return transactions.filter((tx) => {
       const matchType = typeFilter === "all" || tx.transaction_type === typeFilter;
       const matchStatus = statusFilter === "all" || tx.status === statusFilter;
       if (!matchType || !matchStatus) return false;
+      if (!q) return true;
       const player = tx.player?.fullname || tx.player?.email || "";
       const booking = tx.booking?.code_number || "";
       const table = tx.table?.table_number || "";
       const club = tx.club?.name || "";
+      const tournament = tx.tournament?.name || "";
       const type = TYPE_META[tx.transaction_type] || tx.transaction_type || "";
       const desc = getContentLabel(tx);
-      return `${player} ${booking} ${table} ${club} ${type} ${desc}`.toLowerCase().includes(q);
+      return `${player} ${booking} ${table} ${club} ${tournament} ${type} ${desc}`.toLowerCase().includes(q);
     });
   }, [transactions, search, typeFilter, statusFilter]);
 

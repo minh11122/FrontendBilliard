@@ -93,7 +93,7 @@ export const SidebarOwner = () => {
       roles: ["pro"]
     },
     {
-      name: "Lịch sử chuyển khoản",
+      name: "Lịch sử giao dịch",
       href: "/owner/payment-history",
       icon: CreditCard,
       roles: ["free", "basic", "pro"]

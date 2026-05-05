@@ -85,7 +85,7 @@ export const PaymentHistoryPage = () => {
 
   useEffect(() => {
     if (!user?.id) {
-      toast("Vui lòng đăng nhập để xem lịch sử chuyển khoản", { icon: "🔒" });
+      toast("Vui lòng đăng nhập để xem lịch sử giao dịch", { icon: "🔒" });
       navigate("/auth/login");
       return;
     }
@@ -160,7 +160,7 @@ export const PaymentHistoryPage = () => {
       <div className="container mx-auto px-6 py-8">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-black">Lịch sử chuyển khoản</h1>
+            <h1 className="text-3xl font-black">Lịch sử giao dịch</h1>
             <p className="text-slate-500 mt-1">
               Xem các giao dịch nạp/cọc/thanh toán bạn đã thực hiện.
             </p>
