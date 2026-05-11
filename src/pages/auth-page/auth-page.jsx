@@ -333,7 +333,7 @@ export function AuthPage() {
         }`}
       >
         <div className={`form-container register-container ${!isLogin ? "form-active" : ""}`}>
-          <div className="auth-form-wrapper">
+          <div className="auth-form-wrapper register-form-wrapper">
             {registerStep === "register" ? (
               <form onSubmit={registerFormik.handleSubmit}>
                 <h1 className="text-3xl text-green-600">Đăng ký</h1>
@@ -371,7 +371,11 @@ export function AuthPage() {
                   </div>
                 </div>
 
-                <p className="text-red-500 text-sm">{registerFormik.errors.password}</p>
+                {registerFormik.touched.password && registerFormik.errors.password && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {registerFormik.errors.password}
+                  </p>
+                )}
 
                 <div className="mb-4">
                   <label className="text-sm font-semibold text-gray-700 block mb-1">Xác nhận mật khẩu</label>
@@ -391,7 +395,11 @@ export function AuthPage() {
                   </div>
                 </div>
 
-                <p className="text-red-500 text-sm">{registerFormik.errors.confirmPassword}</p>
+                {registerFormik.touched.confirmPassword && registerFormik.errors.confirmPassword && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {registerFormik.errors.confirmPassword}
+                  </p>
+                )}
 
                 <button type="submit" className="btn-solid w-full">Đăng ký</button>
 

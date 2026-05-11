@@ -75,7 +75,8 @@
   overflow: hidden;
   transition: transform 0.6s ease-in-out;
   z-index: 100;
-  border-radius: 40px 150px 150px 40px; /* Large rounded corners on the inner side */
+  border-radius: 40px 150px 150px 40px;
+  /* Large rounded corners on the inner side */
 }
 
 .auth-card.right-panel-active .overlay-container {
@@ -84,7 +85,7 @@
 }
 
 .overlay {
-  background: #16a34a; 
+  background: #16a34a;
   color: #fff;
   position: relative;
   left: 0;
@@ -102,8 +103,10 @@
   position: absolute;
   display: flex;
   align-items: center;
-  justify-content: flex-start; /* Move to the top */
-  padding-top: 100px; /* Offset from top */
+  justify-content: flex-start;
+  /* Move to the top */
+  padding-top: 100px;
+  /* Offset from top */
   flex-direction: column;
   padding-left: 40px;
   padding-right: 40px;
@@ -113,14 +116,16 @@
   width: 50%;
   transform: translateX(0);
   transition: transform 0.6s ease-in-out;
-  text-shadow: 0 4px 10px rgba(0,0,0,0.6); /* Deeper shadow for readability */
+  text-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+  /* Deeper shadow for readability */
 }
 
 .overlay-panel h1 {
   font-size: 36px;
   margin-bottom: 10px;
   line-height: 1.1;
-  font-weight: 800; /* Extra bold for impact */
+  font-weight: 800;
+  /* Extra bold for impact */
 }
 
 .overlay-panel p {
@@ -135,7 +140,7 @@
 .overlay-left {
   left: 0;
   transform: translateX(0);
-  background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('/img-home/login.png');
+  background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/img-home/login.png');
   background-size: cover;
   background-position: center;
 }
@@ -147,7 +152,7 @@
 .overlay-right {
   right: 0;
   transform: translateX(0);
-  background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('/img-home/regis.png');
+  background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/img-home/regis.png');
   background-size: cover;
   background-position: center;
 }
@@ -162,6 +167,11 @@
   flex-direction: column;
   justify-content: center;
   height: 100%;
+}
+
+.register-form-wrapper {
+  justify-content: flex-start;
+  overflow-y: auto;
 }
 
 .auth-input {
@@ -264,7 +274,7 @@
     border-radius: 20px;
     margin-top: 40px;
   }
-  
+
   .auth-form-wrapper {
     padding: 30px 20px;
   }
@@ -277,13 +287,12 @@
     opacity: 1 !important;
     display: none;
   }
-  
+
   .form-active {
     display: block !important;
   }
-  
+
   .overlay-container {
     display: none;
   }
 }
-
