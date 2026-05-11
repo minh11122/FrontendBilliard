@@ -21,6 +21,7 @@ export const PaymentPage = () => {
   const [showTermsModal, setShowTermsModal] = useState(false);
   const allowNavRef = useRef(false);
   const [creatingPayOS, setCreatingPayOS] = useState(false);
+  const autoCancelTriggeredRef = useRef(false);
 
   // Chặn mọi điều hướng trong React Router (back, navbar, link...)
   const blocker = useBlocker(({ currentLocation, nextLocation }) => {
@@ -73,13 +74,22 @@ export const PaymentPage = () => {
 
     const heldUntil = new Date(bookingData.heldUntil).getTime();
 
-    const updateTimer = () => {
+    const updateTimer = async () => {
       const now = Date.now();
       const remaining = Math.max(0, Math.floor((heldUntil - now) / 1000));
       setTimeLeft(remaining);
 
-      if (remaining <= 0) {
-        toast.error("Hết thời gian giữ chỗ. Bàn đã được trả về.");
+      if (remaining <= 0 && !autoCancelTriggeredRef.current) {
+        autoCancelTriggeredRef.current = true;
+        const bookingIdForCancel = bookingData?.booking?._id;
+        if (bookingIdForCancel) {
+          try {
+            await cancelHold(bookingIdForCancel);
+          } catch {
+            // ignore: booking may already be cancelled by server/cron
+          }
+        }
+        toast.error("Hết thời gian giữ chỗ. Đơn đặt đã tự động hủy.");
         allowNavRef.current = true;
         if (storageKey) sessionStorage.removeItem(storageKey);
         navigate("/booking");
@@ -89,7 +99,7 @@ export const PaymentPage = () => {
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [bookingData?.heldUntil, navigate, storageKey]);
+  }, [bookingData?.heldUntil, bookingData?.booking?._id, navigate, storageKey]);
 
   // Xử lý nút quay lại
   const handleBack = useCallback(() => {
@@ -164,6 +174,11 @@ export const PaymentPage = () => {
   };
 
   const handleCreatePayOSCode = async (redirectImmediately = false) => {
+    if (timeLeft <= 0) {
+      toast.error("Đơn đặt đã hết thời gian giữ chỗ, không thể thanh toán");
+      return;
+    }
+
     try {
       setCreatingPayOS(true);
       const res = await createPayOSBookingPayment(booking?._id);
@@ -285,7 +300,7 @@ export const PaymentPage = () => {
             {/* Confirm Button */}
             <button
               onClick={handleConfirmPayment}
-              disabled={!agreedToTerms || creatingPayOS || cancelling}
+              disabled={!agreedToTerms || creatingPayOS || cancelling || timeLeft <= 0}
               className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold text-lg rounded-xl shadow-[0_4px_16px_rgba(16,185,129,0.3)] disabled:shadow-none transition-all active:scale-[0.99] flex items-center justify-center gap-3 mb-4"
             >
               {creatingPayOS ? (

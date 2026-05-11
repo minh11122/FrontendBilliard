@@ -12,6 +12,7 @@ const buildUserFromToken = (token, roleName = null) => {
     roleId: decoded.roleId,
     roleName: roleName || decoded.role || null,
     fullname: localStorage.getItem("user_fullname") || null,
+    clubId: decoded.club_id || null,
   };
 };
 

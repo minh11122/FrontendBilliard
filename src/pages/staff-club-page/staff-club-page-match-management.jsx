@@ -538,7 +538,18 @@ export const StaffClubPageMatchManagement = () => {
                   className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                 >
                   <option value="">Chọn bàn...</option>
-                  {tables.map((table) => (
+                  {tables
+                    .filter((table) => {
+                      // Bỏ qua các bàn không khả dụng (đang chơi, bảo trì, hoặc có khách đặt)
+                      if (table.status !== "Available") return false;
+                      if (table.activeBooking && ["Playing", "Booked"].includes(table.activeBooking.status)) return false;
+
+                      if (!tournament?.table_type_id) return true;
+                      const tourType = tournament.table_type_id._id || tournament.table_type_id;
+                      const tType = table.table_type_id?._id || table.table_type_id;
+                      return String(tourType) === String(tType);
+                    })
+                    .map((table) => (
                     <option key={table._id} value={table._id}>
                       Bàn {table.table_number || table.name || table._id}
                     </option>

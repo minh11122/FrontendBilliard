@@ -14,13 +14,13 @@ import { clubService } from "@/services/club.service";
 import { getProvinces, getDistrictsByProvince, matchAdministrativeUnit } from "@/services/location.service";
 import { uploadImages } from "@/utils/cloudinary";
 import { MapAddressPicker } from "@/components/common/MapAddressPicker";
-import { 
-  Building2, 
-  CreditCard, 
-  Settings2, 
-  Upload, 
-  Image as ImageIcon, 
-  X, 
+import {
+  Building2,
+  CreditCard,
+  Settings2,
+  Upload,
+  Image as ImageIcon,
+  X,
   Save,
   MapPin,
   Clock,
@@ -32,7 +32,7 @@ import {
 
 export function SettingPage() {
   const [activeTab, setActiveTab] = useState("info"); // "info", "subscription", "payment"
-  
+
   // Data states
   const [subscriptions, setSubscriptions] = useState([]);
   const [selectedDurationByPlan, setSelectedDurationByPlan] = useState({});
@@ -75,27 +75,27 @@ export function SettingPage() {
     deposit_percentage: 30
   });
   const guideSteps = [
-  {
-    title: "Bước 1: Đăng nhập PayOS",
-    image: step1
-  },
-  {
-    title: "Bước 2: Xác thực tài khoản",
-    image: step2
-  },
-  {
-    title: "Bước 3: Xác thực ngân hàng",
-    image: step3
-  },
-  {
-    title: "Bước 4: Tạo kênh thanh toán",
-    image: step4
-  },
-  {
-    title: "Bước 5: Copy API Key",
-    image: step5
-  }
-];
+    {
+      title: "Bước 1: Đăng nhập PayOS",
+      image: step1
+    },
+    {
+      title: "Bước 2: Xác thực tài khoản",
+      image: step2
+    },
+    {
+      title: "Bước 3: Xác thực ngân hàng",
+      image: step3
+    },
+    {
+      title: "Bước 4: Tạo kênh thanh toán",
+      image: step4
+    },
+    {
+      title: "Bước 5: Copy API Key",
+      image: step5
+    }
+  ];
 
   const [provinces, setProvinces] = useState([]);
   const [mapSearch, setMapSearch] = useState("");
@@ -152,7 +152,7 @@ export function SettingPage() {
         const club = clubRes.data;
         const avatarImg = club.images?.find(img => img.image_type === "Avatar")?.image_url || "";
         const bgImages = club.images?.filter(img => img.image_type === "Background").map(img => img.image_url) || [];
-        
+
         setClubData({
           name: club.name || "",
           address: club.address || "",
@@ -208,7 +208,7 @@ export function SettingPage() {
 
   const handleLocationSelect = (data) => {
     const { lat, lng, address, provinceName, districtName } = data;
-    
+
     setClubData(prev => ({
       ...prev,
       lat,
@@ -225,7 +225,7 @@ export function SettingPage() {
       getDistrictsByProvince(matchedProvince.code).then(res => {
         const dList = res?.data || [];
         const matchedDistrict = matchAdministrativeUnit(districtName, dList);
-        
+
         setClubData(prev => ({
           ...prev,
           province_code: matchedProvince.code,
@@ -371,7 +371,7 @@ export function SettingPage() {
             <h1 className="text-2xl font-bold text-gray-900">Cài đặt hệ thống</h1>
             <p className="text-gray-500">Quản lý thông tin quán, gói dịch vụ và thanh toán</p>
           </div>
-          
+
           {activeTab === "info" && (
             <div className="flex gap-3">
               {isEditing ? (
@@ -408,9 +408,8 @@ export function SettingPage() {
           <button
             onClick={() => setActiveTab("info")}
             disabled={isBankRequired}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-medium transition-all ${
-              activeTab === "info" ? "bg-orange-500 text-white shadow-md shadow-orange-100" : "text-gray-500 hover:bg-gray-50"
-            }`}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === "info" ? "bg-orange-500 text-white shadow-md shadow-orange-100" : "text-gray-500 hover:bg-gray-50"
+              }`}
           >
             <Building2 className="w-4 h-4" />
             Thông tin quán
@@ -418,21 +417,19 @@ export function SettingPage() {
           <button
             onClick={() => setActiveTab("subscription")}
             disabled={isBankRequired}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-medium transition-all ${
-              activeTab === "subscription" ? "bg-orange-500 text-white shadow-md shadow-orange-100" : "text-gray-500 hover:bg-gray-50"
-            }`}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === "subscription" ? "bg-orange-500 text-white shadow-md shadow-orange-100" : "text-gray-500 hover:bg-gray-50"
+              }`}
           >
             <Settings2 className="w-4 h-4" />
             Gói dịch vụ
           </button>
           <button
             onClick={() => setActiveTab("payment")}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-medium transition-all ${
-              activeTab === "payment" ? "bg-orange-500 text-white shadow-md shadow-orange-100" : "text-gray-500 hover:bg-gray-50"
-            }`}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === "payment" ? "bg-orange-500 text-white shadow-md shadow-orange-100" : "text-gray-500 hover:bg-gray-50"
+              }`}
           >
             <CreditCard className="w-4 h-4" />
-            Thanh toán
+            Cấu hình tiền cọc
           </button>
         </div>
 
@@ -452,7 +449,7 @@ export function SettingPage() {
                     <span className="text-xs text-gray-400 bg-gray-50 px-3 py-1.5 rounded-lg border border-dashed">Chế độ xem — Bấm "Chỉnh sửa" để sửa</span>
                   )}
                 </div>
-                
+
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-gray-700">Tên câu lạc bộ</label>
@@ -460,7 +457,7 @@ export function SettingPage() {
                       <input
                         type="text"
                         value={clubData.name}
-                        onChange={(e) => setClubData({...clubData, name: e.target.value})}
+                        onChange={(e) => setClubData({ ...clubData, name: e.target.value })}
                         className="w-full px-4 py-3 rounded-xl border border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all bg-orange-50/30"
                         placeholder="Nhập tên quán..."
                       />
@@ -476,7 +473,7 @@ export function SettingPage() {
                         <input
                           type="text"
                           value={clubData.phone}
-                          onChange={(e) => setClubData({...clubData, phone: e.target.value})}
+                          onChange={(e) => setClubData({ ...clubData, phone: e.target.value })}
                           className="w-full pl-11 pr-4 py-3 rounded-xl border border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all bg-orange-50/30"
                           placeholder="09xx xxx xxx"
                         />
@@ -491,7 +488,7 @@ export function SettingPage() {
                       <textarea
                         rows={4}
                         value={clubData.description}
-                        onChange={(e) => setClubData({...clubData, description: e.target.value})}
+                        onChange={(e) => setClubData({ ...clubData, description: e.target.value })}
                         className="w-full px-4 py-3 rounded-xl border border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all resize-none bg-orange-50/30"
                         placeholder="Giới thiệu về quán của bạn..."
                       />
@@ -501,31 +498,31 @@ export function SettingPage() {
                   </div>
                   <div className="md:col-span-2">
                     <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 cursor-pointer w-fit">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         checked={clubData.opening_time === "00:00" && clubData.closing_time === "00:00"}
                         onChange={(e) => {
                           if (e.target.checked) {
-                            setClubData({...clubData, opening_time: "00:00", closing_time: "00:00"});
+                            setClubData({ ...clubData, opening_time: "00:00", closing_time: "00:00" });
                           } else {
-                            setClubData({...clubData, opening_time: "08:00", closing_time: "23:30"});
+                            setClubData({ ...clubData, opening_time: "08:00", closing_time: "23:30" });
                           }
                         }}
                         disabled={!isEditing}
                         className="w-4 h-4 text-orange-500 rounded border-gray-300 focus:ring-orange-500 disabled:opacity-50"
                       />
-                      Quán mở cửa 24/24 
+                      Quán mở cửa 24/24
                     </label>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> Giờ mở cửa</label>
                     {isEditing ? (
-                      <input 
-                        type="time" 
+                      <input
+                        type="time"
                         value={clubData.opening_time}
-                        onChange={(e) => setClubData({...clubData, opening_time: e.target.value})}
+                        onChange={(e) => setClubData({ ...clubData, opening_time: e.target.value })}
                         disabled={clubData.opening_time === "00:00" && clubData.closing_time === "00:00"}
-                        className="w-full px-4 py-3 rounded-xl border border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-500/20 bg-orange-50/30 disabled:opacity-50 disabled:bg-gray-100 disabled:border-gray-200" 
+                        className="w-full px-4 py-3 rounded-xl border border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-500/20 bg-orange-50/30 disabled:opacity-50 disabled:bg-gray-100 disabled:border-gray-200"
                       />
                     ) : (
                       <p className="px-4 py-3 rounded-xl bg-gray-50 text-gray-800 font-medium">
@@ -536,12 +533,12 @@ export function SettingPage() {
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> Giờ đóng cửa</label>
                     {isEditing ? (
-                      <input 
-                        type="time" 
+                      <input
+                        type="time"
                         value={clubData.closing_time}
-                        onChange={(e) => setClubData({...clubData, closing_time: e.target.value})}
+                        onChange={(e) => setClubData({ ...clubData, closing_time: e.target.value })}
                         disabled={clubData.opening_time === "00:00" && clubData.closing_time === "00:00"}
-                        className="w-full px-4 py-3 rounded-xl border border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-500/20 bg-orange-50/30 disabled:opacity-50 disabled:bg-gray-100 disabled:border-gray-200" 
+                        className="w-full px-4 py-3 rounded-xl border border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-500/20 bg-orange-50/30 disabled:opacity-50 disabled:bg-gray-100 disabled:border-gray-200"
                       />
                     ) : (
                       <p className="px-4 py-3 rounded-xl bg-gray-50 text-gray-800 font-medium">
@@ -566,129 +563,129 @@ export function SettingPage() {
 
               {/* Quản lý ảnh */}
               <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-                 <h3 className="text-lg font-bold mb-6 flex items-center gap-2 text-gray-800">
-                    <div className="w-2 h-6 bg-orange-500 rounded-full" />
-                    Hình ảnh quán
-                  </h3>
+                <h3 className="text-lg font-bold mb-6 flex items-center gap-2 text-gray-800">
+                  <div className="w-2 h-6 bg-orange-500 rounded-full" />
+                  Hình ảnh quán
+                </h3>
 
-                  <div className="space-y-8">
-                    {/* Avatar Item */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <label className="text-sm font-bold text-gray-700">Avatar (Ảnh đại diện quán)</label>
-                        {isEditing && (
-                          <label className="cursor-pointer text-xs font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
-                            <Upload className="w-3 h-3" /> Thay đổi
-                            <input type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} />
-                          </label>
-                        )}
-                      </div>
-                      
-                      <div className="relative w-32 h-32 rounded-2xl overflow-hidden border-2 border-dashed border-gray-200 bg-gray-50 group">
-                        {clubData.avatar ? (
-                          <img src={clubData.avatar} alt="Avatar" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <ImageIcon className="w-8 h-8 text-gray-300" />
-                          </div>
-                        )}
-                        {uploading && (
-                          <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center">
-                            <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
-                          </div>
-                        )}
-                      </div>
+                <div className="space-y-8">
+                  {/* Avatar Item */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-bold text-gray-700">Avatar (Ảnh đại diện quán)</label>
+                      {isEditing && (
+                        <label className="cursor-pointer text-xs font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+                          <Upload className="w-3 h-3" /> Thay đổi
+                          <input type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} />
+                        </label>
+                      )}
                     </div>
 
-                    {/* Backgrounds Items */}
-                    <div className="space-y-4 border-t border-gray-50 pt-6">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <label className="text-sm font-bold text-gray-700">Backgrounds (Gallery không gian quán)</label>
-                          <p className="text-[10px] text-gray-400">{clubData.backgrounds.length} ảnh • {isEditing ? "Bấm X để xóa" : "Chỉnh sửa để thay đổi"}</p>
-                        </div>
-                        {isEditing && (
-                          <label className="cursor-pointer text-xs font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
-                            <Upload className="w-3 h-3" /> Thêm ảnh
-                            <input type="file" className="hidden" accept="image/*" multiple onChange={handleBackgroundsUpload} />
-                          </label>
-                        )}
-                      </div>
-
-                      {/* Backgrounds grid with pagination */}
-                      {clubData.backgrounds.length > 0 ? (
-                        <div>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                            {clubData.backgrounds
-                              .slice(bgGalleryPage * BG_PER_PAGE, (bgGalleryPage + 1) * BG_PER_PAGE)
-                              .map((url, idx) => {
-                                const realIdx = bgGalleryPage * BG_PER_PAGE + idx;
-                                return (
-                                  <div key={realIdx} className="relative aspect-video rounded-xl overflow-hidden bg-gray-100 group">
-                                    <img src={url} alt={`BG ${realIdx}`} className="w-full h-full object-cover" />
-                                    {isEditing && (
-                                      <button 
-                                        onClick={() => removeBackground(realIdx)}
-                                        className="absolute top-1 right-1 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                                      >
-                                        <X className="w-3 h-3" />
-                                      </button>
-                                    )}
-                                  </div>
-                                );
-                              })
-                            }
-                            {uploading && (
-                              <div className="aspect-video rounded-xl border-2 border-dashed border-orange-100 bg-orange-50/50 flex items-center justify-center">
-                                <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
-                              </div>
-                            )}
-                          </div>
-                          {/* Pagination controls */}
-                          {Math.ceil(clubData.backgrounds.length / BG_PER_PAGE) > 1 && (
-                            <div className="flex items-center justify-between mt-4">
-                              <span className="text-xs text-gray-400">{bgGalleryPage * BG_PER_PAGE + 1}–{Math.min((bgGalleryPage + 1) * BG_PER_PAGE, clubData.backgrounds.length)} / {clubData.backgrounds.length} ảnh</span>
-                              <div className="flex gap-2">
-                                <button onClick={() => setBgGalleryPage(p => Math.max(0, p - 1))} disabled={bgGalleryPage === 0} className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 transition-all">
-                                  <ChevronLeft className="w-4 h-4" />
-                                </button>
-                                <button onClick={() => setBgGalleryPage(p => Math.min(Math.ceil(clubData.backgrounds.length / BG_PER_PAGE) - 1, p + 1))} disabled={bgGalleryPage >= Math.ceil(clubData.backgrounds.length / BG_PER_PAGE) - 1} className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 transition-all">
-                                  <ChevronRight className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                    <div className="relative w-32 h-32 rounded-2xl overflow-hidden border-2 border-dashed border-gray-200 bg-gray-50 group">
+                      {clubData.avatar ? (
+                        <img src={clubData.avatar} alt="Avatar" className="w-full h-full object-cover" />
                       ) : (
-                        !uploading && (
-                          <div className="py-8 text-center bg-gray-50 rounded-2xl border-2 border-dashed border-gray-100">
-                            <ImageIcon className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-                            <p className="text-xs text-gray-400">Chưa có ảnh không gian nào</p>
-                          </div>
-                        )
+                        <div className="w-full h-full flex items-center justify-center">
+                          <ImageIcon className="w-8 h-8 text-gray-300" />
+                        </div>
+                      )}
+                      {uploading && (
+                        <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center">
+                          <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                        </div>
                       )}
                     </div>
                   </div>
+
+                  {/* Backgrounds Items */}
+                  <div className="space-y-4 border-t border-gray-50 pt-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <label className="text-sm font-bold text-gray-700">Backgrounds (Gallery không gian quán)</label>
+                        <p className="text-[10px] text-gray-400">{clubData.backgrounds.length} ảnh • {isEditing ? "Bấm X để xóa" : "Chỉnh sửa để thay đổi"}</p>
+                      </div>
+                      {isEditing && (
+                        <label className="cursor-pointer text-xs font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+                          <Upload className="w-3 h-3" /> Thêm ảnh
+                          <input type="file" className="hidden" accept="image/*" multiple onChange={handleBackgroundsUpload} />
+                        </label>
+                      )}
+                    </div>
+
+                    {/* Backgrounds grid with pagination */}
+                    {clubData.backgrounds.length > 0 ? (
+                      <div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                          {clubData.backgrounds
+                            .slice(bgGalleryPage * BG_PER_PAGE, (bgGalleryPage + 1) * BG_PER_PAGE)
+                            .map((url, idx) => {
+                              const realIdx = bgGalleryPage * BG_PER_PAGE + idx;
+                              return (
+                                <div key={realIdx} className="relative aspect-video rounded-xl overflow-hidden bg-gray-100 group">
+                                  <img src={url} alt={`BG ${realIdx}`} className="w-full h-full object-cover" />
+                                  {isEditing && (
+                                    <button
+                                      onClick={() => removeBackground(realIdx)}
+                                      className="absolute top-1 right-1 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  )}
+                                </div>
+                              );
+                            })
+                          }
+                          {uploading && (
+                            <div className="aspect-video rounded-xl border-2 border-dashed border-orange-100 bg-orange-50/50 flex items-center justify-center">
+                              <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                            </div>
+                          )}
+                        </div>
+                        {/* Pagination controls */}
+                        {Math.ceil(clubData.backgrounds.length / BG_PER_PAGE) > 1 && (
+                          <div className="flex items-center justify-between mt-4">
+                            <span className="text-xs text-gray-400">{bgGalleryPage * BG_PER_PAGE + 1}–{Math.min((bgGalleryPage + 1) * BG_PER_PAGE, clubData.backgrounds.length)} / {clubData.backgrounds.length} ảnh</span>
+                            <div className="flex gap-2">
+                              <button onClick={() => setBgGalleryPage(p => Math.max(0, p - 1))} disabled={bgGalleryPage === 0} className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 transition-all">
+                                <ChevronLeft className="w-4 h-4" />
+                              </button>
+                              <button onClick={() => setBgGalleryPage(p => Math.min(Math.ceil(clubData.backgrounds.length / BG_PER_PAGE) - 1, p + 1))} disabled={bgGalleryPage >= Math.ceil(clubData.backgrounds.length / BG_PER_PAGE) - 1} className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 transition-all">
+                                <ChevronRight className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      !uploading && (
+                        <div className="py-8 text-center bg-gray-50 rounded-2xl border-2 border-dashed border-gray-100">
+                          <ImageIcon className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                          <p className="text-xs text-gray-400">Chưa có ảnh không gian nào</p>
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Right Col: Address & Map Picker */}
             <div className="space-y-8">
-               <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col h-fit">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-bold flex items-center gap-2 text-gray-800">
-                      <div className="w-2 h-6 bg-orange-500 rounded-full" />
-                      Vị trí hiển thị
-                    </h3>
-                    {!isEditing && (
-                      <span className="text-xs text-gray-400 bg-gray-50 px-3 py-1.5 rounded-lg border border-dashed">Chế độ xem</span>
-                    )}
-                  </div>
+              <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col h-fit">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-bold flex items-center gap-2 text-gray-800">
+                    <div className="w-2 h-6 bg-orange-500 rounded-full" />
+                    Vị trí hiển thị
+                  </h3>
+                  {!isEditing && (
+                    <span className="text-xs text-gray-400 bg-gray-50 px-3 py-1.5 rounded-lg border border-dashed">Chế độ xem</span>
+                  )}
+                </div>
 
-                  {isEditing ? (
-                    <div className="space-y-6">
+                {isEditing ? (
+                  <div className="space-y-6">
                     {/* Tỉnh/Thành phố và Quận/Huyện ở trong setting*/}
-                      {/* <div className="space-y-2">
+                    {/* <div className="space-y-2">
                         <label className="text-sm font-semibold text-gray-700">Tỉnh/Thành phố</label>
                         <select
                           value={clubData.province_code ? String(clubData.province_code) : ""}
@@ -713,56 +710,56 @@ export function SettingPage() {
                         </select>
                       </div> */}
 
-                      <div className="space-y-2">
-                        <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                          <MapPin className="w-4 h-4 text-orange-500" /> Địa chỉ chi tiết
-                        </label>
-                        <input
-                          type="text"
-                          value={clubData.address}
-                          onChange={(e) => {
-                            setClubData({...clubData, address: e.target.value});
-                            setMapSearch(e.target.value);
-                          }}
-                          className="w-full px-4 py-3 rounded-xl border border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-500/20 bg-orange-50/30"
-                          placeholder="Nhập địa chỉ để tìm trên map..."
-                        />
-                      </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-orange-500" /> Địa chỉ chi tiết
+                      </label>
+                      <input
+                        type="text"
+                        value={clubData.address}
+                        onChange={(e) => {
+                          setClubData({ ...clubData, address: e.target.value });
+                          setMapSearch(e.target.value);
+                        }}
+                        className="w-full px-4 py-3 rounded-xl border border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-500/20 bg-orange-50/30"
+                        placeholder="Nhập địa chỉ để tìm trên map..."
+                      />
+                    </div>
 
-                      <div className="w-full h-[400px] border border-gray-100 rounded-2xl overflow-hidden">
-                        <MapAddressPicker 
-                          onLocationSelect={handleLocationSelect}
-                          initialCoords={clubData.lat && clubData.lng ? { lat: clubData.lat, lng: clubData.lng } : null}
-                          searchQuery={mapSearch}
+                    <div className="w-full h-[400px] border border-gray-100 rounded-2xl overflow-hidden">
+                      <MapAddressPicker
+                        onLocationSelect={handleLocationSelect}
+                        initialCoords={clubData.lat && clubData.lng ? { lat: clubData.lat, lng: clubData.lng } : null}
+                        searchQuery={mapSearch}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Tỉnh / Huyện</p>
+                      <p className="px-4 py-3 bg-gray-50 rounded-xl text-gray-700 text-sm">
+                        {clubData.province_name || "—"} / {clubData.district_name || "—"}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1"><MapPin className="w-3 h-3 text-orange-500" /> Địa chỉ</p>
+                      <p className="px-4 py-3 bg-gray-50 rounded-xl text-gray-700 text-sm">{clubData.address || "—"}</p>
+                    </div>
+                    {/* Mini map preview in view mode */}
+                    {clubData.lat && clubData.lng && (
+                      <div className="w-full h-[260px] border border-gray-100 rounded-2xl overflow-hidden opacity-80 pointer-events-none">
+                        <MapAddressPicker
+                          onLocationSelect={() => { }}
+                          initialCoords={{ lat: clubData.lat, lng: clubData.lng }}
+                          searchQuery=""
                         />
                       </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="space-y-1">
-                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Tỉnh / Huyện</p>
-                        <p className="px-4 py-3 bg-gray-50 rounded-xl text-gray-700 text-sm">
-                          {clubData.province_name || "—"} / {clubData.district_name || "—"}
-                        </p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1"><MapPin className="w-3 h-3 text-orange-500" /> Địa chỉ</p>
-                        <p className="px-4 py-3 bg-gray-50 rounded-xl text-gray-700 text-sm">{clubData.address || "—"}</p>
-                      </div>
-                      {/* Mini map preview in view mode */}
-                      {clubData.lat && clubData.lng && (
-                        <div className="w-full h-[260px] border border-gray-100 rounded-2xl overflow-hidden opacity-80 pointer-events-none">
-                          <MapAddressPicker
-                            onLocationSelect={() => {}}
-                            initialCoords={{ lat: clubData.lat, lng: clubData.lng }}
-                            searchQuery=""
-                          />
-                        </div>
-                      )}
-                      <p className="text-xs text-center text-gray-400 italic">Bấm "Chỉnh sửa" để thay đổi vị trí quán</p>
-                    </div>
-                  )}
-               </div>
+                    )}
+                    <p className="text-xs text-center text-gray-400 italic">Bấm "Chỉnh sửa" để thay đổi vị trí quán</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -770,11 +767,11 @@ export function SettingPage() {
         {/* TAB CONTENT: SUBSCRIPTION */}
         {activeTab === "subscription" && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-10">
-             {/* CURRENT SUBSCRIPTION */}
+            {/* CURRENT SUBSCRIPTION */}
             {currentSubscription && (
               <div className="max-w-4xl mx-auto bg-gradient-to-br from-green-600 to-green-700 rounded-3xl shadow-xl shadow-green-100 p-8 text-white relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
-                   <Settings2 className="w-32 h-32" />
+                  <Settings2 className="w-32 h-32" />
                 </div>
 
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -785,26 +782,26 @@ export function SettingPage() {
                     const statusText = getSubscriptionStatusLabel(currentSubscription.status);
                     return (
                       <>
-                  <div className="space-y-2">
-                    <span className="bg-white/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Gói đang sử dụng</span>
-                    <h3 className="text-3xl font-black">{currentName}</h3>
-                    <p className="opacity-90 max-w-3xl">{currentDesc}</p>
-                  </div>
+                        <div className="space-y-2">
+                          <span className="bg-white/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Gói đang sử dụng</span>
+                          <h3 className="text-3xl font-black">{currentName}</h3>
+                          <p className="opacity-90 max-w-3xl">{currentDesc}</p>
+                        </div>
 
-                  <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20 space-y-3 min-w-[240px]">
-                    <div className="flex justify-between text-sm">
-                       <span className="opacity-80">Ngày mua:</span>
-                       <span className="font-bold">{new Date(currentSubscription.purchase_date).toLocaleDateString("vi-VN")}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                       <span className="opacity-80">Ngày hết hạn:</span>
-                       <span className="font-bold">{new Date(currentSubscription.expire_date).toLocaleDateString("vi-VN")}</span>
-                    </div>
-                    <div className="pt-3 border-t border-white/10 flex items-center gap-2">
-                       <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                       <span className="text-xs font-bold">Trạng thái: {statusText}</span>
-                    </div>
-                  </div>
+                        <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20 space-y-3 min-w-[240px]">
+                          <div className="flex justify-between text-sm">
+                            <span className="opacity-80">Ngày mua:</span>
+                            <span className="font-bold">{new Date(currentSubscription.purchase_date).toLocaleDateString("vi-VN")}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="opacity-80">Ngày hết hạn:</span>
+                            <span className="font-bold">{new Date(currentSubscription.expire_date).toLocaleDateString("vi-VN")}</span>
+                          </div>
+                          <div className="pt-3 border-t border-white/10 flex items-center gap-2">
+                            <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                            <span className="text-xs font-bold">Trạng thái: {statusText}</span>
+                          </div>
+                        </div>
                       </>
                     );
                   })()}
@@ -813,8 +810,8 @@ export function SettingPage() {
             )}
 
             <div className="text-center space-y-2">
-               <h2 className="text-3xl font-black text-gray-900">Chọn gói Subscription</h2>
-               <p className="text-gray-500">Nâng cấp trải nghiệm quản lý bida chuyên nghiệp hơn</p>
+              <h2 className="text-3xl font-black text-gray-900">Chọn gói Subscription</h2>
+              <p className="text-gray-500">Nâng cấp trải nghiệm quản lý bida chuyên nghiệp hơn</p>
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
@@ -847,7 +844,7 @@ export function SettingPage() {
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-6">
                         <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${isCurrent ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-400"}`}>
-                           <ImageIcon className="w-7 h-7" />
+                          <ImageIcon className="w-7 h-7" />
                         </div>
                         {isCurrent && (
                           <span className="text-xs font-black bg-orange-100 text-orange-600 px-4 py-1.5 rounded-full uppercase">Current</span>
@@ -856,8 +853,8 @@ export function SettingPage() {
 
                       <h3 className="text-xl font-black mb-1">{sub.name}</h3>
                       <div className="flex items-baseline gap-1 mb-6">
-                         <span className="text-4xl font-black text-gray-900">{price}đ</span>
-                         <span className="text-gray-400 font-medium">/{periodLabel}</span>
+                        <span className="text-4xl font-black text-gray-900">{price}đ</span>
+                        <span className="text-gray-400 font-medium">/{periodLabel}</span>
                       </div>
                       {discountPercent > 0 && (
                         <p className="text-xs text-emerald-600 font-semibold mb-4">
@@ -866,8 +863,8 @@ export function SettingPage() {
                       )}
 
                       <div className="space-y-4 mb-8">
-                         <p className="text-gray-500 text-sm leading-relaxed">{sub.description}</p>
-                         <div className="space-y-2">
+                        <p className="text-gray-500 text-sm leading-relaxed">{sub.description}</p>
+                        <div className="space-y-2">
                           <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Thời hạn</label>
                           <select
                             value={selectedMonths}
@@ -882,15 +879,15 @@ export function SettingPage() {
                             <option value={6}>6 tháng</option>
                             <option value={12}>12 tháng</option>
                           </select>
-                         </div>
-                         <ul className="space-y-3">
+                        </div>
+                        <ul className="space-y-3">
                           {featureRows.map((item) => (
                             <li key={item} className="flex items-center gap-3 text-sm text-gray-600">
                               <div className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
                               {item}
                             </li>
                           ))}
-                         </ul>
+                        </ul>
                       </div>
                     </div>
 
@@ -899,8 +896,8 @@ export function SettingPage() {
                       onClick={() => handleSelectPlan(sub)}
                       className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-wider transition-all
                       ${disablePurchase
-                        ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
-                        : "bg-orange-500 text-white hover:bg-orange-600 shadow-lg shadow-orange-200"}`}
+                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                          : "bg-orange-500 text-white hover:bg-orange-600 shadow-lg shadow-orange-200"}`}
                     >
                       {isCurrent ? "Đang sử dụng" : isDowngradeBlocked ? "Không thể hạ xuống Basic" : "Nâng cấp ngay"}
                     </button>
@@ -914,7 +911,7 @@ export function SettingPage() {
         {/* TAB CONTENT: PAYMENT */}
         {activeTab === "payment" && (
           <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
-            
+
 
             {/* Cấu hình tiền cọc */}
             <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
@@ -978,156 +975,155 @@ export function SettingPage() {
       </div>
 
       {/* Bank info required modal */}
-{isBankModalOpen && (
-  <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-    <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl">
-      
-      {/* Title */}
-      <h3 className="text-lg font-bold mb-2 text-gray-900">
-        Thiết lập PayOS cho CLB
-      </h3>
+      {isBankModalOpen && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl">
 
-      <p className="text-sm text-gray-600 mb-3">
-        Bạn cần nhập thông tin PayOS để hệ thống có thể nhận thanh toán.
-      </p>
+            {/* Title */}
+            <h3 className="text-lg font-bold mb-2 text-gray-900">
+              Thiết lập PayOS cho CLB
+            </h3>
 
-      {/* LINK PAYOS */}
-      <a
-        href="https://payos.vn"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-xs text-orange-600 underline mb-2 inline-block"
-      >
-        👉 Mở PayOS để lấy key
-      </a>
+            <p className="text-sm text-gray-600 mb-3">
+              Bạn cần nhập thông tin PayOS để hệ thống có thể nhận thanh toán.
+            </p>
 
-      {/* TOGGLE GUIDE */}
-      <button
-        onClick={() => setShowGuide(!showGuide)}
-        className="text-xs text-blue-600 underline mb-3 block"
-      >
-        📖 {showGuide ? "Ẩn hướng dẫn" : "Xem hướng dẫn"}
-      </button>
+            {/* LINK PAYOS */}
+            <a
+              href="https://payos.vn"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-orange-600 underline mb-2 inline-block"
+            >
+              👉 Mở PayOS để lấy key
+            </a>
 
-      {/* GUIDE */}
-      {showGuide && (
-  <div className="mb-4 space-y-3">
+            {/* TOGGLE GUIDE */}
+            <button
+              onClick={() => setShowGuide(!showGuide)}
+              className="text-xs text-blue-600 underline mb-3 block"
+            >
+              📖 {showGuide ? "Ẩn hướng dẫn" : "Xem hướng dẫn"}
+            </button>
 
-    {/* TITLE */}
-    <p className="text-base font-bold text-gray-900 text-center">
-      {guideSteps[guideStep].title}
-    </p>
+            {/* GUIDE */}
+            {showGuide && (
+              <div className="mb-4 space-y-3">
 
-    {/* IMAGE */}
-    <img
-      src={guideSteps[guideStep].image}
-      className="w-full h-[320px] object-contain rounded-xl border bg-white"
-    />
+                {/* TITLE */}
+                <p className="text-base font-bold text-gray-900 text-center">
+                  {guideSteps[guideStep].title}
+                </p>
 
-    {/* STEP DOT */}
-    <div className="flex justify-center gap-1">
-      {guideSteps.map((_, i) => (
-        <div
-          key={i}
-          className={`w-2 h-2 rounded-full ${
-            i === guideStep ? "bg-orange-500" : "bg-gray-300"
-          }`}
-        />
-      ))}
-    </div>
+                {/* IMAGE */}
+                <img
+                  src={guideSteps[guideStep].image}
+                  className="w-full h-[320px] object-contain rounded-xl border bg-white"
+                />
 
-    {/* BUTTON */}
-    <div className="flex justify-between">
-      <button
-        onClick={() => setGuideStep(prev => Math.max(0, prev - 1))}
-        disabled={guideStep === 0}
-        className="px-3 py-1 text-sm bg-gray-200 rounded disabled:opacity-40"
-      >
-        ⬅️ Trước
-      </button>
+                {/* STEP DOT */}
+                <div className="flex justify-center gap-1">
+                  {guideSteps.map((_, i) => (
+                    <div
+                      key={i}
+                      className={`w-2 h-2 rounded-full ${i === guideStep ? "bg-orange-500" : "bg-gray-300"
+                        }`}
+                    />
+                  ))}
+                </div>
 
-      <button
-        onClick={() => setGuideStep(prev => Math.min(guideSteps.length - 1, prev + 1))}
-        disabled={guideStep === guideSteps.length - 1}
-        className="px-3 py-1 text-sm bg-orange-500 text-white rounded disabled:opacity-40"
-      >
-        Sau ➡️
-      </button>
-    </div>
+                {/* BUTTON */}
+                <div className="flex justify-between">
+                  <button
+                    onClick={() => setGuideStep(prev => Math.max(0, prev - 1))}
+                    disabled={guideStep === 0}
+                    className="px-3 py-1 text-sm bg-gray-200 rounded disabled:opacity-40"
+                  >
+                    ⬅️ Trước
+                  </button>
 
-  </div>
-)}
+                  <button
+                    onClick={() => setGuideStep(prev => Math.min(guideSteps.length - 1, prev + 1))}
+                    disabled={guideStep === guideSteps.length - 1}
+                    className="px-3 py-1 text-sm bg-orange-500 text-white rounded disabled:opacity-40"
+                  >
+                    Sau ➡️
+                  </button>
+                </div>
 
-      {/* INPUT FORM */}
-      <div className="space-y-3">
-        <div className="space-y-1">
-          <label className="text-xs font-semibold text-gray-700">
-            PayOS Client ID
-          </label>
-          <input
-            type="text"
-            value={clubBank.payos_client_id}
-            onChange={(e) =>
-              setClubBank({
-                ...clubBank,
-                payos_client_id: e.target.value
-              })
-            }
-            className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
-            placeholder="VD: 123abc..."
-          />
+              </div>
+            )}
+
+            {/* INPUT FORM */}
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-700">
+                  PayOS Client ID
+                </label>
+                <input
+                  type="text"
+                  value={clubBank.payos_client_id}
+                  onChange={(e) =>
+                    setClubBank({
+                      ...clubBank,
+                      payos_client_id: e.target.value
+                    })
+                  }
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                  placeholder="VD: 123abc..."
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-700">
+                  PayOS API Key
+                </label>
+                <input
+                  type="password"
+                  value={clubBank.payos_api_key}
+                  onChange={(e) =>
+                    setClubBank({
+                      ...clubBank,
+                      payos_api_key: e.target.value
+                    })
+                  }
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                  placeholder="Nhập API Key"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-700">
+                  PayOS Checksum Key
+                </label>
+                <input
+                  type="password"
+                  value={clubBank.payos_checksum_key}
+                  onChange={(e) =>
+                    setClubBank({
+                      ...clubBank,
+                      payos_checksum_key: e.target.value
+                    })
+                  }
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                  placeholder="Nhập Checksum Key"
+                />
+              </div>
+            </div>
+
+            {/* BUTTON */}
+            <div className="flex justify-end mt-5">
+              <button
+                onClick={handleSaveBankInfo}
+                disabled={bankSaving}
+                className="px-5 py-2.5 rounded-xl bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 transition-all disabled:opacity-60"
+              >
+                {bankSaving ? "Đang lưu..." : "Lưu & tiếp tục"}
+              </button>
+            </div>
+          </div>
         </div>
-
-        <div className="space-y-1">
-          <label className="text-xs font-semibold text-gray-700">
-            PayOS API Key
-          </label>
-          <input
-            type="password"
-            value={clubBank.payos_api_key}
-            onChange={(e) =>
-              setClubBank({
-                ...clubBank,
-                payos_api_key: e.target.value
-              })
-            }
-            className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
-            placeholder="Nhập API Key"
-          />
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-xs font-semibold text-gray-700">
-            PayOS Checksum Key
-          </label>
-          <input
-            type="password"
-            value={clubBank.payos_checksum_key}
-            onChange={(e) =>
-              setClubBank({
-                ...clubBank,
-                payos_checksum_key: e.target.value
-              })
-            }
-            className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
-            placeholder="Nhập Checksum Key"
-          />
-        </div>
-      </div>
-
-      {/* BUTTON */}
-      <div className="flex justify-end mt-5">
-        <button
-          onClick={handleSaveBankInfo}
-          disabled={bankSaving}
-          className="px-5 py-2.5 rounded-xl bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 transition-all disabled:opacity-60"
-        >
-          {bankSaving ? "Đang lưu..." : "Lưu & tiếp tục"}
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+      )}
     </div>
   );
 }

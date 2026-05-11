@@ -53,7 +53,7 @@ export const SidebarClub = () => {
       icon: Trophy,
     },
     {
-      name: "Lịch sử chuyển khoản",
+      name: "Lịch sử giao dịch",
       href: "/staff/payment-history",
       icon: CreditCard,
     },

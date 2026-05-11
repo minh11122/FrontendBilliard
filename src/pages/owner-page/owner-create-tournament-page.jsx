@@ -6,6 +6,7 @@ import {
   DollarSign, Award, Settings2, ChevronLeft
 } from "lucide-react";
 import { createTournament } from "@/services/tournament.service";
+import { getTables } from "@/services/billiardTable.service";
 
 export default function OwnerCreateTournamentPage() {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ export default function OwnerCreateTournamentPage() {
   const [bannerFile, setBannerFile] = useState(null);
   const [bannerPreview, setBannerPreview] = useState("");
   const [errors, setErrors] = useState({});
+  const [tableTypes, setTableTypes] = useState([]);
 
   const formatDateTimeLocal = (date) => {
     if (!date) return "";
@@ -38,6 +40,7 @@ export default function OwnerCreateTournamentPage() {
     registration_deadline: "",
     play_date: "",
     auto_bracket: true,
+    table_type_id: "",
   });
 
   const handleChange = (e) => {
@@ -47,6 +50,29 @@ export default function OwnerCreateTournamentPage() {
       [name]: type === "checkbox" ? checked : value
     }));
   };
+
+  React.useEffect(() => {
+    const fetchTableTypes = async () => {
+      try {
+        const res = await getTables({ club_id: CLUB_ID, limit: 100 });
+        if (res?.data?.success) {
+          const allTables = res.data.data || [];
+          const uniqueTypesMap = new Map();
+          allTables.forEach((t) => {
+            if (t.table_type_id && t.table_type_id._id) {
+              uniqueTypesMap.set(t.table_type_id._id, t.table_type_id);
+            }
+          });
+          setTableTypes(Array.from(uniqueTypesMap.values()));
+        }
+      } catch (err) {
+        console.error("Failed to fetch tables to extract types", err);
+      }
+    };
+    if (CLUB_ID) {
+      fetchTableTypes();
+    }
+  }, []);
 
   React.useEffect(() => {
     const newErrors = {};
@@ -113,6 +139,11 @@ export default function OwnerCreateTournamentPage() {
       return;
     }
 
+    if (!form.table_type_id) {
+      toast.error("Vui lòng chọn loại bàn thi đấu");
+      return;
+    }
+
     if (!String(form.prize_pool ?? "").trim()) {
       toast.error("Vui lòng nhập tiền thưởng");
       return;
@@ -133,6 +164,7 @@ export default function OwnerCreateTournamentPage() {
       formData.append("fee", Number(form.fee) || 0);
       formData.append("prize_pool", String(form.prize_pool).trim());
       formData.append("auto_bracket", form.auto_bracket);
+      if (form.table_type_id) formData.append("table_type_id", form.table_type_id);
       if (form.registration_open) formData.append("registration_open", form.registration_open);
       if (form.registration_deadline) formData.append("registration_deadline", form.registration_deadline);
       if (form.play_date) formData.append("play_date", form.play_date);
@@ -204,6 +236,17 @@ export default function OwnerCreateTournamentPage() {
                 placeholder="Mô tả chi tiết về giải đấu, lịch trình, nội quy..."
                 rows={4} className={`${inputClass} resize-none`} />
               <p className="text-xs text-slate-400 mt-1 text-right">{form.description.length}/1000</p>
+            </div>
+            <div>
+              <label className={labelClass}>Loại bàn thi đấu <span className="text-red-500">*</span></label>
+              <select name="table_type_id" value={form.table_type_id} onChange={handleChange} className={inputClass}>
+                <option value="">Chọn loại bàn...</option>
+                {tableTypes.map((type) => (
+                  <option key={type._id} value={type._id}>
+                    {type.name}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>

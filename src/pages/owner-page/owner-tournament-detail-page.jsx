@@ -122,7 +122,7 @@ export default function OwnerTournamentDetailPage() {
               <InfoRow icon={<Users size={16} className="text-slate-400" />} label="Số người" value={`${tournament.registered_player || 0} / ${tournament.max_players}`} />
               <InfoRow icon={<Calendar size={16} className="text-slate-400" />} label="Ngày thi đấu" value={formatDateTime(tournament.play_date)} />
               <InfoRow icon={<Clock size={16} className="text-slate-400" />} label="Đăng ký từ" value={formatDateTime(tournament.registration_open)} />
-              <InfoRow icon={<Clock size={16} className="text-slate-400" />} label="Đăng ký đến" value={formatDateTime(tournament.registration_close)} />
+              <InfoRow icon={<Clock size={16} className="text-slate-400" />} label="Đăng ký đến" value={formatDateTime(tournament.registration_deadline)} />
               {tournament.club_id?.name && (
                 <InfoRow icon={<MapPin size={16} className="text-slate-400" />} label="CLB" value={tournament.club_id.name} />
               )}

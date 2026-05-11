@@ -222,8 +222,7 @@ export default function OwnerReportsPage() {
                   <LineChart
                     data={bookingData.revenue.timeline.map((item) => ({
                       name: item.date.split("-").slice(1).join("/"),
-                      "Giờ chơi": item.table,
-                      "Dịch vụ & F&B": item.service,
+                      "Doanh thu": item.total,
                     }))}
                     margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
                   >
@@ -248,16 +247,8 @@ export default function OwnerReportsPage() {
                     <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
                     <Line
                       type="monotone"
-                      dataKey="Giờ chơi"
+                      dataKey="Doanh thu"
                       stroke="#3b82f6"
-                      strokeWidth={3}
-                      dot={{ r: 4 }}
-                      activeDot={{ r: 6 }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="Dịch vụ & F&B"
-                      stroke="#f59e0b"
                       strokeWidth={3}
                       dot={{ r: 4 }}
                       activeDot={{ r: 6 }}
