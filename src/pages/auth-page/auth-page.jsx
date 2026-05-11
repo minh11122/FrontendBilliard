@@ -351,6 +351,8 @@ export function AuthPage() {
                   />
                 </div>
 
+                <p className="text-red-500 text-sm">{registerFormik.errors.email}</p>
+
                 <div className="mb-4">
                   <label className="text-sm font-semibold text-gray-700 block mb-1">Mật khẩu</label>
                   <div className="relative">
@@ -369,6 +371,8 @@ export function AuthPage() {
                   </div>
                 </div>
 
+                <p className="text-red-500 text-sm">{registerFormik.errors.password}</p>
+
                 <div className="mb-4">
                   <label className="text-sm font-semibold text-gray-700 block mb-1">Xác nhận mật khẩu</label>
                   <div className="relative">
@@ -386,6 +390,8 @@ export function AuthPage() {
                     </button>
                   </div>
                 </div>
+
+                <p className="text-red-500 text-sm">{registerFormik.errors.confirmPassword}</p>
 
                 <button type="submit" className="btn-solid w-full">Đăng ký</button>
 
