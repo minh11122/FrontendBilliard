@@ -170,12 +170,12 @@ export default function OwnerListEmployeePage() {
                                                 Mở khóa
                                             </button>
                                         )}
-                                        <button
+                                        {/* <button
                                             onClick={() => handleDelete(staff._id)}
                                             className="px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 text-sm font-medium transition"
                                         >
                                             Xóa
-                                        </button>
+                                        </button> */}
                                     </td>
                                 </tr>
                             ))

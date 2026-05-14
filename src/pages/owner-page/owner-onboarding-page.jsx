@@ -567,7 +567,6 @@ function StepAddTable({ clubId, onNext, onSkip, onBack }) {
       fd.append("table_type_id", form.table_type_id);
       fd.append("price", form.price);
       fd.append("description", form.description);
-      fd.append("area", "Khu vực chung");
       fd.append("isActive", true);
       
       if (files.length > 0) {

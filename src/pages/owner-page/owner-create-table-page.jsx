@@ -71,7 +71,6 @@ export default function OwnerCreateTablePage() {
         formData.append("table_type_id", values.table_type_id);
         formData.append("price", values.price);
         formData.append("description", values.description);
-        formData.append("area", "Khu vực chung");
         formData.append("isActive", true);
 
         imageFiles.forEach((file) => formData.append("images", file));
