@@ -41,6 +41,7 @@ export function AuthPage() {
   const [isResending, setIsResending] = useState(false);
   const [countdown, setCountdown] = useState(60);
   const [isVerifySuccess, setIsVerifySuccess] = useState(false);
+  const [verificationNotice, setVerificationNotice] = useState("");
   const otpInputRefs = useRef([]);
 
   useEffect(() => {
@@ -141,7 +142,7 @@ export function AuthPage() {
           error.response?.status === 403 &&
           errorMessage.toLowerCase().includes("kích hoạt")
         ) {
-          await openOtpVerification(normalizedEmail, true);
+          await openOtpVerification(normalizedEmail, false, "Tai khoan chua kich hoat. Vui long xac thuc OTP de tiep tuc.");
           setSubmitting(false);
           return;
         }
@@ -189,7 +190,7 @@ export function AuthPage() {
           confirmPassword: values.confirmPassword,
         });
         toast.success("Đăng ký thành công! Vui lòng xác thực OTP.");
-        await openOtpVerification(normalizedEmail, false);
+        await openOtpVerification(normalizedEmail);
       } catch (error) {
         toast.error(error.response?.data?.message || "Đăng ký thất bại");
       } finally {
@@ -243,10 +244,15 @@ export function AuthPage() {
     setOtp(newOtp);
   };
 
-  const openOtpVerification = async (email, shouldResend = false) => {
+  const openOtpVerification = async (
+    email,
+    shouldResend = false,
+    noticeMessage = "",
+  ) => {
     setEmailForOtp(email);
     setOtp(["", "", "", "", "", ""]);
     setRegisterStep("verify");
+    setVerificationNotice(noticeMessage);
     setIsLogin(false);
     navigate("/auth/register");
 
@@ -274,6 +280,7 @@ export function AuthPage() {
       await verifyOtp({ email: emailForOtp, otp_code: otp.join("").trim() });
       toast.success("Xác thực thành công!");
       setIsVerifySuccess(true);
+      setVerificationNotice("");
       setTimeout(() => {
         setIsLogin(true);
         setRegisterStep("register");
@@ -309,6 +316,7 @@ export function AuthPage() {
   };
 
   const toggleForm = () => {
+    setVerificationNotice("");
     setIsLogin(!isLogin);
     navigate(isLogin ? "/auth/register" : "/auth/login");
   };
@@ -431,6 +439,11 @@ export function AuthPage() {
                 ) : (
                   <form onSubmit={handleOtpVerify}>
                     <h2 className="text-2xl font-bold">Xác nhận OTP</h2>
+                    {verificationNotice && (
+                      <p className="mt-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                        {verificationNotice}
+                      </p>
+                    )}
                     <div className="flex justify-center gap-2 my-6">
                       {otp.map((d, i) => (
                         <input
