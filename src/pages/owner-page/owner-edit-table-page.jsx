@@ -73,7 +73,6 @@ export default function OwnerEditTablePage() {
         formData.append("price", values.price);
         formData.append("description", values.description || "");
         formData.append("status", values.status);
-        formData.append("area", "Khu vực chung");
 
         // Ảnh bị xóa
         removedImages.forEach((url) => formData.append("removedImages", url));

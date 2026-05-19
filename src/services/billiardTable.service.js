@@ -9,17 +9,20 @@ export const getTables = (params) => {
 export const createTable = (formData) => {
     // Không cần set 'Content-Type': 'multipart/form-data', 
     // Axios sẽ tự động nhận diện và set đúng boundary khi truyền FormData
-    return api.post("/tables", formData);
+    return api.post("/tables", formData, { timeout: 120000 });
 };
 
 // Cập nhật bàn
 export const updateTable = (id, data) => {
-    return api.put(`/tables/${id}`, data);
+    const config = data instanceof FormData ? { timeout: 120000 } : undefined;
+    return api.put(`/tables/${id}`, data, config);
 };
 
 // Xóa bàn
-export const deleteTable = (id) => {
-    return api.delete(`/tables/${id}`);
+export const deleteTable = (id, clubId) => {
+    return api.delete(`/tables/${id}`, {
+        params: clubId ? { club_id: clubId } : undefined,
+    });
 };
 
 // Lấy chi tiết bàn
