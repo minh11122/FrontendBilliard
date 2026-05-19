@@ -67,16 +67,6 @@ export default function OwnerListEmployeePage() {
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm("Hành động này sẽ xóa nhân viên. Bạn có chắc chắn?")) return;
-        try {
-            await staffClubService.deleteStaff(id);
-            alert("Xóa nhân viên thành công");
-            fetchStaff();
-        } catch (error) {
-            alert(error?.response?.data?.message || "Lỗi khi xóa nhân viên");
-        }
-    };
 
     const totalPages = Math.max(1, Math.ceil(staffList.length / itemsPerPage));
     const paginatedStaff = staffList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -170,12 +160,6 @@ export default function OwnerListEmployeePage() {
                                                 Mở khóa
                                             </button>
                                         )}
-                                        <button
-                                            onClick={() => handleDelete(staff._id)}
-                                            className="px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 text-sm font-medium transition"
-                                        >
-                                            Xóa
-                                        </button>
                                     </td>
                                 </tr>
                             ))
