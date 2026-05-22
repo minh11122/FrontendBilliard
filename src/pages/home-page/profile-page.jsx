@@ -168,7 +168,7 @@ export const ProfilePage = () => {
             <div className="flex items-center gap-2 mt-2 text-sm">
               <ShieldCheck className="text-green-600" size={16} />
               <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs">
-                {user.role_id?.name}
+                {user.role_id?.name === "CUSTOMER" ? "Khách hàng" : user.role_id?.name}
               </span>
             </div>
           </div>
@@ -262,7 +262,9 @@ export const ProfilePage = () => {
                 <ShieldCheck className="text-green-600" size={18} />
                 <div>
                   <p className="text-gray-500">Vai trò</p>
-                  <p className="font-medium">{user.role_id?.name}</p>
+                  <p className="font-medium">
+                    {user.role_id?.name === "CUSTOMER" ? "Khách hàng" : user.role_id?.name}
+                  </p>
                 </div>
               </div>
 

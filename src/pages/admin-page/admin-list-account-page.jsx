@@ -47,6 +47,18 @@ const getRoleColor = (role) => {
   return roleColorMap[role];
 };
 
+const translateRole = (role) => {
+  if (!role) return "";
+  const roleMap = {
+    CUSTOMER: "Khách hàng",
+    OWNER: "Chủ CLB",
+    STAFF_CLUB: "Nhân viên CLB",
+    STAFF_SYSTEM: "Nhân viên hệ thống",
+    ADMIN: "Quản trị viên",
+  };
+  return roleMap[role.toUpperCase()] || role;
+};
+
 
 const Avatar = ({ src, name, size = "sm" }) => {
   const dim = size === "lg" ? "w-14 h-14 text-xl" : "w-9 h-9 text-sm";
@@ -298,9 +310,9 @@ export const AccountManagement = () => {
               className="acc-input border border-gray-200 bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-700 transition-all"
             >
               <option value="ALL">Tất cả vai trò</option>
-              <option value="CUSTOMER">Customer</option>
-              <option value="STAFF_CLUB">Staff Club</option>
-              <option value="OWNER">Owner</option>
+              <option value="CUSTOMER">Khách hàng</option>
+              <option value="STAFF_CLUB">Nhân viên CLB</option>
+              <option value="OWNER">Chủ CLB</option>
             </select>
 
 
@@ -392,7 +404,7 @@ export const AccountManagement = () => {
                           className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${getRoleColor(acc.role_id?.name)}`}
                         >
                           <ShieldCheck className="w-3 h-3" />
-                          {acc.role_id?.name}
+                          {translateRole(acc.role_id?.name)}
                         </span>
                       </td>
 
@@ -562,7 +574,7 @@ export const AccountManagement = () => {
                     className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${getRoleColor(selectedAccount.role_id?.name)}`}
                   >
                     <ShieldCheck className="w-3 h-3" />
-                    {selectedAccount.role_id?.name}
+                    {translateRole(selectedAccount.role_id?.name)}
                   </span>
                 </div>
 
@@ -728,7 +740,7 @@ export const AccountManagement = () => {
                   </p>
                   <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-sky-100 text-sky-700">
                     <ShieldCheck className="w-3 h-3" />
-                    STAFF_SYSTEM
+                    Nhân viên hệ thống
                   </span>
                 </div>
 
