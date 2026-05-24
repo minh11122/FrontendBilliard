@@ -60,6 +60,7 @@ export const HeaderHome = () => {
   const isSolidHeader = scrolled || location.pathname !== "/" || isMobileMenuOpen;
   const { user, logout } = useContext(AuthContext);
   const [isIncomplete, setIsIncomplete] = useState(false);
+  const shouldShowIncompleteBanner = Boolean(user && isIncomplete);
 
   useEffect(() => {
     if (!user || user.roleName !== "CUSTOMER") return;
@@ -151,13 +152,14 @@ export const HeaderHome = () => {
     }
   };
   return (
+    <>
     <header
       className={`w-full fixed top-0 left-0 right-0 z-[9999] transition-all duration-300 ${isSolidHeader
         ? "bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm"
         : "bg-transparent border-b border-transparent"
         }`}
     >
-      {user && isIncomplete && (
+      {shouldShowIncompleteBanner && (
         <div className="bg-yellow-50 dark:bg-yellow-900/30 border-b border-yellow-200 dark:border-yellow-700 text-yellow-800 dark:text-yellow-300 px-6 py-3 text-sm flex items-center justify-between">
           <span>⚠️ Vui lòng nhập đầy đủ thông tin (tên, số điện thoại)</span>
 
@@ -663,5 +665,10 @@ export const HeaderHome = () => {
         </div>
       )}
     </header>
+    <div
+      className={shouldShowIncompleteBanner ? "h-[121px]" : "h-[73px]"}
+      aria-hidden="true"
+    />
+    </>
   );
 };

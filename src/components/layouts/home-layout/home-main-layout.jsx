@@ -7,7 +7,7 @@ export const HomeMainLayout = () => {
     return (
         <>
             <HeaderHome />
-            <div className="pt-[73px]">
+            <div>
                 <Outlet />
             </div>
             <FooterHome />
