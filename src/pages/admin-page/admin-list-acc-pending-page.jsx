@@ -6,7 +6,6 @@ import {
   Eye,
   ChevronLeft,
   ChevronRight,
-  Tag,
   Sparkles,
 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -31,15 +30,8 @@ export const AccPendingManagement = () => {
     name: "",
     price: "",
     description: "",
-    discount_percent: 0,
-    duration_days: 30,
     post_limit: 0,
     is_active: true,
-    features: {
-      allow_priority_post: false,
-      allow_highlight: false,
-      allow_pin_post: false,
-    },
   });
 
   const fetchPackages = async () => {
@@ -68,29 +60,20 @@ export const AccPendingManagement = () => {
       name: pkg?.name || "",
       price: pkg?.price ?? "",
       description: pkg?.description || "",
-      discount_percent: pkg?.discount_percent ?? 0,
-      duration_days: pkg?.duration_days ?? 30,
       post_limit: pkg?.post_limit ?? 0,
       is_active: pkg?.is_active ?? true,
-      features: {
-        allow_priority_post: !!pkg?.features?.allow_priority_post,
-        allow_highlight: !!pkg?.features?.allow_highlight,
-        allow_pin_post: !!pkg?.features?.allow_pin_post,
-      },
     });
     setOpenModal(true);
   };
 
   const handleSubmit = async () => {
     try {
-      if (!form.name || !form.price || !form.duration_days)
+      if (!form.name || !form.price)
         return toast.error("Nhập thiếu dữ liệu");
       if (!editing?._id) return toast.error("Không tìm thấy gói để cập nhật");
       await updateSubscription(editing._id, {
         ...form,
         price: Number(form.price),
-        discount_percent: Number(form.discount_percent) || 0,
-        duration_days: Number(form.duration_days),
         post_limit: Number(form.post_limit) || 0,
       });
       toast.success("Cập nhật thành công");
@@ -250,13 +233,6 @@ export const AccPendingManagement = () => {
                         {pkg.name}
                       </h3>
                     </div>
-                    {pkg.discount_percent > 0 && (
-                      <span
-                        className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${accent.badge}`}
-                      >
-                        <Tag className="w-3 h-3" /> -{pkg.discount_percent}%
-                      </span>
-                    )}
                   </div>
 
                   {/* Price */}
@@ -264,12 +240,10 @@ export const AccPendingManagement = () => {
                     <span className="text-2xl font-extrabold text-gray-900">
                       {formatPrice(pkg.price)}
                     </span>
+                    <span className="text-xs text-gray-500 font-medium">/ tháng</span>
                   </div>
 
                   <div className="flex flex-wrap gap-1.5">
-                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-white/80 text-gray-700">
-                      {pkg.duration_days || 0} ngày
-                    </span>
                     <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-white/80 text-gray-700">
                       {pkg.post_limit || 0} bài đăng
                     </span>
@@ -385,7 +359,7 @@ export const AccPendingManagement = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
-                    Giá (đ) *
+                    Giá (đ/tháng) *
                   </label>
                   <input
                     placeholder="99000"
@@ -399,21 +373,7 @@ export const AccPendingManagement = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
-                    Số ngày hiệu lực *
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={form.duration_days}
-                    onChange={(e) =>
-                      setForm({ ...form, duration_days: e.target.value })
-                    }
-                    className="pkg-input w-full border border-gray-200 bg-gray-50 rounded-xl px-3.5 py-2.5 text-sm text-gray-800"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
-                    Giới hạn bài đăng
+                    Giới hạn bài đăng / tháng
                   </label>
                   <input
                     type="number"
@@ -424,77 +384,6 @@ export const AccPendingManagement = () => {
                     }
                     className="pkg-input w-full border border-gray-200 bg-gray-50 rounded-xl px-3.5 py-2.5 text-sm text-gray-800"
                   />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
-                    Giảm giá (%)
-                  </label>
-                  <input
-                    placeholder="0"
-                    type="number"
-                    value={form.discount_percent}
-                    onChange={(e) =>
-                      setForm({ ...form, discount_percent: e.target.value })
-                    }
-                    className="pkg-input w-full border border-gray-200 bg-gray-50 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 placeholder-gray-400"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <p className="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">
-                  Tính năng
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <label className="flex items-center gap-2 text-sm text-gray-700">
-                    <input
-                      type="checkbox"
-                      checked={!!form.features?.allow_priority_post}
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          features: {
-                            ...form.features,
-                            allow_priority_post: e.target.checked,
-                          },
-                        })
-                      }
-                    />
-                    Bài đăng ưu tiên
-                  </label>
-                  <label className="flex items-center gap-2 text-sm text-gray-700">
-                    <input
-                      type="checkbox"
-                      checked={!!form.features?.allow_highlight}
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          features: {
-                            ...form.features,
-                            allow_highlight: e.target.checked,
-                          },
-                        })
-                      }
-                    />
-                    Làm nổi bật
-                  </label>
-                  <label className="flex items-center gap-2 text-sm text-gray-700">
-                    <input
-                      type="checkbox"
-                      checked={!!form.features?.allow_pin_post}
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          features: {
-                            ...form.features,
-                            allow_pin_post: e.target.checked,
-                          },
-                        })
-                      }
-                    />
-                    Ghim bài đăng
-                  </label>
-                  
                 </div>
               </div>
 
@@ -561,48 +450,19 @@ export const AccPendingManagement = () => {
             </div>
 
             <div className="px-6 py-5 space-y-4">
-              {viewDetail.discount_percent > 0 && (
-                <div className="flex items-center gap-2 bg-rose-50 border border-rose-100 rounded-xl px-4 py-2.5">
-                  <Tag className="w-4 h-4 text-rose-500" />
-                  <span className="text-sm font-semibold text-rose-600">
-                    Giảm {viewDetail.discount_percent}%
-                  </span>
-                </div>
-              )}
-
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div className="bg-gray-50 rounded-lg px-3 py-2">
-                  <p className="text-xs text-gray-400">Hiệu lực</p>
-                  <p className="font-semibold text-gray-800">
-                    {viewDetail.duration_days || 0} ngày
-                  </p>
-                </div>
-                <div className="bg-gray-50 rounded-lg px-3 py-2">
-                  <p className="text-xs text-gray-400">Giới hạn bài đăng</p>
+                  <p className="text-xs text-gray-400">Giới hạn bài đăng / tháng</p>
                   <p className="font-semibold text-gray-800">
                     {viewDetail.post_limit || 0}
                   </p>
                 </div>
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-1.5">
-                  Tính năng
-                </p>
-                <ul className="text-sm text-gray-700 space-y-1">
-                  <li>
-                    Ưu tiên: {viewDetail.features?.allow_priority_post ? "Có" : "Không"}
-                  </li>
-                  <li>
-                    Nổi bật: {viewDetail.features?.allow_highlight ? "Có" : "Không"}
-                  </li>
-                  <li>
-                    Ghim bài: {viewDetail.features?.allow_pin_post ? "Có" : "Không"}
-                  </li>
-                  <li>
-                    Trạng thái: {viewDetail.is_active ? "Đang hoạt động" : "Đã tắt"}
-                  </li>
-                </ul>
+                <div className="bg-gray-50 rounded-lg px-3 py-2">
+                  <p className="text-xs text-gray-400">Trạng thái gói</p>
+                  <p className="font-semibold text-gray-800">
+                    {viewDetail.is_active ? "Đang hoạt động" : "Đã tắt"}
+                  </p>
+                </div>
               </div>
 
               {viewDetail.description && (

@@ -817,23 +817,18 @@ export function SettingPage() {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
               {subscriptions.map((sub) => {
                 const basePrice = Number(sub.price) || 0;
-                const discountPercent = Number(sub.discount_percent) || 0;
                 const selectedMonths = Number(selectedDurationByPlan[sub._id] || 1);
-                const monthlyPrice = Math.max(0, basePrice - (basePrice * discountPercent) / 100);
-                const totalPrice = Math.round(monthlyPrice * selectedMonths);
+                const totalPrice = Math.round(basePrice * selectedMonths);
                 const price = totalPrice.toLocaleString("vi-VN");
                 const periodLabel = `${selectedMonths} tháng`;
                 const featureRows = [
-                  `Đăng tối đa ${sub.post_limit || 0} bài`,
-                  sub.features?.allow_priority_post ? "Bài đăng ưu tiên" : null,
-                  sub.features?.allow_highlight ? "Làm nổi bật bài đăng" : null,
-                  sub.features?.allow_pin_post ? "Ghim bài đăng" : null
-                ].filter(Boolean);
+                  `Đăng tối đa ${sub.post_limit || 0} bài / tháng`
+                ];
                 const isCurrent = getSubscriptionFromCurrent(currentSubscription)?._id === sub._id;
                 const currentTier = getSubscriptionTier(getSubscriptionFromCurrent(currentSubscription)?.name);
                 const targetTier = getSubscriptionTier(sub.name);
                 const isDowngradeBlocked = currentTier === "pro" && targetTier === "basic" && !isCurrent;
-                const disablePurchase = isCurrent || isDowngradeBlocked;
+                const disablePurchase = isDowngradeBlocked;
 
                 return (
                   <div
@@ -856,12 +851,6 @@ export function SettingPage() {
                         <span className="text-4xl font-black text-gray-900">{price}đ</span>
                         <span className="text-gray-400 font-medium">/{periodLabel}</span>
                       </div>
-                      {discountPercent > 0 && (
-                        <p className="text-xs text-emerald-600 font-semibold mb-4">
-                          Giảm {discountPercent}% từ {basePrice.toLocaleString("vi-VN")}đ
-                        </p>
-                      )}
-
                       <div className="space-y-4 mb-8">
                         <p className="text-gray-500 text-sm leading-relaxed">{sub.description}</p>
                         <div className="space-y-2">
@@ -872,7 +861,7 @@ export function SettingPage() {
                               setSelectedDurationByPlan((prev) => ({ ...prev, [sub._id]: Number(e.target.value) }))
                             }
                             className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20"
-                            disabled={isCurrent}
+                            disabled={false}
                           >
                             <option value={1}>1 tháng</option>
                             <option value={3}>3 tháng</option>
@@ -899,7 +888,7 @@ export function SettingPage() {
                           ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                           : "bg-orange-500 text-white hover:bg-orange-600 shadow-lg shadow-orange-200"}`}
                     >
-                      {isCurrent ? "Đang sử dụng" : isDowngradeBlocked ? "Không thể hạ xuống Basic" : "Nâng cấp ngay"}
+                      {isDowngradeBlocked ? "Không thể hạ xuống Basic" : isCurrent ? "Gia hạn gói" : "Nâng cấp ngay"}
                     </button>
                   </div>
                 );
