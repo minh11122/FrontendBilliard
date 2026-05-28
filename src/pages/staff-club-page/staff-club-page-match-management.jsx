@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -22,6 +22,7 @@ import {
   startMatch,
   submitMatchResult
 } from "@/services/tournament.service";
+import { AuthContext } from "@/context/AuthContext";
 
 const STATUS_META = {
   Ready: { label: "Sẵn sàng", className: "bg-emerald-100 text-emerald-700" },
@@ -220,7 +221,8 @@ const MatchCard = ({
 export const StaffClubPageMatchManagement = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const CLUB_ID = localStorage.getItem("selected_club_id") || "";
+const { user } = useContext(AuthContext);
+const CLUB_ID = localStorage.getItem("selected_club_id") || user?.clubId || "";
 
   const [tournament, setTournament] = useState(null);
   const [matches, setMatches] = useState([]);
@@ -450,7 +452,8 @@ export const StaffClubPageMatchManagement = () => {
       </div>
     );
   };
-
+ console.log("Kiểm tra tables:", tables);
+  console.log("Kiểm tra CLUB_ID:", CLUB_ID);
   return (
     <div className="flex-1 p-6 lg:p-10 max-w-[1440px] mx-auto w-full min-h-[calc(100vh-80px)] bg-slate-50/50">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -538,22 +541,41 @@ export const StaffClubPageMatchManagement = () => {
                   className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                 >
                   <option value="">Chọn bàn...</option>
-                  {tables
+                                    {tables
                     .filter((table) => {
-                      // Bỏ qua các bàn không khả dụng (đang chơi, bảo trì, hoặc có khách đặt)
-                      if (table.status !== "Available") return false;
-                      if (table.activeBooking && ["Playing", "Booked"].includes(table.activeBooking.status)) return false;
+                      // Thêm dòng log này vào đầu hàm filter:
+                      console.log(`Đang kiểm tra bàn ${table.table_number || table.name}:`, table);
 
+                      // 1. Kiểm tra trạng thái bàn
+                      if (table.status !== "Available") {
+                         console.log(`=> Loại bàn ${table.table_number} vì status là: ${table.status}`);
+                         return false;
+                      }
+
+                      // 2. Kiểm tra có khách đặt không
+                      if (table.activeBooking && ["Playing", "Booked"].includes(table.activeBooking.status)) {
+                         console.log(`=> Loại bàn ${table.table_number} vì đang có khách đặt`);
+                         return false;
+                      }
+
+                      // 3. Kiểm tra loại bàn (Pool, Carom...) có khớp với giải đấu không
                       if (!tournament?.table_type_id) return true;
+                      
                       const tourType = tournament.table_type_id._id || tournament.table_type_id;
                       const tType = table.table_type_id?._id || table.table_type_id;
-                      return String(tourType) === String(tType);
+                      
+                      const isMatch = String(tourType) === String(tType);
+                      if (!isMatch) {
+                          console.log(`=> Loại bàn ${table.table_number} vì khác loại bàn (Giải: ${tourType} - Bàn: ${tType})`);
+                      }
+                      return isMatch;
                     })
                     .map((table) => (
                     <option key={table._id} value={table._id}>
                       Bàn {table.table_number || table.name || table._id}
                     </option>
                   ))}
+
                 </select>
               </div>
               <div>

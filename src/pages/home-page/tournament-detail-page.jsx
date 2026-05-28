@@ -181,8 +181,13 @@ export default function TournamentDetailPage() {
       toast.error("Bạn cần đăng ký giải đấu trước khi xem danh sách người chơi");
       return;
     }
-
-    navigate(`/tournament/${tournament._id}/players`);
+    if (user.roleName === "OWNER") {
+      navigate(`/owner/tournaments/${tournament._id}/players`);
+    } else if (user.roleName === "STAFF_CLUB") {
+      navigate(`/staff/tournaments/${tournament._id}/players`);
+    } else {
+      navigate(`/tournament/${tournament._id}/players`);
+    }
   };
 
   return (
