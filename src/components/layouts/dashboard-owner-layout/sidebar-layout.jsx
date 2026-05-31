@@ -216,7 +216,7 @@ export const SidebarOwner = () => {
               onClick={() => navigate("/owner/select-club")}
             >
               <Building2 className="h-5 w-5" />
-              <span className="text-sm font-medium">Đổi chi nhánh</span>
+              <span className="text-sm font-medium">Đổi cơ sở</span>
             </Button>
 
             <Button

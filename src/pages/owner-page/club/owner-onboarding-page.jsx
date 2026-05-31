@@ -332,6 +332,11 @@ function StepClubImages({ clubId, onNext, onBack }) {
 
   const handleFiles = (e) => {
     const selected = Array.from(e.target.files);
+    const invalidFiles = selected.filter(f => !f.type.startsWith("image/"));
+    if (invalidFiles.length > 0) {
+      toast.error("Chỉ được phép chọn file ảnh!");
+      return;
+    }
     if (files.length + selected.length > 5) { toast.error("Tối đa 5 ảnh!"); return; }
     const newFiles = [...files, ...selected];
     setFiles(newFiles);
@@ -544,6 +549,11 @@ function StepAddTable({ clubId, onNext, onSkip, onBack }) {
 
   const handleFiles = (e) => {
     const selected = Array.from(e.target.files);
+    const invalidFiles = selected.filter(f => !f.type.startsWith("image/"));
+    if (invalidFiles.length > 0) {
+      toast.error("Chỉ được phép chọn file ảnh!");
+      return;
+    }
     if (files.length + selected.length > 5) { toast.error("Tối đa 5 ảnh!"); return; }
     const newFiles = [...files, ...selected];
     setFiles(newFiles);
@@ -687,6 +697,11 @@ function StepAddService({ clubId, onNext, onSkip, onBack }) {
 
   const handleFiles = (e) => {
     const selected = Array.from(e.target.files);
+    const invalidFiles = selected.filter(f => !f.type.startsWith("image/"));
+    if (invalidFiles.length > 0) {
+      toast.error("Chỉ được phép chọn file ảnh!");
+      return;
+    }
     if (files.length + selected.length > 5) { toast.error("Tối đa 5 ảnh!"); return; }
     const newFiles = [...files, ...selected];
     setFiles(newFiles);

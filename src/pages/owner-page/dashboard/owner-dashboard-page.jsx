@@ -251,7 +251,7 @@ export const OwnerDashboardPage = () => {
           onClick={() => navigate("/owner/select-club")}
           className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-all shadow-sm flex items-center gap-2 text-sm"
         >
-          <LogOut size={16} /> Đổi chi nhánh
+          <LogOut size={16} /> Đổi cơ sở
         </button>
       </div>
 
