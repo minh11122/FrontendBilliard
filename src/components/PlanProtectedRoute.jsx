@@ -18,7 +18,7 @@ export const PlanProtectedRoute = ({ allowedPlans, children }) => {
     if (isAllowed) return;
 
     toast(
-      `Tinh nang nay can nang cap goi ${allowedPlans[0] === "pro" ? "Pro" : "Basic"}`,
+      `Tính năng này cần nâng cấp gói ${allowedPlans[0] === "pro" ? "Pro" : "Basic"}`,
       { icon: "🔒", id: "plan-restricted-toast" },
     );
   }, [allowedPlans, isAllowed]);

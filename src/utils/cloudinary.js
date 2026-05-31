@@ -1,7 +1,17 @@
+import toast from "react-hot-toast";
+
 //src/utils/cloudinary
 export const uploadImages = async (files, setUploading) => {
   if (!files || files.length === 0) {
     console.error("Không có file");
+    return [];
+  }
+
+  // Validate that all files are images
+  const nonImageFiles = Array.from(files).filter(file => !file.type.startsWith("image/"));
+  if (nonImageFiles.length > 0) {
+    const fileNames = nonImageFiles.map(f => f.name).join(", ");
+    toast.error(`File không hợp lệ: ${fileNames}. Chỉ được phép tải lên file ảnh.`);
     return [];
   }
 

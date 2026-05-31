@@ -34,6 +34,7 @@ import {
 
 export function SettingPage() {
   const [activeTab, setActiveTab] = useState("info"); // "info", "subscription", "payment"
+  const [previewImage, setPreviewImage] = useState(null);
 
   // Data states
   const [subscriptions, setSubscriptions] = useState([]);
@@ -585,7 +586,10 @@ export function SettingPage() {
                       )}
                     </div>
 
-                    <div className="relative w-32 h-32 rounded-2xl overflow-hidden border-2 border-dashed border-gray-200 bg-gray-50 group">
+                    <div 
+                      className={`relative w-32 h-32 rounded-2xl overflow-hidden border-2 border-dashed border-gray-200 bg-gray-50 group ${clubData.avatar ? "cursor-zoom-in" : ""}`}
+                      onClick={() => clubData.avatar && setPreviewImage(clubData.avatar)}
+                    >
                       {clubData.avatar ? (
                         <img src={clubData.avatar} alt="Avatar" className="w-full h-full object-cover" />
                       ) : (
@@ -625,12 +629,19 @@ export function SettingPage() {
                             .map((url, idx) => {
                               const realIdx = bgGalleryPage * BG_PER_PAGE + idx;
                               return (
-                                <div key={realIdx} className="relative aspect-video rounded-xl overflow-hidden bg-gray-100 group">
+                                <div 
+                                  key={realIdx} 
+                                  className="relative aspect-video rounded-xl overflow-hidden bg-gray-100 group cursor-zoom-in"
+                                  onClick={(e) => {
+                                    if (e.target.closest("button")) return;
+                                    setPreviewImage(url);
+                                  }}
+                                >
                                   <img src={url} alt={`BG ${realIdx}`} className="w-full h-full object-cover" />
                                   {isEditing && (
                                     <button
                                       onClick={() => removeBackground(realIdx)}
-                                      className="absolute top-1 right-1 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                      className="absolute top-1 right-1 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
                                     >
                                       <X className="w-3 h-3" />
                                     </button>
@@ -1221,6 +1232,30 @@ export function SettingPage() {
                 {bankSaving ? "Đang lưu..." : "Lưu & tiếp tục"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox / Image Preview Modal */}
+      {previewImage && (
+        <div 
+          className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div className="relative max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl flex items-center justify-center bg-transparent">
+            <button
+              onClick={() => setPreviewImage(null)}
+              className="absolute top-4 right-4 p-2 bg-black/60 hover:bg-black/80 text-white rounded-full transition-colors z-50 border border-white/10"
+              aria-label="Đóng ảnh"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <img 
+              src={previewImage} 
+              alt="Xem ảnh lớn" 
+              className="max-w-full max-h-[85vh] object-contain rounded-xl select-none shadow-2xl animate-in zoom-in-95 duration-250"
+              onClick={(e) => e.stopPropagation()} 
+            />
           </div>
         </div>
       )}

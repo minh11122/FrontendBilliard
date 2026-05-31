@@ -118,6 +118,10 @@ export default function OwnerCreateTournamentPage() {
   const handleBannerChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Chỉ được phép chọn file ảnh!");
+      return;
+    }
     setBannerFile(file);
     setBannerPreview(URL.createObjectURL(file));
     e.target.value = "";
