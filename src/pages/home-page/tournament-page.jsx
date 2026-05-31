@@ -54,6 +54,12 @@ export const TournamentPage = () => {
       button: "Đăng ký ngay",
       buttonStyle: "bg-green-500 hover:bg-green-600 text-white",
     },
+    deadlinePassed: {
+      label: "Hết hạn đăng ký",
+      color: "bg-orange-100 text-orange-600",
+      button: "Xem chi tiết",
+      buttonStyle: "bg-orange-500 hover:bg-orange-600 text-white",
+    },
     live: {
       label: "Đang diễn ra",
       color: "bg-blue-100 text-blue-600",
@@ -72,6 +78,18 @@ export const TournamentPage = () => {
       button: "Xem chi tiết",
       buttonStyle: "bg-red-50 text-red-600 hover:bg-red-100",
     },
+  };
+
+  const getUiStatus = (t) => {
+    if (t.status === "InProgress") return "live";
+    if (t.status === "Cancelled") return "cancelled";
+    if (t.status === "Completed") return "ended";
+    if (
+      (t.status === "Open" || t.status === "Closed") &&
+      t.registration_deadline &&
+      new Date() > new Date(t.registration_deadline)
+    ) return "deadlinePassed";
+    return "upcoming";
   };
 
   return (
@@ -144,8 +162,7 @@ export const TournamentPage = () => {
               if (t.status === "Completed") return false; // Ẩn giải đã kết thúc
 
               const matchSearch = t.name?.toLowerCase().includes(search.toLowerCase()) || t.club_id?.name?.toLowerCase().includes(search.toLowerCase());
-              let uiStatus = "upcoming";
-              if (t.status === "InProgress") uiStatus = "live";
+              const uiStatus = getUiStatus(t);
 
               const matchTab = activeTab === "all" ? true : activeTab === uiStatus;
               
@@ -159,11 +176,7 @@ export const TournamentPage = () => {
               return matchSearch && matchTab && matchFee;
             })
             .map((t, i) => {
-              // Map db status to ui status
-              let uiStatus = "upcoming";
-              if (t.status === "InProgress") uiStatus = "live";
-              if (t.status === "Cancelled") uiStatus = "cancelled";
-              if (t.status === "Completed") uiStatus = "ended";
+              const uiStatus = getUiStatus(t);
 
               const cfg = statusConfig[uiStatus];
               const displayDate = t.play_date ? new Date(t.play_date).toLocaleDateString("vi-VN") : "Đang cập nhật";
