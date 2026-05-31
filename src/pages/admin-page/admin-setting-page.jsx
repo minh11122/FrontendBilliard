@@ -219,28 +219,28 @@ export const AdminSettings = () => {
       accent: "border-emerald-200",
     },
     {
-      label: "Tong so giao dich",
+      label: "Tổng số giao dịch",
       value: totalOrders,
       icon: Receipt,
       color: "text-violet-600 bg-violet-50",
       accent: "border-violet-200",
     },
     {
-      label: "Shop phat sinh giao dich",
+      label: "Số lượng shop phát sinh giao dịch",
       value: activeShops,
       icon: Store,
       color: "text-sky-600 bg-sky-50",
       accent: "border-sky-200",
     },
     {
-      label: "Gia tri don trung binh",
+      label: "Giá trị đơn trung bình",
       value: formatPrice(avgOrderValue),
       icon: ShoppingBag,
       color: "text-amber-600 bg-amber-50",
       accent: "border-amber-200",
     },
     {
-      label: "Tang truong so voi nam truoc",
+      label: "Tăng trưởng so với năm trước",
       value: growthLabel,
       icon: TrendingUp,
       color: "text-rose-600 bg-rose-50",
@@ -248,7 +248,7 @@ export const AdminSettings = () => {
       valueClass: growthValue >= 0 ? "text-emerald-600" : "text-rose-600",
     },
     {
-      label: "Doanh thu all time",
+      label: "Tổng doanh thu",
       value: formatPrice(summary.total_revenue),
       icon: Package,
       color: "text-teal-600 bg-teal-50",
@@ -279,13 +279,13 @@ export const AdminSettings = () => {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600 mb-1">
-              Quan ly
+              Quản Lý
             </p>
             <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
-              Thong ke doanh thu
+              Thống Kê Doanh Thu
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              Tong hop doanh thu, xu huong theo thang, top goi va top shop.
+              Tổng hợp doanh thu, xu hướng theo tháng, top gói và top shop.
             </p>
           </div>
 
@@ -296,7 +296,7 @@ export const AdminSettings = () => {
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
-                Nam thong ke
+                Năm thống kê
               </p>
               <select
                 value={selectedYear}
@@ -383,11 +383,11 @@ export const AdminSettings = () => {
             <div className="panel-card bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
                 <Package className="w-4 h-4 text-violet-500" />
-                <h2 className="font-bold text-gray-800">Top goi dich vu</h2>
+                <h2 className="font-bold text-gray-800">Top gói dịch vụ</h2>
               </div>
               <div className="px-6 py-5 space-y-4">
                 {topPackages.length === 0 ? (
-                  <p className="text-sm text-gray-400">Chua co du lieu goi dich vu.</p>
+                  <p className="text-sm text-gray-400">Chưa có dữ liệu gói dịch vụ.</p>
                 ) : (
                   topPackages.map((pkg) => (
                     <div key={pkg.name} className="space-y-2">
@@ -416,26 +416,26 @@ export const AdminSettings = () => {
             <div className="panel-card bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-amber-500" />
-                <h2 className="font-bold text-gray-800">Diem nhan nam {selectedYear}</h2>
+                <h2 className="font-bold text-gray-800">Điểm nhấn năm {selectedYear}</h2>
               </div>
               <div className="p-6 grid grid-cols-2 gap-3">
                 <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-4">
                   <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 mb-1">
-                    Thang tot nhat
+                    Tháng tốt nhất
                   </p>
                   <p className="text-2xl font-extrabold text-emerald-700">{bestMonth.month}</p>
                   <p className="text-sm text-emerald-600 mt-1">{formatPrice(bestMonth.revenue)}</p>
                 </div>
                 <div className="rounded-2xl bg-sky-50 border border-sky-100 p-4">
                   <p className="text-xs font-semibold uppercase tracking-wide text-sky-600 mb-1">
-                    Don hang thang tot nhat
+                    Đơn hàng tháng tốt nhất
                   </p>
                   <p className="text-2xl font-extrabold text-sky-700">{bestMonth.orders}</p>
-                  <p className="text-sm text-sky-600 mt-1">giao dich</p>
+                  <p className="text-sm text-sky-600 mt-1">giao dịch</p>
                 </div>
                 <div className="rounded-2xl bg-violet-50 border border-violet-100 p-4 col-span-2">
                   <p className="text-xs font-semibold uppercase tracking-wide text-violet-600 mb-1">
-                    Ty trong nam {selectedYear}
+                    Tỷ trọng năm {selectedYear}
                   </p>
                   <p className="text-2xl font-extrabold text-violet-700">
                     {summary.total_revenue
@@ -443,7 +443,7 @@ export const AdminSettings = () => {
                       : "0%"}
                   </p>
                   <p className="text-sm text-violet-600 mt-1">
-                    so voi tong doanh thu all time
+                    so với tổng doanh thu all time
                   </p>
                 </div>
               </div>
@@ -493,7 +493,7 @@ export const AdminSettings = () => {
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <DollarSign className="w-4 h-4 text-emerald-500" />
-                <h2 className="font-bold text-gray-800">Giao dich gan day</h2>
+                <h2 className="font-bold text-gray-800">Giao dịch gần đây</h2>
               </div>
               {!loading && (
                 <span className="text-xs font-semibold text-gray-400 bg-gray-100 px-2.5 py-1 rounded-full">
@@ -517,13 +517,13 @@ export const AdminSettings = () => {
             ) : recentTransactions.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-gray-400 gap-2">
                 <DollarSign className="w-10 h-10 opacity-30" />
-                <p className="text-sm font-medium">Chua co giao dich</p>
+                <p className="text-sm font-medium">Chưa có giao dịch</p>
               </div>
             ) : (
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100">
-                    {["Cua hang", "Goi dich vu", "Gia", "Ngay mua"].map((h, i) => (
+                    {["Cửa hàng", "Gói dịch vụ", "Giá", "Ngày mua"].map((h, i) => (
                       <th
                         key={h}
                         className={`px-6 py-3.5 text-xs font-semibold uppercase tracking-wide text-gray-400 ${
