@@ -91,6 +91,11 @@ export default function OwnerCreateTablePage() {
 
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
+    const invalidFiles = files.filter(f => !f.type.startsWith("image/"));
+    if (invalidFiles.length > 0) {
+      toast.error("Chỉ được phép chọn file ảnh!");
+      return;
+    }
     if (imageFiles.length + files.length > 5) {
       toast.error("Tối đa 5 ảnh!");
       return;

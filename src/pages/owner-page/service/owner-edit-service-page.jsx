@@ -102,6 +102,11 @@ export default function OwnerEditServicePage() {
 
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
+    const invalidFiles = files.filter(f => !f.type.startsWith("image/"));
+    if (invalidFiles.length > 0) {
+      toast.error("Chỉ được phép chọn file ảnh!");
+      return;
+    }
     const totalCount = existingImages.length + newImageFiles.length + files.length;
     if (totalCount > 5) {
       toast.error("Tổng số ảnh tối đa là 5!");

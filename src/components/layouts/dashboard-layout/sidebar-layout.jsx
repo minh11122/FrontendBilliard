@@ -35,9 +35,9 @@ export const SidebarAdmin = () => {
       href: "/admin/list-user",
       icon: UsersRound,
     },
-    
+
     {
-      name: "Danh sách cửa hàng",
+      name: "Danh sách câu lạc bộ",
       href: "/admin/list-shop",
       icon: Store,
     },
@@ -127,16 +127,14 @@ export const SidebarAdmin = () => {
                   <NavLink
                     to={item.href}
                     onClick={() => setSidebarOpen(false)}
-                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
-                      isActive
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${isActive
                         ? "bg-emerald-50 text-emerald-600"
                         : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                    }`}
+                      }`}
                   >
                     <Icon
-                      className={`h-4 w-4 shrink-0 ${
-                        isActive ? "text-emerald-500" : "text-slate-400"
-                      }`}
+                      className={`h-4 w-4 shrink-0 ${isActive ? "text-emerald-500" : "text-slate-400"
+                        }`}
                     />
 
 
@@ -158,8 +156,8 @@ export const SidebarAdmin = () => {
         <div className="border-t border-slate-100 px-3 py-3">
 
 
-         
-{/* <button
+
+          {/* <button
             onClick={() => navigate("/admin/settings")}
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
           >

@@ -109,6 +109,9 @@ export default function TournamentDetailPage() {
   }
 
   const cfg = statusConfig[tournament.status] || statusConfig.Draft;
+  const isDeadlinePassed =
+    tournament.registration_deadline &&
+    new Date() > new Date(tournament.registration_deadline);
   const fallbackImg =
     "https://images.unsplash.com/photo-1611599537845-1c7aca0091c0?q=80&w=1200";
   const bannerUrl =
@@ -181,8 +184,13 @@ export default function TournamentDetailPage() {
       toast.error("Bạn cần đăng ký giải đấu trước khi xem danh sách người chơi");
       return;
     }
-
-    navigate(`/tournament/${tournament._id}/players`);
+    if (user.roleName === "OWNER") {
+      navigate(`/owner/tournaments/${tournament._id}/players`);
+    } else if (user.roleName === "STAFF_CLUB") {
+      navigate(`/staff/tournaments/${tournament._id}/players`);
+    } else {
+      navigate(`/tournament/${tournament._id}/players`);
+    }
   };
 
   return (
@@ -345,7 +353,7 @@ export default function TournamentDetailPage() {
               Danh sách người chơi
             </button>
 
-            {tournament.status === "Open" && !joined && (
+            {tournament.status === "Open" && !joined && !isDeadlinePassed && (
               <button
                 onClick={handleRegisterNow}
                 disabled={registeringNow}
@@ -353,6 +361,13 @@ export default function TournamentDetailPage() {
               >
                 {registeringNow ? "Đang đăng ký..." : "Đăng ký ngay"}
               </button>
+            )}
+
+            {tournament.status === "Open" && !joined && isDeadlinePassed && (
+              <div className="w-full py-3 bg-orange-50 text-orange-600 font-semibold rounded-2xl text-center border border-orange-200 flex items-center justify-center gap-2">
+                <Clock size={18} />
+                Đã hết hạn đăng ký
+              </div>
             )}
 
             {/* Trạng thái nếu đã tham gia hoặc giải đã đóng/kết thúc */}
