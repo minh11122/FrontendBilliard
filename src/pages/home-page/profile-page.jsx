@@ -98,6 +98,10 @@ export const ProfilePage = () => {
         return toast.error("Vui lòng nhập đầy đủ mật khẩu");
       }
 
+      if (oldPassword === newPassword) {
+        return toast.error("Mật khẩu mới không được trùng với mật khẩu hiện tại");
+      }
+
       // validate password
       const passwordRegex =
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{6,}$/;
