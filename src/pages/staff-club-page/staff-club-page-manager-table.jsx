@@ -106,7 +106,9 @@ const isTableBusyAt = (tableId, date, startTime, endTime, bookings) => {
   });
 };
 
-// Returns position and width of a booking block on the timeline
+// Chuyển thời gian booking thành tọa độ trên trục ngang timeline.
+// Ví dụ: 08:00 với HOUR_WIDTH = 80 thì left = 8 * 80px.
+// width được tính bằng khoảng cách từ start_time đến end_time.
 const getBlockStyle = (booking, currentDate) => {
   if (!booking || !booking.start_time) return { left: 0, width: 0, display: 'none' };
   
@@ -156,7 +158,9 @@ const getBlockStyle = (booking, currentDate) => {
   return { left: `${left}px`, width: `${width}px` };
 };
 
-// Derived status for Table (Y-axis label) based on current time
+// Tính trạng thái hiển thị ở cột tên bàn bên trái.
+// table.status chỉ là trạng thái gốc của bàn, còn màu "đang chơi/đã đặt"
+// phải dựa thêm vào booking của bàn đó và thời điểm hiện tại.
 const getTableDerivedStatus = (table, dateFilter, bookingsForTable) => {
    if (table.status === "Maintenance") return "maintenance";
 
@@ -934,6 +938,10 @@ export const StaffClubPageManagerTable = () => {
 
   const [currentDate, setCurrentDate] = useState(new Date());
 
+  // modalTarget quyết định modal chi tiết có mở hay không.
+  // - null: đóng modal
+  // - { table }: click vào khung tên bàn, xem chi tiết bàn chưa gắn booking cụ thể
+  // - { table, booking, isBookingActive: true }: click vào block booking trên timeline
   const [modalTarget, setModalTarget] = useState(null); 
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -955,6 +963,8 @@ export const StaffClubPageManagerTable = () => {
     }
   }, [user?.clubId]);
 
+  // Lấy danh sách bàn từ API /tables.
+  // Mảng tables này tạo cột bên trái và mỗi hàng timeline tương ứng với một bàn.
   const fetchTables = async () => {
     try {
       const res = await getTables({ page: 1, limit: 200 }); 
@@ -966,6 +976,8 @@ export const StaffClubPageManagerTable = () => {
     }
   };
 
+  // Lấy booking của ngày đang xem từ API /bookings/club.
+  // Lấy thêm ngày hôm qua để hiển thị đúng các ca chơi qua đêm sang ngày hiện tại.
   const fetchBookingsForDate = async (selectedDate) => {
     try {
       const year = selectedDate.getFullYear();
@@ -1039,6 +1051,8 @@ export const StaffClubPageManagerTable = () => {
     }
   }, []);
 
+  // Lọc danh sách bàn trước khi vẽ timeline.
+  // Khi lọc theo status, mỗi bàn được tính lại trạng thái bằng booking của chính bàn đó.
   const filteredTables = useMemo(() => {
     let result = tables;
     if (typeFilter !== "all") result = result.filter(t => (t.table_type_id?._id || t.table_type_id) === typeFilter);
@@ -1106,6 +1120,8 @@ export const StaffClubPageManagerTable = () => {
   return (
     <div className="p-4 md:p-6 w-full max-w-[1440px] mx-auto min-h-[calc(100vh-80px)] flex flex-col h-full bg-white">
       {modalTarget && (
+        // Modal chi tiết bàn được mở ở đây.
+        // Dữ liệu modal lấy từ modalTarget, được set khi click vào tên bàn hoặc block booking.
         <TableDetailModal
           table={modalTarget.table}
           booking={modalTarget.booking ? (bookings.find(b => b._id === modalTarget.booking._id) || modalTarget.booking) : modalTarget.booking}
@@ -1215,6 +1231,8 @@ export const StaffClubPageManagerTable = () => {
                      const ds = getTableDerivedStatus(table, currentDate, bookings.filter(b => (b.table_id?._id || b.table_id) === table._id));
                      const meta = STATUS_META[ds] || STATUS_META.available;
                      return (
+                        // Khung tên bàn bên trái. Click vào đây mở modal chi tiết bàn,
+                        // nhưng không gắn booking vì user chỉ click vào bàn, không click vào lịch đặt.
                         <div key={table._id} className="h-[90px] border-b border-gray-100 flex items-center p-3 hover:bg-gray-50 transition-colors cursor-pointer bg-white" onClick={() => setModalTarget({ table })}>
                            <div className="flex items-center gap-3 w-full">
                               <div className={`shrink-0 w-2 h-10 rounded-full ${meta.dot}`} />
@@ -1231,6 +1249,8 @@ export const StaffClubPageManagerTable = () => {
                   </div>
 
                   {paginatedTables.map(table => {
+                      // Mỗi hàng bên phải là timeline của một bàn.
+                      // Booking được filter bằng table_id nên block luôn nằm đúng hàng của bàn đó.
                       const tableBookings = bookings.filter(b => (b.table_id?._id || b.table_id) === table._id);
                       return (
                         <div 
@@ -1239,10 +1259,13 @@ export const StaffClubPageManagerTable = () => {
                         >
                            {tableBookings.map(booking => {
                               if (booking.status === "Cancelled") return null;
+                              // left/width quyết định block booking nằm ở giờ nào và dài bao lâu.
                               const { left, width, display } = getBlockStyle(booking, currentDate);
                               if (display === 'none') return null;
                               const bMeta = STATUS_META[booking.status.toLowerCase()] || STATUS_META.completed;
                               return (
+                                // Click vào block lịch đặt sẽ mở modal chi tiết bàn kèm booking.
+                                // Trong modal có thông tin khách, thời gian, trạng thái, dịch vụ và các nút thao tác.
                                 <div key={booking._id} className={`absolute top-2 bottom-2 rounded-lg p-2 border overflow-hidden cursor-pointer transition-transform hover:scale-[1.01] hover:shadow-md z-10 flex flex-col justify-center ${bMeta.blockClass}`} style={{ left, width }} onClick={() => setModalTarget({ table, booking, isBookingActive: true })}>
                                    <div className="flex items-center justify-between gap-2 max-w-full"><span className="font-bold text-[13px] truncate">{booking.guest_name || booking.account_id?.fullname || "Khách"}</span></div>
                                    <span className="text-[11px] opacity-80 mt-[2px] truncate font-semibold">
