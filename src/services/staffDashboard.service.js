@@ -1,12 +1,15 @@
 import axios from "axios";
 
+// Các API của system staff đang gọi trực tiếp tới backend staff namespace.
 const BASE_URL = "http://localhost:9999/api/staff";
 
+// Mỗi request của system staff cần gửi token để backend authenticate và authorizeRole("STAFF_SYSTEM").
 function authHeader() {
     const token = localStorage.getItem("token");
     return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+// Lấy dữ liệu tổng quan và số lượng pending để hiển thị badge ở sidebar/tab.
 export async function getDashboardData(dateType, specificDate) {
     const params = {};
     if (dateType) params.dateType = dateType;
@@ -19,6 +22,7 @@ export async function getDashboardData(dateType, specificDate) {
     return res.data;
 }
 
+// Lấy danh sách CLB theo trạng thái đang lọc: Pending, Approved, Rejected hoặc Locked.
 export async function getClubs(status) {
     const params = status ? { status } : {};
     const res = await axios.get(`${BASE_URL}/clubs`, {
@@ -28,6 +32,7 @@ export async function getClubs(status) {
     return res.data;
 }
 
+// Duyệt CLB đang Pending; backend sẽ chuyển status sang Approved.
 export async function approveClub(id) {
     const res = await axios.patch(`${BASE_URL}/clubs/${id}/approve`, {}, {
         headers: authHeader()
@@ -35,6 +40,7 @@ export async function approveClub(id) {
     return res.data;
 }
 
+// Từ chối CLB đang Pending và gửi kèm lý do từ chối.
 export async function rejectClub(id, reason = "") {
     const res = await axios.patch(`${BASE_URL}/clubs/${id}/reject`, { reason }, {
         headers: authHeader()
@@ -42,6 +48,7 @@ export async function rejectClub(id, reason = "") {
     return res.data;
 }
 
+// Khóa CLB đã được duyệt; backend chuyển status sang Locked.
 export async function lockClub(id) {
     const res = await axios.patch(`${BASE_URL}/clubs/${id}/lock`, {}, {
         headers: authHeader()
@@ -49,6 +56,7 @@ export async function lockClub(id) {
     return res.data;
 }
 
+// Mở khóa CLB; backend chuyển status từ Locked về Approved.
 export async function unlockClub(id) {
     const res = await axios.patch(`${BASE_URL}/clubs/${id}/unlock`, {}, {
         headers: authHeader()
@@ -79,7 +87,7 @@ export async function rejectPost(id, reason = "") {
     return res.data;
 }
 
-// Notifications
+// Lấy danh sách thông báo cho system staff.
 export async function getStaffNotifications() {
     const res = await axios.get(`${BASE_URL}/notifications`, {
         headers: authHeader()
@@ -87,6 +95,7 @@ export async function getStaffNotifications() {
     return res.data;
 }
 
+// Tạo thông báo test cho system staff; hiện trang quản lý CLB chưa có nút gọi hàm này.
 export async function createStaffTestNotification() {
     const res = await axios.post(`${BASE_URL}/notifications/test`, {}, {
         headers: authHeader()
@@ -94,6 +103,7 @@ export async function createStaffTestNotification() {
     return res.data;
 }
 
+// Đánh dấu một thông báo là đã đọc.
 export async function markStaffNotificationRead(id) {
     const res = await axios.patch(`${BASE_URL}/notifications/${id}/read`, {}, {
         headers: authHeader()
@@ -101,6 +111,7 @@ export async function markStaffNotificationRead(id) {
     return res.data;
 }
 
+// Đánh dấu tất cả thông báo là đã đọc.
 export async function markAllStaffNotificationsRead() {
     const res = await axios.patch(`${BASE_URL}/notifications/read-all`, {}, {
         headers: authHeader()

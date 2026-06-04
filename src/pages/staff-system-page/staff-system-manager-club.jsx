@@ -12,6 +12,7 @@ import {
 } from "../../services/staffDashboard.service";
 import { getClubById } from "../../services/club.service";
 
+// Toast nhỏ ở góc màn hình để báo thao tác thành công hoặc thất bại.
 // ─── Toast ─────────────────────────────────────────────────────────────────
 const Toast = ({ message, type, onClose }) => (
   <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-2xl text-white text-sm font-medium
@@ -23,6 +24,7 @@ const Toast = ({ message, type, onClose }) => (
 );
 
 // ─── Status Badge ──────────────────────────────────────────────────────────
+// Map trạng thái từ backend sang nhãn tiếng Việt và màu badge trên giao diện.
 const STATUS_MAP = {
   Pending: { label: "Chờ duyệt", cls: "bg-yellow-100 text-yellow-700" },
   Approved: { label: "Đã duyệt", cls: "bg-green-100 text-green-700" },
@@ -30,6 +32,7 @@ const STATUS_MAP = {
   Locked: { label: "Đã khoá", cls: "bg-gray-100 text-gray-500" },
 };
 
+// StatusBadge nhận status của CLB rồi chọn cấu hình màu/nhãn trong STATUS_MAP.
 const StatusBadge = ({ status }) => {
   const s = STATUS_MAP[status] || { label: status, cls: "bg-gray-100 text-gray-500" };
   return (
@@ -40,6 +43,7 @@ const StatusBadge = ({ status }) => {
 };
 
 // ─── Skeleton row ─────────────────────────────────────────────────────────
+// SkeletonRow hiển thị các dòng giả khi đang tải danh sách CLB.
 const SkeletonRow = () => (
   <tr>
     {[1, 2, 3, 4, 5, 6].map(i => (
@@ -51,6 +55,7 @@ const SkeletonRow = () => (
 );
 
 // ─── Image Viewer Modal ──────────────────────────────────────────────────────
+// Modal xem ảnh toàn màn hình, dùng khi staff bấm vào ảnh/tài liệu trong chi tiết CLB.
 const ImageViewerModal = ({ src, onClose }) => {
   if (!src) return null;
   return (
@@ -64,7 +69,9 @@ const ImageViewerModal = ({ src, onClose }) => {
 };
 
 // ─── Detail Modal ──────────────────────────────────────────────────────────
+// Modal chi tiết CLB: hiển thị thông tin đăng ký, chủ CLB, tài liệu và hình ảnh.
 const ClubDetailModal = ({ club, onClose }) => {
+  // viewImage lưu ảnh đang được phóng to trong modal toàn màn hình.
   const [viewImage, setViewImage] = useState(null);
   if (!club) return null;
   return (
@@ -155,6 +162,7 @@ const ClubDetailModal = ({ club, onClose }) => {
 };
 
 // ─── Filter tabs config ────────────────────────────────────────────────────
+// Các tab lọc danh sách CLB theo status backend trả về.
 const FILTERS = [
   { key: "Pending", label: "Chờ duyệt", active: "bg-yellow-500 text-white", dot: "bg-yellow-500" },
   { key: "Approved", label: "Đã duyệt", active: "bg-green-600 text-white", dot: "bg-green-500" },
@@ -165,16 +173,28 @@ const FILTERS = [
 // ─── Main Component ────────────────────────────────────────────────────────
 export const SystemStaff1 = () => {
   const navigate = useNavigate();
+
+  // clubs là danh sách CLB của tab hiện tại; counts dùng cho badge số CLB chờ duyệt.
   const [clubs, setClubs] = useState([]);
   const [counts, setCounts] = useState({ Pending: 0, Approved: 0, Rejected: 0, Locked: 0 });
+
+  // loading/error điều khiển trạng thái tải bảng và thông báo lỗi API.
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // actionLoading lưu từng CLB đang được duyệt/từ chối/khóa/mở khóa để disable đúng nút đó.
   const [actionLoading, setActionLoading] = useState({});
   const [toast, setToast] = useState(null);
+
+  // selected là CLB đang mở modal chi tiết; detailLoading lưu trạng thái tải chi tiết.
   const [selected, setSelected] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+
+  // filterStatus quyết định tab hiện tại; search lọc thêm trên danh sách đã lấy từ backend.
   const [filterStatus, setFilterStatus] = useState("Pending");
   const [search, setSearch] = useState("");
+
+  // notifications dùng cho chuông thông báo của system staff ở góc phải header.
   const [notifications, setNotifications] = useState([]);
   const [showNotificationPopup, setShowNotificationPopup] = useState(false);
   
@@ -182,12 +202,13 @@ export const SystemStaff1 = () => {
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
+  // Hiện toast trong 3.5 giây sau mỗi thao tác.
   const showToast = (message, type = "success") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
   };
 
-  // Fetch notifications
+  // Lấy thông báo của system staff, dùng cho popup chuông.
   const fetchNotifications = useCallback(async () => {
     try {
       const res = await getStaffNotifications();
@@ -197,7 +218,7 @@ export const SystemStaff1 = () => {
     } catch { /* silent */ }
   }, []);
 
-  // Fetch count badges from dashboard (non-blocking)
+  // Lấy số lượng chờ duyệt từ dashboard để hiển thị badge trên tab Pending/sidebar.
   const fetchCounts = useCallback(async () => {
     try {
       const res = await getDashboardData();
@@ -209,7 +230,7 @@ export const SystemStaff1 = () => {
   }, []);
 
 
-  // Fetch clubs for current filter tab
+  // Lấy danh sách CLB theo status của tab hiện tại: Pending, Approved, Rejected hoặc Locked.
   const fetchClubs = useCallback(async (status) => {
     try {
       setLoading(true);
@@ -223,13 +244,14 @@ export const SystemStaff1 = () => {
     }
   }, []);
 
+  // Khi vào trang lần đầu, tải badge thống kê và thông báo; không chặn việc tải bảng CLB.
   useEffect(() => {
     fetchCounts();
     fetchNotifications();
     
   }, [fetchCounts, fetchNotifications]);
 
-  // Handle click outside to close unread popup
+  // Khi popup thông báo đang mở, click ra ngoài popup sẽ tự đóng lại.
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (popupRef.current && !popupRef.current.contains(event.target)) {
@@ -244,10 +266,12 @@ export const SystemStaff1 = () => {
     };
   }, [showNotificationPopup]);
 
+  // Mỗi lần đổi tab trạng thái, gọi lại API để lấy danh sách CLB tương ứng.
   useEffect(() => {
     fetchClubs(filterStatus);
   }, [filterStatus, fetchClubs]);
 
+  // Click vào một thông báo thì đánh dấu thông báo đó là đã đọc rồi tải lại danh sách.
   const handleReadNotification = async (notifId) => {
     try {
         await markStaffNotificationRead(notifId);
@@ -255,6 +279,7 @@ export const SystemStaff1 = () => {
     } catch (e) { console.error(e); }
   };
   
+  // Đánh dấu toàn bộ thông báo trong popup là đã đọc.
   const handleReadAll = async () => {
       try {
           await markAllStaffNotificationsRead();
@@ -262,6 +287,7 @@ export const SystemStaff1 = () => {
       } catch (e) { console.error(e); }
   };
 
+  // Hàm tạo thông báo test, hiện không có nút gọi trong UI trang này.
   const handleCreateTestNotification = async () => {
     try {
       await createStaffTestNotification();
@@ -274,11 +300,13 @@ export const SystemStaff1 = () => {
     }
   };
 
+  // Đổi tab lọc và reset ô tìm kiếm để tránh giữ keyword cũ sang tab mới.
   const handleTabChange = (key) => {
     setFilterStatus(key);
     setSearch("");
   };
 
+  // Mở modal chi tiết: hiển thị dữ liệu sẵn có trước, sau đó gọi API lấy thêm ảnh/tài liệu/bàn.
   const handleViewDetail = async (club) => {
     try {
       setDetailLoading(true);
@@ -296,6 +324,7 @@ export const SystemStaff1 = () => {
     }
   };
 
+  // Wrapper dùng chung cho các thao tác đổi trạng thái CLB để set loading, toast và refresh dữ liệu.
   const withAction = async (id, action, successMsg, errorMsg, fn) => {
     setActionLoading(p => ({ ...p, [id]: action }));
     try {
@@ -310,9 +339,11 @@ export const SystemStaff1 = () => {
     }
   };
 
+  // Duyệt CLB Pending thành Approved.
   const handleApprove = (id) =>
     withAction(id, "approve", "Đã duyệt CLB thành công!", "Lỗi khi duyệt CLB", () => approveClub(id));
 
+  // Từ chối CLB Pending; bắt buộc nhập lý do để gửi về backend.
   const handleReject = (id) => {
     const reason = window.prompt("Vui lòng nhập lý do từ chối:");
     if (reason === null) return; // user cancelled
@@ -323,18 +354,22 @@ export const SystemStaff1 = () => {
     withAction(id, "reject", "Đã từ chối CLB.", "Lỗi khi từ chối CLB", () => rejectClub(id, reason.trim()));
   };
 
+  // Khóa CLB đã duyệt để chuyển trạng thái Approved -> Locked.
   const handleLock = (id) =>
     withAction(id, "lock", "Đã khoá CLB.", "Lỗi khi khoá CLB", () => lockClub(id));
 
+  // Mở khóa CLB để chuyển trạng thái Locked -> Approved.
   const handleUnlock = (id) =>
     withAction(id, "unlock", "Đã mở khoá CLB.", "Lỗi khi mở khoá CLB", () => unlockClub(id));
 
+  // Lọc phía frontend theo tên hoặc địa chỉ trong danh sách của tab đang xem.
   const filtered = clubs.filter(c =>
     !search ||
     c.name?.toLowerCase().includes(search.toLowerCase()) ||
     c.address?.toLowerCase().includes(search.toLowerCase())
   );
 
+  // Nội dung hiển thị khi tab hiện tại không có CLB nào.
   const emptyMessages = {
     Pending: { icon: "✅", text: "Không có CLB nào đang chờ duyệt" },
     Approved: { icon: "🏢", text: "Chưa có CLB nào được duyệt" },
@@ -345,6 +380,7 @@ export const SystemStaff1 = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {toast && <Toast {...toast} onClose={() => setToast(null)} />}
+      {/* Khi selected có dữ liệu, modal chi tiết CLB sẽ mở. */}
       {selected && <ClubDetailModal club={selected} onClose={() => setSelected(null)} />}
 
       {/* Header */}
@@ -357,7 +393,7 @@ export const SystemStaff1 = () => {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          {/* Nút Chuông Thông Báo */}
+          {/* Nút chuông thông báo: mở popup, hiện chấm đỏ nếu còn thông báo chưa đọc. */}
           <div className="relative" ref={popupRef}>
             <button
               onClick={() => setShowNotificationPopup(!showNotificationPopup)}
@@ -414,7 +450,7 @@ export const SystemStaff1 = () => {
             )}
           </div>
 
-          {/* Nút Làm Mới */}
+          {/* Nút làm mới chỉ tải lại danh sách CLB của tab hiện tại. */}
           <button
             onClick={() => fetchClubs(filterStatus)}
             disabled={loading}
@@ -436,9 +472,9 @@ export const SystemStaff1 = () => {
       )}
 
       <div className="p-6">
-        {/* Filter tabs + Search */}
+        {/* Khu vực tìm kiếm và tab lọc trạng thái CLB */}
         <div className="flex flex-wrap items-center gap-3 mb-5">
-          {/* Search */}
+          {/* Ô tìm kiếm lọc nhanh theo tên hoặc địa chỉ CLB trên dữ liệu đang có. */}
           <div className="relative flex-1 min-w-[200px] max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
@@ -450,7 +486,7 @@ export const SystemStaff1 = () => {
             />
           </div>
 
-          {/* Tabs */}
+          {/* Các tab này đổi filterStatus, sau đó useEffect sẽ gọi lại fetchClubs. */}
           <div className="flex gap-1.5 flex-wrap">
             {FILTERS.map(f => (
               <button
@@ -473,7 +509,7 @@ export const SystemStaff1 = () => {
           </div>
         </div>
 
-        {/* Table */}
+        {/* Bảng CLB: loading thì hiện skeleton, không có dữ liệu thì hiện empty state, còn lại render từng CLB. */}
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -498,6 +534,7 @@ export const SystemStaff1 = () => {
                     </td>
                   </tr>
                 ) : (
+                  // Mỗi dòng là một CLB, nút thao tác sẽ thay đổi theo status của CLB đó.
                   filtered.map(club => (
                     <tr key={club._id}
                       className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
@@ -519,7 +556,7 @@ export const SystemStaff1 = () => {
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-2">
-                          {/* Xem chi tiết */}
+                          {/* Xem chi tiết: gọi getClubById để lấy đủ thông tin rồi mở modal. */}
                           <button
                             onClick={() => handleViewDetail(club)}
                             className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700"
@@ -528,7 +565,7 @@ export const SystemStaff1 = () => {
                             <Eye className="w-4 h-4" />
                           </button>
 
-                          {/* Pending → Duyệt + Từ chối */}
+                          {/* CLB Pending được phép duyệt hoặc từ chối. */}
                           {club.status === "Pending" && (
                             <>
                               <button
@@ -554,7 +591,7 @@ export const SystemStaff1 = () => {
                             </>
                           )}
 
-                          {/* Approved → Khoá */}
+                          {/* CLB Approved được phép khóa. */}
                           {club.status === "Approved" && (
                             <button
                               disabled={!!actionLoading[club._id]}
@@ -568,7 +605,7 @@ export const SystemStaff1 = () => {
                             </button>
                           )}
 
-                          {/* Locked → Mở khoá */}
+                          {/* CLB Locked được phép mở khóa. */}
                           {club.status === "Locked" && (
                             <button
                               disabled={!!actionLoading[club._id]}
@@ -590,7 +627,7 @@ export const SystemStaff1 = () => {
             </table>
           </div>
 
-          {/* Footer count */}
+          {/* Footer hiển thị tổng số CLB sau khi áp dụng tìm kiếm frontend. */}
           {!loading && filtered.length > 0 && (
             <div className="px-5 py-3 border-t border-gray-100 text-xs text-gray-400">
               Hiển thị <span className="font-medium text-gray-600">{filtered.length}</span> CLB
