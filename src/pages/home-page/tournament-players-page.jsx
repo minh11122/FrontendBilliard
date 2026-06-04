@@ -98,7 +98,7 @@ export const TournamentPlayersPage = () => {
 
           const joinedRes = await getMyRegisteredTournamentIds();
           const joinedTournamentIds = joinedRes?.success ? joinedRes.data || [] : [];
-          const hasJoined = joinedTournamentIds.includes(id);
+          const hasJoined = joinedTournamentIds.some(tid => String(tid) === String(id));
 
           if (!hasJoined) {
             toast.error("Bạn cần đăng ký giải đấu trước khi xem danh sách người chơi");
