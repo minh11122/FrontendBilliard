@@ -72,21 +72,23 @@ export default function OwnerServiceListPage() {
 
   const handleConfirmAction = async () => {
     if (!deleteTarget) return;
+    console.log("[handleConfirmAction DEBUG] CLUB_ID =", CLUB_ID, "| serviceId =", deleteTarget._id, "| type =", deleteType);
     try {
       if (deleteType === "deactivate") {
-        await deactivateService(deleteTarget._id);
+        await deactivateService(deleteTarget._id, CLUB_ID);
         toast.success("Đã vô hiệu hóa dịch vụ");
       } else if (deleteType === "permanent") {
-        await deleteServicePermanently(deleteTarget._id);
+        await deleteServicePermanently(deleteTarget._id, CLUB_ID);
         toast.success("Đã xóa vĩnh viễn dịch vụ");
       } else if (deleteType === "reactivate") {
-        await reactivateService(deleteTarget._id);
+        await reactivateService(deleteTarget._id, CLUB_ID);
         toast.success("Đã khôi phục dịch vụ");
       }
       setShowDeleteConfirm(false);
       setDeleteTarget(null);
       fetchServices(pagination.currentPage);
     } catch (error) {
+      console.error("[handleConfirmAction ERROR]", error.response?.status, error.response?.data);
       toast.error(error.response?.data?.message || "Có lỗi xảy ra");
     }
   };

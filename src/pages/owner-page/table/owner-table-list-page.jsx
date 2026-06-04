@@ -107,7 +107,7 @@ export default function OwnerTableListPage() {
     const handleDelete = async (id) => {
         if (window.confirm("Bạn có chắc chắn muốn xóa bàn này không?")) {
             try {
-                const res = await deleteTable(id);
+                const res = await deleteTable(id, CLUB_ID);
                 if (res.data.success) {
                     toast.success("Đã xóa bàn thành công");
                     fetchTables();

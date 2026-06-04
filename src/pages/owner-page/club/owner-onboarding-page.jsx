@@ -3,7 +3,8 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
   CheckCircle2, ChevronRight, CreditCard, Package, Image as ImageIcon,
-  Users, TableProperties, ConciergeBell, Sparkles, Store, Loader2, X, Plus, Upload
+  Users, TableProperties, ConciergeBell, Sparkles, Store, Loader2, X, Plus, Upload,
+  Eye, EyeOff
 } from "lucide-react";
 import { completeOnboarding, getClubBank, saveClubBank } from "@/services/club.service";
 import api from "@/lib/axios";
@@ -429,6 +430,7 @@ function StepClubImages({ clubId, onNext, onBack }) {
 // ─── Step 4: Thêm nhân viên ─────────────────────────────────────────────────
 function StepAddStaff({ clubId, onNext, onBack }) {
   const [form, setForm] = useState({ password: "", fullname: "", phone: "", email: "" });
+  const [showPassword, setShowPassword] = useState(false);
   const [saving, setSaving] = useState(false);
   const [added, setAdded] = useState([]);
   const [existingCount, setExistingCount] = useState(0);
@@ -462,6 +464,7 @@ function StepAddStaff({ clubId, onNext, onBack }) {
       toast.success(`Đã thêm nhân viên: ${form.fullname}`);
       setAdded(prev => [...prev, form.fullname]);
       setForm({ password: "", fullname: "", phone: "", email: "" });
+      setShowPassword(false);
     } catch (e) {
       toast.error(e.response?.data?.message || "Thêm nhân viên thất bại");
     } finally {
@@ -494,8 +497,22 @@ function StepAddStaff({ clubId, onNext, onBack }) {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">Mật khẩu <span className="text-red-500">*</span></label>
-          <input className={inputCls} type="password" placeholder="••••••••" value={form.password}
-            onChange={e => setForm(p => ({ ...p, password: e.target.value }))} />
+          <div className="relative">
+            <input 
+              className={`${inputCls} pr-10`} 
+              type={showPassword ? "text" : "password"} 
+              placeholder="••••••••" 
+              value={form.password}
+              onChange={e => setForm(p => ({ ...p, password: e.target.value }))} 
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">Email <span className="text-red-500">*</span></label>
@@ -569,6 +586,7 @@ function StepAddTable({ clubId, onNext, onSkip, onBack }) {
 
   const handleAdd = async () => {
     if (!form.table_number || !form.table_type_id || !form.price) { toast.error("Nhập đủ tên bàn, loại bàn và đơn giá"); return; }
+    if (files.length === 0) { toast.error("Vui lòng tải lên ít nhất 1 ảnh bàn"); return; }
     setSaving(true);
     try {
       const fd = new FormData();
@@ -631,7 +649,7 @@ function StepAddTable({ clubId, onNext, onSkip, onBack }) {
           <input className={inputCls} placeholder="Mô tả..." value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} />
         </div>
         <div className="sm:col-span-3">
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Ảnh bàn (tùy chọn, tối đa 5 ảnh)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Ảnh bàn <span className="text-red-500">*</span> (tối đa 5 ảnh)</label>
           <div className="flex gap-2 overflow-x-auto pb-2">
             {previews.map((src, idx) => (
               <div key={idx} className="relative group aspect-video rounded-xl overflow-hidden border border-gray-200 w-32 flex-shrink-0">
@@ -916,7 +934,23 @@ export default function OwnerOnboardingPage() {
   const initialStep = Number(searchParams.get("step")) || 1;
   const [currentStep, setCurrentStep] = useState(initialStep);
   const [selectedPlan, setSelectedPlan] = useState("free");
-  const clubName = localStorage.getItem("selected_club_name") || "Quán của bạn";
+  const [clubName, setClubName] = useState(localStorage.getItem("selected_club_name") || "Quán của bạn");
+
+  useEffect(() => {
+    if (clubId) {
+      localStorage.setItem("selected_club_id", clubId);
+      api.get(`/clubs/${clubId}`).then(res => {
+        if (res.data?.success && res.data.data) {
+          const club = res.data.data;
+          setClubName(club.name);
+          localStorage.setItem("selected_club_name", club.name);
+          localStorage.setItem("selected_club_plan", club.plan_type || "free");
+        }
+      }).catch(err => {
+        console.error("Error fetching club details in onboarding:", err);
+      });
+    }
+  }, [clubId]);
 
   useEffect(() => {
     // Check if returned from PayOS
@@ -943,6 +977,8 @@ export default function OwnerOnboardingPage() {
     try {
       const res = await completeOnboarding(clubId, selectedPlan);
       const realPlan = res?.data?.plan_type || selectedPlan;
+      localStorage.setItem("selected_club_id", clubId);
+      localStorage.setItem("selected_club_name", clubName);
       localStorage.setItem("selected_club_plan", realPlan);
       toast.success("Thiết lập hoàn tất! Chào mừng bạn 🎉");
       navigate("/owner/dashboard");

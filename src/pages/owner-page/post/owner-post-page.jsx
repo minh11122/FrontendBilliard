@@ -653,7 +653,7 @@ export const OwnerPostPage = () => {
                         <div className="space-y-3">
                           <input
                             type="file"
-                            accept="image/png,image/jpeg,image/jpg"
+                            accept="image/png,image/jpeg,image/jpg,image/webp"
                             onChange={(e) => uploadImageForBlock(idx, e.target.files?.[0])}
                             className="block w-full text-sm text-slate-600"
                           />
@@ -730,7 +730,7 @@ export const OwnerPostPage = () => {
                 <div className="flex-1 min-w-[220px]">
                   <input
                     type="file"
-                    accept="image/png,image/jpeg,image/jpg"
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
                     onChange={handlePickImage}
                     className="block w-full text-sm text-slate-600"
                     disabled={submitDisabled}

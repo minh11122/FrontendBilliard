@@ -25,16 +25,22 @@ export const updateService = (id, formData) => {
 };
 
 // Vô hiệu hóa dịch vụ (soft delete)
-export const deactivateService = (id) => {
-    return api.patch(`/services/${id}/deactivate`);
+export const deactivateService = (id, clubId) => {
+    return api.patch(`/services/${id}/deactivate`, {}, {
+        params: clubId ? { club_id: clubId } : undefined,
+    });
 };
 
 // Khôi phục dịch vụ
-export const reactivateService = (id) => {
-    return api.patch(`/services/${id}/reactivate`);
+export const reactivateService = (id, clubId) => {
+    return api.patch(`/services/${id}/reactivate`, {}, {
+        params: clubId ? { club_id: clubId } : undefined,
+    });
 };
 
 // Xóa vĩnh viễn
-export const deleteServicePermanently = (id) => {
-    return api.delete(`/services/${id}`);
+export const deleteServicePermanently = (id, clubId) => {
+    return api.delete(`/services/${id}`, {
+        params: clubId ? { club_id: clubId } : undefined,
+    });
 };

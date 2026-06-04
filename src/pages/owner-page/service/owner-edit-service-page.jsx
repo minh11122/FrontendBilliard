@@ -263,7 +263,7 @@ export default function OwnerEditServicePage() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/jpg,image/jpeg,image/png"
+              accept="image/jpg,image/jpeg,image/png,image/webp"
               multiple
               className="hidden"
               onChange={handleImageChange}
