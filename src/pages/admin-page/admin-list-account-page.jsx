@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useFormik } from "formik";
+import * as Yup from "yup";
 import {
   Search,
   Filter,
@@ -88,12 +90,6 @@ export const AccountManagement = () => {
 
   const [accounts, setAccounts] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [form, setForm] = useState({
-    fullname: "",
-    email: "",
-    password: "",
-    phone: "", // 👈 THÊM
-  });
   const [pagination, setPagination] = useState({
     page: 1,
     totalPages: 1,
@@ -194,48 +190,42 @@ export const AccountManagement = () => {
     return pages;
   })();
 
+  const createFormik = useFormik({
+    initialValues: {
+      fullname: "",
+      email: "",
+      phone: "",
+      password: "",
+    },
+    validationSchema: Yup.object({
+      fullname: Yup.string().required("Vui lòng nhập họ tên"),
+      email: Yup.string()
+        .required("Vui lòng nhập email")
+        .matches(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Vui lòng nhập email hợp lệ"),
+      phone: Yup.string()
+        .required("Vui lòng nhập số điện thoại")
+        .matches(/(84|0[3|5|7|8|9])+([0-9]{8})\b/, "Số điện thoại không hợp lệ (VD: 0987654321)"),
+      password: Yup.string()
+        .required("Vui lòng nhập mật khẩu")
+        .min(6, "Mật khẩu phải có ít nhất 6 ký tự"),
+    }),
+    onSubmit: async (values, { resetForm }) => {
+      try {
+        const res = await createAccount(values);
+        toast.success(res.data.message || "Tạo nhân viên thành công");
+        setShowCreateModal(false);
+        resetForm();
+        fetchAccounts(1);
+      } catch (error) {
+        console.log(error);
+        toast.error(error?.response?.data?.message || "Tạo thất bại");
+      }
+    },
+  });
 
-  const handleCreate = async () => {
-    // Validate inputs
-    if (!form.fullname.trim()) {
-      return toast.error("Vui lòng nhập họ tên");
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!form.email.trim() || !emailRegex.test(form.email)) {
-      return toast.error("Vui lòng nhập email hợp lệ");
-    }
-
-    const phoneRegex = /(84|0[3|5|7|8|9])+([0-9]{8})\b/;
-    if (!form.phone.trim() || !phoneRegex.test(form.phone)) {
-      return toast.error("Số điện thoại không hợp lệ (VD: 0987654321)");
-    }
-
-    if (!form.password || form.password.length < 6) {
-      return toast.error("Mật khẩu phải có ít nhất 6 ký tự");
-    }
-
-    try {
-      const res = await createAccount({
-        fullname: form.fullname,
-        email: form.email,
-        password: form.password,
-        phone: form.phone,
-      });
-
-
-      toast.success(res.data.message || "Tạo nhân viên thành công");
-
-
-      setShowCreateModal(false);
-      setForm({ fullname: "", email: "", password: "", phone: "" });
-      fetchAccounts(1);
-    } catch (error) {
-      console.log(error); // 👈 debug
-
-
-      toast.error(error?.response?.data?.message || "Tạo thất bại");
-    }
+  const handleCloseCreateModal = () => {
+    setShowCreateModal(false);
+    createFormik.resetForm();
   };
 
 
@@ -649,7 +639,7 @@ export const AccountManagement = () => {
       {showCreateModal && (
         <div
           className="modal-overlay fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-          onClick={() => setShowCreateModal(false)}
+          onClick={handleCloseCreateModal}
         >
           <div
             className="modal-box bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
@@ -659,23 +649,22 @@ export const AccountManagement = () => {
             <div className="bg-gradient-to-r from-emerald-500 to-teal-400 px-6 py-5">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <Avatar name={form.fullname} size="lg" />
+                  <Avatar name={createFormik.values.fullname} size="lg" />
                   <div>
                     <p className="text-emerald-100 text-xs font-semibold uppercase tracking-widest mb-0.5">
                       Tạo nhân viên
                     </p>
                     <h2 className="text-white text-lg font-extrabold leading-tight">
-                      {form.fullname || "Nhân viên mới"}
+                      {createFormik.values.fullname || "Nhân viên mới"}
                     </h2>
                     <p className="text-emerald-100 text-xs mt-0.5">
-                      {form.email || "email@example.com"}
+                      {createFormik.values.email || "email@example.com"}
                     </p>
                   </div>
                 </div>
 
-
                 <button
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={handleCloseCreateModal}
                   className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 transition-colors text-white"
                 >
                   <X className="w-4 h-4" />
@@ -683,117 +672,140 @@ export const AccountManagement = () => {
               </div>
             </div>
 
+            <form onSubmit={createFormik.handleSubmit}>
+              {/* Body giống DETAIL nhưng là INPUT */}
+              <div className="px-6 py-5 space-y-4">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  {/* FULLNAME */}
+                  <div className="col-span-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
+                      Họ tên
+                    </p>
+                    <input
+                      name="fullname"
+                      value={createFormik.values.fullname}
+                      onChange={createFormik.handleChange}
+                      onBlur={createFormik.handleBlur}
+                      className={`w-full border rounded-xl px-3 py-2 text-sm acc-input ${
+                        createFormik.touched.fullname && createFormik.errors.fullname
+                          ? "border-red-500 focus:ring-red-500"
+                          : "border-gray-200"
+                      }`}
+                      placeholder="Nhập họ tên..."
+                    />
+                    {createFormik.touched.fullname && createFormik.errors.fullname && (
+                      <p className="text-red-500 text-[11px] mt-1 ml-1">{createFormik.errors.fullname}</p>
+                    )}
+                  </div>
 
-            {/* Body giống DETAIL nhưng là INPUT */}
-            <div className="px-6 py-5 space-y-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                {/* FULLNAME */}
-                <div className="col-span-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
-                    Họ tên
-                  </p>
-                  <input
-                    value={form.fullname}
-                    onChange={(e) =>
-                      setForm({ ...form, fullname: e.target.value })
-                    }
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm acc-input"
-                    placeholder="Nhập họ tên..."
-                  />
-                </div>
+                  {/* EMAIL */}
+                  <div className="col-span-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
+                      Email
+                    </p>
+                    <input
+                      name="email"
+                      value={createFormik.values.email}
+                      onChange={createFormik.handleChange}
+                      onBlur={createFormik.handleBlur}
+                      className={`w-full border rounded-xl px-3 py-2 text-sm acc-input ${
+                        createFormik.touched.email && createFormik.errors.email
+                          ? "border-red-500 focus:ring-red-500"
+                          : "border-gray-200"
+                      }`}
+                      placeholder="Nhập email..."
+                    />
+                    {createFormik.touched.email && createFormik.errors.email && (
+                      <p className="text-red-500 text-[11px] mt-1 ml-1">{createFormik.errors.email}</p>
+                    )}
+                  </div>
 
+                  {/* PHONE */}
+                  <div className="col-span-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
+                      Số điện thoại
+                    </p>
+                    <input
+                      name="phone"
+                      value={createFormik.values.phone}
+                      onChange={createFormik.handleChange}
+                      onBlur={createFormik.handleBlur}
+                      className={`w-full border rounded-xl px-3 py-2 text-sm acc-input ${
+                        createFormik.touched.phone && createFormik.errors.phone
+                          ? "border-red-500 focus:ring-red-500"
+                          : "border-gray-200"
+                      }`}
+                      placeholder="Nhập số điện thoại..."
+                    />
+                    {createFormik.touched.phone && createFormik.errors.phone && (
+                      <p className="text-red-500 text-[11px] mt-1 ml-1">{createFormik.errors.phone}</p>
+                    )}
+                  </div>
 
-                {/* EMAIL */}
-                <div className="col-span-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
-                    Email
-                  </p>
-                  <input
-                    value={form.email}
-                    onChange={(e) =>
-                      setForm({ ...form, email: e.target.value })
-                    }
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm acc-input"
-                    placeholder="Nhập email..."
-                  />
-                </div>
+                  {/* PASSWORD */}
+                  <div className="col-span-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
+                      Mật khẩu
+                    </p>
+                    <input
+                      type="password"
+                      name="password"
+                      value={createFormik.values.password}
+                      onChange={createFormik.handleChange}
+                      onBlur={createFormik.handleBlur}
+                      className={`w-full border rounded-xl px-3 py-2 text-sm acc-input ${
+                        createFormik.touched.password && createFormik.errors.password
+                          ? "border-red-500 focus:ring-red-500"
+                          : "border-gray-200"
+                      }`}
+                      placeholder="Nhập mật khẩu..."
+                    />
+                    {createFormik.touched.password && createFormik.errors.password && (
+                      <p className="text-red-500 text-[11px] mt-1 ml-1">{createFormik.errors.password}</p>
+                    )}
+                  </div>
 
+                  {/* ROLE FIXED */}
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
+                      Vai trò
+                    </p>
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-sky-100 text-sky-700">
+                      <ShieldCheck className="w-3 h-3" />
+                      Nhân viên hệ thống
+                    </span>
+                  </div>
 
-                {/* PHONE */}
-                <div className="col-span-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
-                    Số điện thoại
-                  </p>
-                  <input
-                    value={form.phone}
-                    onChange={(e) =>
-                      setForm({ ...form, phone: e.target.value })
-                    }
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm acc-input"
-                    placeholder="Nhập số điện thoại..."
-                  />
-                </div>
-
-
-                {/* PASSWORD */}
-                <div className="col-span-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
-                    Mật khẩu
-                  </p>
-                  <input
-                    type="password"
-                    value={form.password}
-                    onChange={(e) =>
-                      setForm({ ...form, password: e.target.value })
-                    }
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm acc-input"
-                    placeholder="Nhập mật khẩu..."
-                  />
-                </div>
-
-
-                {/* ROLE FIXED */}
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
-                    Vai trò
-                  </p>
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-sky-100 text-sky-700">
-                    <ShieldCheck className="w-3 h-3" />
-                    Nhân viên hệ thống
-                  </span>
-                </div>
-
-
-                {/* STATUS */}
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
-                    Trạng thái
-                  </p>
-                  <span className="inline-block text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">
-                    ACTIVE
-                  </span>
+                  {/* STATUS */}
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
+                      Trạng thái
+                    </p>
+                    <span className="inline-block text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">
+                      ACTIVE
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
 
+              {/* Footer giống DETAIL */}
+              <div className="px-6 pb-5 flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleCloseCreateModal}
+                  className="w-1/2 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl transition-colors"
+                >
+                  Hủy
+                </button>
 
-            {/* Footer giống DETAIL */}
-            <div className="px-6 pb-5 flex gap-2">
-              <button
-                onClick={() => setShowCreateModal(false)}
-                className="w-1/2 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl transition-colors"
-              >
-                Hủy
-              </button>
-
-
-              <button
-                onClick={handleCreate}
-                className="w-1/2 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-xl transition-colors"
-              >
-                Tạo
-              </button>
-            </div>
+                <button
+                  type="submit"
+                  className="w-1/2 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-xl transition-colors"
+                >
+                  Tạo
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
