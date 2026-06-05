@@ -225,13 +225,13 @@ export const AdminSettings = () => {
       color: "text-violet-600 bg-violet-50",
       accent: "border-violet-200",
     },
-    {
-      label: "Số lượng shop phát sinh giao dịch",
-      value: activeShops,
-      icon: Store,
-      color: "text-sky-600 bg-sky-50",
-      accent: "border-sky-200",
-    },
+    // {
+    //   label: "Số lượng shop phát sinh giao dịch",
+    //   value: activeShops,
+    //   icon: Store,
+    //   color: "text-sky-600 bg-sky-50",
+    //   accent: "border-sky-200",
+    // },
     {
       label: "Giá trị đơn trung bình",
       value: formatPrice(avgOrderValue),
@@ -239,21 +239,21 @@ export const AdminSettings = () => {
       color: "text-amber-600 bg-amber-50",
       accent: "border-amber-200",
     },
-    {
-      label: "Tăng trưởng so với năm trước",
-      value: growthLabel,
-      icon: TrendingUp,
-      color: "text-rose-600 bg-rose-50",
-      accent: "border-rose-200",
-      valueClass: growthValue >= 0 ? "text-emerald-600" : "text-rose-600",
-    },
-    {
-      label: "Tổng doanh thu",
-      value: formatPrice(summary.total_revenue),
-      icon: Package,
-      color: "text-teal-600 bg-teal-50",
-      accent: "border-teal-200",
-    },
+    // {
+    //   label: "Tăng trưởng so với năm trước",
+    //   value: growthLabel,
+    //   icon: TrendingUp,
+    //   color: "text-rose-600 bg-rose-50",
+    //   accent: "border-rose-200",
+    //   valueClass: growthValue >= 0 ? "text-emerald-600" : "text-rose-600",
+    // },
+    // {
+    //   label: "Tổng doanh thu",
+    //   value: formatPrice(summary.total_revenue),
+    //   icon: Package,
+    //   color: "text-teal-600 bg-teal-50",
+    //   accent: "border-teal-200",
+    // },
   ];
 
 
