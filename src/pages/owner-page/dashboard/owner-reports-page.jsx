@@ -176,8 +176,6 @@ export default function OwnerReportsPage() {
               <div className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
-                    // Map lại cục data timeline (Biểu đồ đường) từ API. 
-                    // Ngày gốc "2024-06-04" cắt bỏ số 2024 đi, giữ lại "06/04" cho gọn biểu đồ
                     data={bookingData.revenue.timeline.map((item) => ({
                       name: item.date.split("-").slice(1).join("/"),
                       "Doanh thu": item.total,

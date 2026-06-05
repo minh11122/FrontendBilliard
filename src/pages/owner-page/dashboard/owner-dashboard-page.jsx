@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { clubService, getClubAnalytics } from "@/services/club.service";
 import { getTournamentsByClub } from "@/services/tournament.service";
+import { getTables } from "@/services/billiardTable.service";
 import {
   Loader2, LayoutDashboard, CircleDot, Activity, LogOut,
   Clock, PlusCircle, Users, Star, AlertCircle, Trophy, Calendar
@@ -40,6 +41,7 @@ export const OwnerDashboardPage = () => {
   const [loading, setLoading]       = useState(true);
   const [clubData, setClubData]     = useState(null);
   const [analyticsData, setAnalyticsData] = useState(null); // hôm nay (cho KQKD + sao)
+  const [tableCounts, setTableCounts] = useState({ total: 0, available: 0, inUse: 0, booked: 0, holding: 0, maintenance: 0 });
 
   // Dịch vụ — filter riêng
   const [serviceFilter, setServiceFilter]     = useState("thisMonth");
@@ -94,12 +96,14 @@ export const OwnerDashboardPage = () => {
           return;
         }
 
-        const clubRes = await clubService.getClubById(clubId, {
-          play_date:  new Date().toISOString().split("T")[0],
-          startTime:  new Date().toTimeString().substring(0, 5),
-          duration:   2,
-        });
+        const clubRes = await clubService.getClubById(clubId);
         if (clubRes?.success) setClubData(clubRes.data);
+
+        // Fetch danh sách bàn từ API Quản lý bàn (chỉ cần lấy limit 1 để tiết kiệm dung lượng, vì statusCounts đính kèm)
+        const tablesRes = await getTables({ club_id: clubId, page: 1, limit: 1 });
+        if (tablesRes?.data?.statusCounts) {
+           setTableCounts(tablesRes.data.statusCounts);
+        }
 
         // Analytics hôm nay (cho KQKD)
         const start = new Date(); start.setHours(0, 0, 0, 0);
@@ -128,13 +132,20 @@ export const OwnerDashboardPage = () => {
     (async () => {
       setTournamentLoading(true);
       try {
-        const res = await getTournamentsByClub(clubId);
-        if (res?.success) setTournaments(res.data || []);
-      } catch { /* yên lặng */ } finally {
+        const d = getStartDate(tournamentFilter);
+        const res = await getTournamentsByClub(clubId, {
+           status: "all",
+           startDate: d.toISOString(),
+           endDate: new Date().toISOString()
+        });
+        if (res?.data?.success) setTournaments(res.data.data);
+      } catch (error) {
+        console.error("Lỗi lấy giải đấu:", error);
+      } finally {
         setTournamentLoading(false);
       }
     })();
-  }, [clubId]);
+  }, [clubId, tournamentFilter]);
 
   // Lọc giải đấu theo khoảng thời gian
   const filterTournamentsByRange = (list, filter) => {
@@ -213,15 +224,10 @@ export const OwnerDashboardPage = () => {
     );
   }
 
-  let totalTables = 0, available = 0, playing = 0, held = 0;
-  if (clubData?.tables) {
-    totalTables = clubData.tables.length;
-    clubData.tables.forEach(t => {
-      if (t.status === "Available") available++;
-      else if (t.status === "Playing") playing++;
-      else held++;
-    });
-  }
+  const totalTables = tableCounts.total;
+  const available = tableCounts.available;
+  const playing = tableCounts.inUse;
+  const held = tableCounts.maintenance + tableCounts.holding + tableCounts.booked;
 
   // Tính rating toàn thời gian
   const rating       = ratingData?.feedback?.average ?? 0;
