@@ -49,6 +49,7 @@ export default function TournamentDetailPage() {
   const [tournament, setTournament] = useState(null);
   const [loading, setLoading] = useState(true);
   const [joined, setJoined] = useState(false);
+  const [joinedLoading, setJoinedLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("info");
   const [registeringNow, setRegisteringNow] = useState(false);
 
@@ -69,16 +70,22 @@ export default function TournamentDetailPage() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) return;
+    if (!token) {
+      setJoinedLoading(false);
+      return;
+    }
 
     const fetchJoinedStatus = async () => {
       try {
+        setJoinedLoading(true);
         const res = await getMyRegisteredTournamentIds();
         if (res?.success) {
-          setJoined((res.data || []).includes(id));
+          setJoined((res.data || []).some(tid => String(tid) === String(id)));
         }
       } catch {
         // keep silent
+      } finally {
+        setJoinedLoading(false);
       }
     };
 
@@ -180,7 +187,7 @@ export default function TournamentDetailPage() {
       return;
     }
 
-    if (user.roleName === "CUSTOMER" && !joined) {
+    if (user.roleName === "CUSTOMER" && !joinedLoading && !joined) {
       toast.error("Bạn cần đăng ký giải đấu trước khi xem danh sách người chơi");
       return;
     }

@@ -12,12 +12,19 @@ import { uploadImages } from "@/utils/cloudinary";
 
 export function RegisterOwnerAccount() {
   const navigate = useNavigate();
+
+  // provinces/districts dùng để map vị trí từ bản đồ sang mã tỉnh, mã quận/huyện gửi về backend.
   const [provinces, setProvinces] = useState([]);
   const [districts, setDistricts] = useState([]);
+
+  // isUploadingImage khóa nút submit khi ảnh giấy phép kinh doanh chưa upload xong.
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  // previewImages lưu ảnh xem trước và URL thật sau khi upload Cloudinary thành công.
   const [previewImages, setPreviewImages] = useState([]);
   const fileInputRef = useRef(null);
 
+  // Lấy danh sách tỉnh/thành phố một lần khi vào trang để phục vụ việc tự chọn vị trí.
   useEffect(() => {
     const fetchProvinces = async () => {
       try {
@@ -30,6 +37,7 @@ export function RegisterOwnerAccount() {
     fetchProvinces();
   }, []);
 
+  // Yup kiểm tra các trường bắt buộc trước khi cho submit form đăng ký CLB.
   const validationSchema = Yup.object({
     name: Yup.string().required("Vui lòng nhập tên CLB"),
     province_code: Yup.string().required("Vui lòng chọn Tỉnh/Thành phố"),
@@ -40,6 +48,7 @@ export function RegisterOwnerAccount() {
     legalDocuments: Yup.array().min(1, "Vui lòng tải lên ít nhất 1 ảnh giấy phép kinh doanh"),
   });
 
+  // Formik quản lý toàn bộ dữ liệu form, validate và luồng submit.
   const formik = useFormik({
     initialValues: {
       name: "",
@@ -56,6 +65,7 @@ export function RegisterOwnerAccount() {
 
     validationSchema,
 
+    // Submit thành công sẽ tạo CLB ở trạng thái Pending để system staff duyệt.
     onSubmit: async (values, { setSubmitting }) => {
       try {
         await registerClub(values);
@@ -73,7 +83,7 @@ export function RegisterOwnerAccount() {
     },
   });
 
-  // Fetch districts when province changes
+  // Khi province_code thay đổi, tải lại danh sách quận/huyện tương ứng.
   useEffect(() => {
     const fetchDistricts = async () => {
       if (formik.values.province_code) {
@@ -90,10 +100,11 @@ export function RegisterOwnerAccount() {
     fetchDistricts();
   }, [formik.values.province_code]);
 
+  // Nhận dữ liệu từ MapAddressPicker rồi đồng bộ tọa độ, địa chỉ, tỉnh và quận/huyện vào Formik.
   const handleLocationSelect = async (locationData) => {
     const { lat, lng, address, provinceName, districtName, isFromSearch } = locationData;
     
-    // 1. Update lat/lng
+    // Lưu tọa độ thật của marker để backend không phải geocode lại nếu đã có lat/lng.
     formik.setFieldValue("lat", lat);
     formik.setFieldValue("lng", lng);
 
@@ -102,12 +113,12 @@ export function RegisterOwnerAccount() {
       formik.setFieldValue("address", address);
     }
 
-    // 2. Map Province Name to Code
+    // Map tên tỉnh từ bản đồ sang province_code trong danh sách địa phương của hệ thống.
     const matchedProvince = matchAdministrativeUnit(provinceName, provinces);
     if (matchedProvince) {
       formik.setFieldValue("province_code", matchedProvince.code);
       
-      // 3. Map District Name to Code
+      // Sau khi biết tỉnh, tải quận/huyện của tỉnh đó rồi map districtName sang district_code.
       try {
         const districtList = await getDistrictsByProvince(matchedProvince.code);
         setDistricts(districtList);
@@ -128,6 +139,7 @@ export function RegisterOwnerAccount() {
     }
   };
 
+  // Dọn các blob preview khi rời trang để trình duyệt không giữ ảnh tạm trong bộ nhớ.
   useEffect(() => {
     return () => {
       previewImages.forEach((image) => {
@@ -138,7 +150,7 @@ export function RegisterOwnerAccount() {
     };
   }, [previewImages]);
 
-  // upload ảnh
+  // Upload ảnh giấy phép kinh doanh: tạo preview ngay, upload Cloudinary, rồi lưu URL thật vào legalDocuments.
   const handleImageUpload = async (e) => {
   const files = Array.from(e.target.files || []);
   e.target.value = "";
@@ -193,6 +205,7 @@ export function RegisterOwnerAccount() {
   }
 };
 
+  // Xóa một ảnh khỏi preview và cập nhật lại mảng legalDocuments trước khi submit.
   const handleRemoveImage = (imageId) => {
     setPreviewImages((prev) => {
       const imageToRemove = prev.find((item) => item.id === imageId);
@@ -220,7 +233,7 @@ export function RegisterOwnerAccount() {
 
       <div className="max-w-6xl mx-auto bg-white rounded-3xl shadow-xl grid md:grid-cols-2 overflow-hidden">
         
-        {/* LEFT FORM */}
+        {/* Cột trái là form nhập thông tin CLB và giấy phép kinh doanh. */}
         <div className="p-8 md:p-10">
 
           <h2 className="text-2xl font-bold mb-2">
@@ -233,7 +246,7 @@ export function RegisterOwnerAccount() {
 
           <form onSubmit={formik.handleSubmit} className="space-y-5">
 
-            {/* Tên CLB */}
+            {/* Tên CLB là tên sẽ hiển thị cho khách hàng và system staff khi duyệt hồ sơ. */}
             <div className="group">
               <label className="text-sm font-bold text-gray-700 mb-1.5 block">Tên câu lạc bộ</label>
               <div className="relative">
@@ -252,7 +265,7 @@ export function RegisterOwnerAccount() {
               )}
             </div>
 
-            {/* Địa chỉ chi tiết (Search Box) */}
+            {/* Ô địa chỉ dùng làm từ khóa tìm trên bản đồ; bản đồ sẽ trả lại tọa độ và vùng hành chính. */}
             <div className="group">
               <label className="text-sm font-bold text-gray-700 mb-1.5 block">Địa chỉ chi tiết (Dùng để tìm trên Map)</label>
               <div className="relative">
@@ -271,7 +284,7 @@ export function RegisterOwnerAccount() {
               </p>
             </div>
 
-            {/* Bản đồ chọn địa chỉ */}
+            {/* Bản đồ cho phép tìm/kéo marker để xác nhận vị trí thật của CLB. */}
             <div className="space-y-4 pt-2">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-bold flex items-center gap-2">
@@ -294,7 +307,7 @@ export function RegisterOwnerAccount() {
                 />
               </div>
 
-              {/* Thông tin vùng hành chính tự động */}
+              {/* Tỉnh và quận/huyện được tự động suy ra từ vị trí trên bản đồ. */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-blue-50/50 p-3 rounded-2xl border border-blue-100/50 transition-all hover:bg-blue-50">
                   <span className="text-[10px] text-blue-600 uppercase font-black tracking-wider block mb-1">Tỉnh / Thành phố</span>
@@ -324,7 +337,7 @@ export function RegisterOwnerAccount() {
               )}
             </div>
 
-            {/* Phone */}
+            {/* Số điện thoại CLB sẽ được backend kiểm tra trùng trước khi tạo hồ sơ. */}
             <div>
               <label className="text-sm font-medium">Số điện thoại</label>
               <div className="relative mt-1">
@@ -338,7 +351,7 @@ export function RegisterOwnerAccount() {
               </div>
             </div>
 
-            {/* Tax code */}
+            {/* Mã số thuế là thông tin bắt buộc và backend cũng kiểm tra trùng. */}
             <div>
               <label className="text-sm font-medium">Mã số thuế</label>
               <div className="relative mt-1">
@@ -352,7 +365,7 @@ export function RegisterOwnerAccount() {
               </div>
             </div>
 
-            {/* Description */}
+            {/* Mô tả không bắt buộc, dùng để giới thiệu CLB sau khi hồ sơ được duyệt. */}
             <div>
               <label className="text-sm font-medium">Mô tả</label>
               <textarea
@@ -365,7 +378,7 @@ export function RegisterOwnerAccount() {
               />
             </div>
 
-            {/* Upload */}
+            {/* Upload giấy phép kinh doanh: bắt buộc có ít nhất một ảnh hợp lệ trước khi submit. */}
             <div>
               <label className="text-sm font-medium">
                 Ảnh giấy phép kinh doanh <span className="text-red-500">*</span>
@@ -439,7 +452,7 @@ export function RegisterOwnerAccount() {
               )}
             </div>
 
-            {/* Submit */}
+            {/* Submit gửi toàn bộ form qua registerClub; nút bị khóa khi đang upload ảnh hoặc đang gửi form. */}
             <button
               type="submit"
               disabled={formik.isSubmitting || isUploadingImage}
@@ -451,7 +464,7 @@ export function RegisterOwnerAccount() {
           </form>
         </div>
 
-        {/* RIGHT HERO */}
+        {/* Cột phải chỉ là phần hình ảnh giới thiệu, không tham gia vào dữ liệu submit. */}
         <div className="relative hidden md:block">
           <img
             src="/img-home/club.jpg"

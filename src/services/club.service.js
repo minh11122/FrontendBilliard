@@ -34,6 +34,7 @@ export const getClubById = async (id, params = {}) => {
  */
 export const registerClub = async (data) => {
   try {
+    // Gửi hồ sơ đăng ký CLB lên backend; backend tạo CLB status Pending để system staff duyệt.
     const response = await api.post("/clubs/register-owner-account", data);
     return response.data;
   } catch (error) {
