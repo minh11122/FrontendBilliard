@@ -16,15 +16,26 @@ const STATUS_META = {
   all: "Tất cả trạng thái",
   SUCCESS: "Thành công",
   PENDING: "Đang xử lý",
+  CANCELLED: "Đã hủy",
+  EXPIRED: "Hết hạn",
+};
+
+const STATUS_LABELS = {
+  SUCCESS: "Thành công",
+  PENDING: "Đang xử lý",
+  CANCELLED: "Đã hủy",
+  EXPIRED: "Hết hạn",
 };
 
 const StatusPill = ({ status }) => {
   const map = {
     PENDING: "bg-amber-50 text-amber-800 border-amber-200",
     SUCCESS: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    CANCELLED: "bg-rose-50 text-rose-700 border-rose-200",
+    EXPIRED: "bg-slate-100 text-slate-700 border-slate-200",
   };
   const cls = map[status] || "bg-gray-50 text-gray-700 border-gray-200";
-  const label = status === "SUCCESS" ? "Thành công" : status === "PENDING" ? "Đang xử lý" : status;
+  const label = STATUS_LABELS[status] || status;
   return (
     <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${cls}`}>
       {label}
