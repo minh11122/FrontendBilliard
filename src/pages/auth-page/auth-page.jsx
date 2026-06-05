@@ -142,7 +142,7 @@ export function AuthPage() {
           error.response?.status === 403 &&
           errorMessage.toLowerCase().includes("kích hoạt")
         ) {
-          await openOtpVerification(normalizedEmail, false, "Tai khoan chua kich hoat. Vui long xac thuc OTP de tiep tuc.");
+          await openOtpVerification(normalizedEmail, false, "Tài khoản chưa kích hoạt. Vui lòng xác thực OTP để tiếp tục.");
           setSubmitting(false);
           return;
         }
@@ -218,12 +218,33 @@ export function AuthPage() {
   };
 
   const handleOtpChange = (index, value) => {
-    const digit = value.replace(/\D/g, "").slice(-1);
-    if (value && !digit) return;
+    const cleanedValue = value.replace(/\D/g, "");
+    if (!cleanedValue && value) return;
+
+    // Autofill or full paste (6 digits)
+    if (cleanedValue.length >= 6) {
+      const newOtp = [...otp];
+      const chars = cleanedValue.slice(0, 6).split("");
+      chars.forEach((char, i) => {
+        newOtp[i] = char;
+      });
+      setOtp(newOtp);
+      otpInputRefs.current[5]?.focus();
+      return;
+    }
+
+    // Normal typing or single character change
+    const digit = cleanedValue.slice(-1);
     const newOtp = [...otp];
     newOtp[index] = digit;
     setOtp(newOtp);
-    if (digit && index < 5) otpInputRefs.current[index + 1]?.focus();
+    
+    // Auto focus next input
+    if (digit && index < 5) {
+        setTimeout(() => {
+            otpInputRefs.current[index + 1]?.focus();
+        }, 10);
+    }
   };
 
   const handleOtpKeyDown = (index, e) => {
@@ -456,7 +477,7 @@ export function AuthPage() {
                           type="text"
                           inputMode="numeric"
                           autoComplete={i === 0 ? "one-time-code" : "off"}
-                          maxLength={1}
+                          maxLength={6}
                           className="w-10 h-10 text-center border rounded-lg"
                         />
                       ))}
