@@ -309,9 +309,8 @@ export function SettingPage() {
       // redirect PayOS
       window.location.href = payment.checkoutUrl;
 
-    } catch {
-      toast.error("Không tạo được thanh toán");
-
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Không tạo được thanh toán");
     }
 
   };
