@@ -39,31 +39,31 @@ export function LoginSystem() {
 
         const { token, role, fullname } = res.data;
 
-        if (fullname) {
-          localStorage.setItem("user_fullname", fullname);
-        }
+        if (role === "ADMIN" || role === "STAFF_SYSTEM") {
+          if (fullname) {
+            localStorage.setItem("user_fullname", fullname);
+          }
 
-        loginContext(token);
+          loginContext(token);
 
-        // remember me
-        if (values.rememberMe) {
-          Cookies.set("rememberedEmail", values.email, { expires: 7 });
-          Cookies.set("rememberedPassword", values.password, { expires: 7 });
-        } else {
-          Cookies.remove("rememberedEmail");
-          Cookies.remove("rememberedPassword");
-        }
+          // remember me
+          if (values.rememberMe) {
+            Cookies.set("rememberedEmail", values.email, { expires: 7 });
+            Cookies.set("rememberedPassword", values.password, { expires: 7 });
+          } else {
+            Cookies.remove("rememberedEmail");
+            Cookies.remove("rememberedPassword");
+          }
 
-
-        if (role === "ADMIN") {
           toast.success("Đăng nhập thành công!");
-          navigate("/admin/list-user");
-        } else if (role === "STAFF_SYSTEM") {
-          toast.success("Đăng nhập thành công!");
-          navigate("/systemstaff/systemstaff1");
+          
+          if (role === "ADMIN") {
+            navigate("/admin/list-user");
+          } else {
+            navigate("/systemstaff/systemstaff1");
+          }
         } else {
           toast.error("Bạn không có quyền truy cập hệ thống");
-          navigate("/");
         }
       } catch (error) {
         toast.error(error.response?.data?.message || "Đăng nhập thất bại");
@@ -157,7 +157,7 @@ export function LoginSystem() {
             </div>
 
             {/* Remember */}
-            <label className="flex items-center gap-2 text-sm text-gray-600">
+            {/* <label className="flex items-center gap-2 text-sm text-gray-600">
               <input
                 type="checkbox"
                 name="rememberMe"
@@ -165,7 +165,7 @@ export function LoginSystem() {
                 onChange={formik.handleChange}
               />
               Ghi nhớ đăng nhập
-            </label>
+            </label> */}
 
             {/* Submit */}
             <button
