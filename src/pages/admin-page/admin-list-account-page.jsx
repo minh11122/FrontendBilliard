@@ -196,6 +196,25 @@ export const AccountManagement = () => {
 
 
   const handleCreate = async () => {
+    // Validate inputs
+    if (!form.fullname.trim()) {
+      return toast.error("Vui lòng nhập họ tên");
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!form.email.trim() || !emailRegex.test(form.email)) {
+      return toast.error("Vui lòng nhập email hợp lệ");
+    }
+
+    const phoneRegex = /(84|0[3|5|7|8|9])+([0-9]{8})\b/;
+    if (!form.phone.trim() || !phoneRegex.test(form.phone)) {
+      return toast.error("Số điện thoại không hợp lệ (VD: 0987654321)");
+    }
+
+    if (!form.password || form.password.length < 6) {
+      return toast.error("Mật khẩu phải có ít nhất 6 ký tự");
+    }
+
     try {
       const res = await createAccount({
         fullname: form.fullname,
