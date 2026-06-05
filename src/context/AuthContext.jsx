@@ -39,6 +39,17 @@ export const AuthProvider = ({ children }) => {
     setAuthLoading(false);
   };
 
+  const updateAuthUser = (updates) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const newUser = { ...prev, ...updates };
+      if (updates.fullname) {
+        localStorage.setItem("user_fullname", updates.fullname);
+      }
+      return newUser;
+    });
+  };
+
   useEffect(() => {
     const initUser = async () => {
       const token = localStorage.getItem("token");
@@ -124,6 +135,7 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider
       value={{
         user,
+        updateAuthUser,
         login,
         logout,
         isAuthenticated,

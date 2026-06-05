@@ -209,8 +209,12 @@ export default function OwnerPaymentHistoryPage() {
                     <tr key={tx._id} className="hover:bg-slate-50/70 transition-colors">
                       <td className="px-6 py-4 text-sm text-slate-600">{formatDateTime(tx.transaction_time)}</td>
                       <td className="px-6 py-4 text-sm">
-                        <div className="font-semibold text-slate-800">{tx.player?.fullname || "Khách ẩn danh"}</div>
-                        {tx.player?.email ? <div className="text-xs text-slate-500 mt-0.5">{tx.player.email}</div> : null}
+                        <div className="font-semibold text-slate-800">
+                          {tx.booking?.guest_name || tx.player?.fullname || "Khách ẩn danh"}
+                        </div>
+                        {!tx.booking?.guest_name && tx.player?.email ? (
+                          <div className="text-xs text-slate-500 mt-0.5">{tx.player.email}</div>
+                        ) : null}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-700">
                         {tx.booking?.code_number ? (

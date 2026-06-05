@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
+import { AuthContext } from "@/context/AuthContext";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import {
@@ -23,6 +24,7 @@ import { uploadImages } from "@/utils/cloudinary";
 
 export const ProfilePage = () => {
   const [user, setUser] = useState(null);
+  const { updateAuthUser } = useContext(AuthContext);
   const [uploading, setUploading] = useState(false);
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -85,6 +87,7 @@ export const ProfilePage = () => {
 
         const data = res.data.data;
         setUser(data);
+        updateAuthUser({ fullname: data.fullname });
         toast.success("Cập nhật thông tin thành công");
       } catch (error) {
         console.log(error);
