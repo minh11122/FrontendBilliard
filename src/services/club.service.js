@@ -120,6 +120,16 @@ export const getClubAnalytics = async (clubId, params = {}) => {
   }
 };
 
+export const getClubFeedbackStats = async (clubId) => {
+  try {
+    const response = await api.get(`/clubs/${clubId}/feedback-stats`);
+    return response.data;
+  } catch (error) {
+    console.error("Error in getClubFeedbackStats:", error);
+    throw error;
+  }
+};
+
 export const clubService = {
   getAllClubs,
   getClubById,
@@ -130,7 +140,8 @@ export const clubService = {
   getStaffClubStatistics,
   completeOnboarding,
   getSubscriptions,
-  getClubAnalytics
+  getClubAnalytics,
+  getClubFeedbackStats
 };
 
 

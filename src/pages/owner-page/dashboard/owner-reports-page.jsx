@@ -42,17 +42,18 @@ const FILTER_LABELS = {
 };
 const FILTER_KEYS = ["today", "7days", "thisMonth", "30days"];
 
+// Hàm tính khoảng thời gian (Từ ngày ... Đến ngày ...) dựa trên bộ lọc người dùng chọn
 const buildDateRange = (filter) => {
   const start = new Date();
-  start.setHours(0, 0, 0, 0);
+  start.setHours(0, 0, 0, 0); // Ép về 0h0p0s đầu ngày
 
   const end = new Date();
-  end.setHours(23, 59, 59, 999);
+  end.setHours(23, 59, 59, 999); // Ép về 23h59p cuối ngày
 
   if (filter === "7days") start.setDate(end.getDate() - 7);
   if (filter === "30days") start.setDate(end.getDate() - 30);
   if (filter === "90days") start.setDate(end.getDate() - 90);
-  if (filter === "thisMonth") start.setDate(1);
+  if (filter === "thisMonth") start.setDate(1); // Set về mùng 1 đầu tháng
 
   return { start, end };
 };
@@ -60,14 +61,12 @@ const buildDateRange = (filter) => {
 export default function OwnerReportsPage() {
   const clubId = localStorage.getItem("selected_club_id");
 
+  // State quản lý phần Doanh thu (Phía trên)
   const [bookingFilter, setBookingFilter] = useState("30days");
-  const [bookingData, setBookingData] = useState(null);
+  const [bookingData, setBookingData] = useState(null); // Đây là chỗ hứng cục data kpi, revenue, services, feedback từ Backend
   const [bookingLoading, setBookingLoading] = useState(true);
 
-  const [tournamentFilter, setTournamentFilter] = useState("30days");
-  const [tournaments, setTournaments] = useState([]);
-  const [tournamentLoading, setTournamentLoading] = useState(true);
-
+  // Hàm gọi API lấy cục data doanh thu to đùng từ Backend (clubAnalytics.controller)
   const fetchBooking = useCallback(async (filter) => {
     if (!clubId) return;
 
@@ -88,60 +87,15 @@ export default function OwnerReportsPage() {
     }
   }, [clubId]);
 
-  const fetchTournaments = useCallback(async () => {
-    if (!clubId) return;
-
-    setTournamentLoading(true);
-    try {
-      const res = await getTournamentsByClub(clubId);
-      if (res?.success) setTournaments(res.data || []);
-    } catch {
-      // no-op
-    } finally {
-      setTournamentLoading(false);
-    }
-  }, [clubId]);
-
   useEffect(() => {
     fetchBooking(bookingFilter);
   }, [bookingFilter, fetchBooking]);
-
-  useEffect(() => {
-    fetchTournaments();
-  }, [fetchTournaments]);
 
   const formatMoney = (val) =>
     new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
     }).format(val || 0);
-
-  const filteredTournaments = (() => {
-    const { start } = buildDateRange(tournamentFilter);
-
-    return tournaments
-      .filter((t) => {
-        const d = t.play_date ? new Date(t.play_date) : null;
-        return d && d >= start;
-      })
-      .filter((t) => t.status !== "Draft" && t.status !== "Cancelled");
-  })();
-
-  const totalTournamentRevenue = filteredTournaments.reduce(
-    (sum, t) => sum + ((t.fee || 0) * (t.registered_player || 0)),
-    0
-  );
-
-  const tournamentChartData = filteredTournaments
-    .filter((t) => (t.fee || 0) * (t.registered_player || 0) > 0)
-    .map((t) => ({
-      name: t.name.length > 16 ? `${t.name.slice(0, 14)}…` : t.name,
-      fullName: t.name,
-      revenue: (t.fee || 0) * (t.registered_player || 0),
-      status: t.status,
-    }))
-    .sort((a, b) => b.revenue - a.revenue)
-    .slice(0, 6);
 
   const FilterPills = ({ value, onChange }) => (
     <div className="flex bg-white rounded-xl shadow-sm border border-gray-200 p-1">
@@ -191,6 +145,7 @@ export default function OwnerReportsPage() {
                   <p className="text-sm font-medium text-gray-500 mb-1">
                     Tổng doanh thu
                   </p>
+                  {/* Lấy kpi.totalRevenue từ API về, ném qua hàm formatMoney để biến thành chữ VD: "1.500.000 ₫" */}
                   <h3 className="text-2xl font-black text-gray-900">
                     {formatMoney(bookingData.kpi.totalRevenue)}
                   </h3>
@@ -205,6 +160,7 @@ export default function OwnerReportsPage() {
                   <p className="text-sm font-medium text-gray-500 mb-1">
                     Trung bình / hóa đơn
                   </p>
+                  {/* Lấy kpi.averageOrderValue từ API */}
                   <h3 className="text-2xl font-black text-gray-900">
                     {formatMoney(bookingData.kpi.averageOrderValue)}
                   </h3>
@@ -220,6 +176,8 @@ export default function OwnerReportsPage() {
               <div className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
+                    // Map lại cục data timeline (Biểu đồ đường) từ API. 
+                    // Ngày gốc "2024-06-04" cắt bỏ số 2024 đi, giữ lại "06/04" cho gọn biểu đồ
                     data={bookingData.revenue.timeline.map((item) => ({
                       name: item.date.split("-").slice(1).join("/"),
                       "Doanh thu": item.total,
@@ -269,17 +227,16 @@ export default function OwnerReportsPage() {
               Doanh thu Giải đấu
             </h2>
             <p className="text-gray-500 mt-1 text-sm">
-              Doanh thu từ phí đăng ký giải đấu
+              Doanh thu từ phí đăng ký giải đấu (đã loại trừ giải bị hủy)
             </p>
           </div>
-          <FilterPills value={tournamentFilter} onChange={setTournamentFilter} />
         </div>
 
-        {tournamentLoading ? (
+        {bookingLoading ? (
           <div className="flex justify-center py-14">
             <Loader2 className="animate-spin text-yellow-500 w-8 h-8" />
           </div>
-        ) : (
+        ) : bookingData ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl p-5 text-white shadow-lg shadow-orange-200/40 col-span-1 md:col-span-1 flex flex-col justify-center">
@@ -287,7 +244,7 @@ export default function OwnerReportsPage() {
                   Tổng doanh thu giải đấu
                 </p>
                 <h3 className="text-2xl font-black">
-                  {formatMoney(totalTournamentRevenue)}
+                  {formatMoney(bookingData.kpi.totalTournamentRevenue)}
                 </h3>
               </div>
 
@@ -300,7 +257,7 @@ export default function OwnerReportsPage() {
                     Số giải đấu
                   </p>
                   <h3 className="text-2xl font-black text-gray-900">
-                    {filteredTournaments.length}
+                    {bookingData.tournaments?.totalCount || 0}
                   </h3>
                 </div>
               </div>
@@ -314,16 +271,13 @@ export default function OwnerReportsPage() {
                     Tổng người tham gia
                   </p>
                   <h3 className="text-2xl font-black text-gray-900">
-                    {filteredTournaments.reduce(
-                      (sum, t) => sum + (t.registered_player || 0),
-                      0
-                    )}
+                    {bookingData.tournaments?.totalPlayers || 0}
                   </h3>
                 </div>
               </div>
             </div>
 
-            {tournamentChartData.length > 0 ? (
+            {bookingData.tournaments?.chartData?.length > 0 ? (
               <div className="grid grid-cols-1 gap-6">
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                   <h3 className="text-base font-bold text-gray-900 mb-6 flex items-center gap-2">
@@ -333,7 +287,7 @@ export default function OwnerReportsPage() {
                   <div className="h-[280px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
-                        data={tournamentChartData}
+                        data={bookingData.tournaments.chartData}
                         layout="vertical"
                         margin={{ top: 5, right: 60, left: 10, bottom: 5 }}
                       >
@@ -363,7 +317,7 @@ export default function OwnerReportsPage() {
                           radius={[0, 6, 6, 0]}
                           barSize={20}
                         >
-                          {tournamentChartData.map((entry, idx) => (
+                          {bookingData.tournaments.chartData.map((entry, idx) => (
                             <Cell
                               key={idx}
                               fill={
@@ -391,7 +345,7 @@ export default function OwnerReportsPage() {
               </div>
             )}
           </>
-        )}
+        ) : null}
       </section>
     </div>
   );

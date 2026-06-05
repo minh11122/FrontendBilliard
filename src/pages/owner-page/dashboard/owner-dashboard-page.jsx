@@ -42,7 +42,7 @@ export const OwnerDashboardPage = () => {
   const [analyticsData, setAnalyticsData] = useState(null); // hôm nay (cho KQKD + sao)
 
   // Dịch vụ — filter riêng
-  const [serviceFilter, setServiceFilter]     = useState("today");
+  const [serviceFilter, setServiceFilter]     = useState("thisMonth");
   const [serviceData, setServiceData]         = useState(null);
   const [serviceLoading, setServiceLoading]   = useState(false);
 
@@ -64,7 +64,7 @@ export const OwnerDashboardPage = () => {
     if (!clubId) return;
     setServiceLoading(true);
     try {
-      const start = getStartDate(filter);
+      const start = getStartDate(filter);//hàm tính ngày bắt đầu theo filter truyền vào
       const end   = new Date();
       end.setHours(23, 59, 59, 999);
       const res = await getClubAnalytics(clubId, {
@@ -101,7 +101,7 @@ export const OwnerDashboardPage = () => {
         });
         if (clubRes?.success) setClubData(clubRes.data);
 
-        // Analytics hôm nay (cho KQKD + sao đánh giá)
+        // Analytics hôm nay (cho KQKD)
         const start = new Date(); start.setHours(0, 0, 0, 0);
         const end   = new Date(); end.setHours(23, 59, 59, 999);
         const aRes = await getClubAnalytics(clubId, {
@@ -110,12 +110,8 @@ export const OwnerDashboardPage = () => {
         });
         if (aRes?.success) setAnalyticsData(aRes.data);
 
-        // Rating toàn thời gian (start từ 2020)
-        const allStart = new Date("2020-01-01T00:00:00.000Z");
-        const ratingRes = await getClubAnalytics(clubId, {
-          startDate: allStart.toISOString(),
-          endDate:   end.toISOString(),
-        });
+        // Rating toàn thời gian
+        const ratingRes = await clubService.getClubFeedbackStats(clubId);
         if (ratingRes?.success) setRatingData(ratingRes.data);
       } catch (err) {
         console.error("Dashboard error:", err);
@@ -140,7 +136,7 @@ export const OwnerDashboardPage = () => {
     })();
   }, [clubId]);
 
-  // Lọc giải đấu theo khoảng ngày
+  // Lọc giải đấu theo khoảng thời gian
   const filterTournamentsByRange = (list, filter) => {
     const cutoff = getStartDate(filter);
     return list.filter(t => {
@@ -284,7 +280,7 @@ export const OwnerDashboardPage = () => {
                     { val: totalTables, label: "Tổng cộng",          bg: "bg-gray-50",                   txt: "text-gray-900" },
                     { val: available,   label: "Còn trống",           bg: "bg-green-50 border border-green-100", txt: "text-green-600" },
                     { val: playing,     label: "Đang chơi",           bg: "bg-blue-50 border border-blue-100",   txt: "text-blue-600" },
-                    { val: held,        label: "Đặt trước / Bảo trì", bg: "bg-orange-50 border border-orange-100", txt: "text-orange-600" },
+                    { val: held,        label: "Bảo trì", bg: "bg-orange-50 border border-orange-100", txt: "text-orange-600" },
                   ].map(({ val, label, bg, txt }) => (
                     <div key={label} className={`flex flex-col items-center justify-center p-4 rounded-2xl ${bg}`}>
                       <span className={`text-4xl font-black ${txt}`}>{val}</span>
@@ -398,7 +394,7 @@ export const OwnerDashboardPage = () => {
               </div>
             </div>
             {ratingCount === 0 && (
-              <p className="text-xs text-gray-400 italic text-center">Chưa có đánh giá hôm nay.</p>
+              <p className="text-xs text-gray-400 italic text-center">Chưa có đánh giá</p>
             )}
           </div>
         </div>
