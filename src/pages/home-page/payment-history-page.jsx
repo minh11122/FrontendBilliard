@@ -74,7 +74,7 @@ const getContentLabel = (tx) => {
     return `${typeLabel} cho booking ${tx.booking.code_number}${tablePart}${clubPart}`;
   }
   if (tx.tournament?.name) return `${typeLabel}: ${tx.tournament.name}`;
-  if (tx.description) return `${typeLabel}: ${tx.description}`;
+  if (tx.description) return `${typeLabel}`;
   return "—";
 };
 
