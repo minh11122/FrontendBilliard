@@ -433,7 +433,7 @@ export const AdminSettings = () => {
                   <p className="text-2xl font-extrabold text-sky-700">{bestMonth.orders}</p>
                   <p className="text-sm text-sky-600 mt-1">giao dịch</p>
                 </div>
-                <div className="rounded-2xl bg-violet-50 border border-violet-100 p-4 col-span-2">
+                {/* <div className="rounded-2xl bg-violet-50 border border-violet-100 p-4 col-span-2">
                   <p className="text-xs font-semibold uppercase tracking-wide text-violet-600 mb-1">
                     Tỷ trọng năm {selectedYear}
                   </p>
@@ -445,7 +445,7 @@ export const AdminSettings = () => {
                   <p className="text-sm text-violet-600 mt-1">
                     so với tổng doanh thu all time
                   </p>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>
