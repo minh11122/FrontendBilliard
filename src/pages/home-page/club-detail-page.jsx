@@ -249,7 +249,7 @@ export const ClubDetailPage = () => {
   const availableTables = club.tables?.filter(t => mapTypeToUI(t.table_type_id?.name) === selectedTableType) || [];
 
   // Tính tiền
-  const currentTablePrice = selectedTable ? selectedTable.price : (club.priceFrom || 60000);
+  const currentTablePrice = selectedTable ? selectedTable.price : (club.priceFrom || 0);
   const totalPrice = selectedDuration * currentTablePrice;
 
   const calculateEndTime = (start, duration) => {
